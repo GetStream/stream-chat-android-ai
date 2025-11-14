@@ -1,7 +1,7 @@
 # AI components for [Stream Android Chat SDK](https://getstream.io/tutorials/android-chat/)
 
 <p align="center">
-  <a href="https://github.com/GetStream/stream-chat-android-ai/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/GetStream/stream-chat-android-ai/workflows/ci/badge.svg" /></a>
+  <a href="https://github.com/GetStream/stream-chat-android-ai/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/GetStream/stream-chat-android-ai/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://developer.android.com/about/versions/lollipop"><img alt="API" src="https://img.shields.io/badge/API-21%2B-brightgreen.svg?style=flat"/></a>
   <a href="https://github.com/GetStream/stream-chat-android-ai/releases"><img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai" /></a>
 </p>
