@@ -14,12 +14,6 @@ plugins {
     alias(libs.plugins.maven.publish)
 }
 
-streamProject {
-    spotless {
-        useKtfmt = true
-    }
-}
-
 detekt {
     autoCorrect = true
     toolVersion = libs.versions.detekt.get()

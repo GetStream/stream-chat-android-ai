@@ -1,7 +1,7 @@
 [versions]
 compileSdk = "36"
 targetSdk = "36"
-minSdk = "21"
+minSdk = "23"
 
 agp = "8.13.1"
 kotlin = "2.2.21"
@@ -13,6 +13,8 @@ lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
 composeBom = "2025.11.00"
 streamConventions = "0.3.0"
+streamLog = "1.3.4"
+streamChatAndroid = "6.27.0"
 mavenPublish = "0.35.0"
 
 [libraries]
@@ -30,6 +32,9 @@ androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+stream-log = { group = "io.getstream", name = "stream-log", version.ref = "streamLog" }
+stream-chat-android-offline = { group = "io.getstream", name = "stream-chat-android-offline", version.ref = "streamChatAndroid" }
+stream-chat-android-compose = { group = "io.getstream", name = "stream-chat-android-compose", version.ref = "streamChatAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -41,3 +46,16 @@ stream-project = { id = "io.getstream.project", version.ref = "streamConventions
 stream-android-library = { id = "io.getstream.android.library", version.ref = "streamConventions" }
 stream-android-application = { id = "io.getstream.android.application", version.ref = "streamConventions" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+
+[bundles]
+stream-chat = [
+    "stream-log",
+    "stream-chat-android-offline",
+    "stream-chat-android-compose",
+]
+androidx-compose = [
+    "androidx-compose-ui",
+    "androidx-compose-ui-graphics",
+    "androidx-compose-ui-tooling-preview",
+    "androidx-compose-material3",
+]

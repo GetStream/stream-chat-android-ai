@@ -27,6 +27,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }
@@ -34,15 +35,14 @@ android {
 dependencies {
     implementation(projects.streamChatAndroidAiCompose)
 
+    implementation(libs.bundles.stream.chat)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
+    implementation(libs.bundles.androidx.compose)
 
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
