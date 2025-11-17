@@ -20,21 +20,29 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import io.getstream.chat.android.ai.compose.Greeting
-import io.getstream.chat.android.ai.compose.sample.ui.theme.SampleTheme
+import io.getstream.chat.android.ai.compose.sample.chat.ChatViewModel
+import io.getstream.chat.android.ai.compose.sample.ui.chat.ChatApp
+import io.getstream.chat.android.ai.compose.sample.ui.theme.AppTheme
+import io.getstream.chat.android.compose.ui.theme.ChatTheme
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: ChatViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SampleTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(name = "Android", modifier = Modifier.padding(innerPadding))
+            AppTheme {
+                ChatTheme {
+                    ChatApp(
+                        viewModel = viewModel,
+                        userName = "André Rêgo",
+                        userEmail = "andre.rego@getstream.io",
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
             }
         }

@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.ui.theme
+package io.getstream.chat.android.ai.compose.sample.chat
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-
-@Composable
-fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
-    MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+/**
+ * Represents the role of a message sender.
+ */
+public sealed class MessageRole {
+    public object User : MessageRole()
+    public object Assistant : MessageRole()
 }

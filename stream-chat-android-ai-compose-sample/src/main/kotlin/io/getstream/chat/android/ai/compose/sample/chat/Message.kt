@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2014-2025 Stream.io Inc. All rights reserved.
+ *
+ * Licensed under the Stream License;
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    https://github.com/GetStream/stream-chat-android-ai/blob/main/LICENSE
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.getstream.chat.android.ai.compose.sample.chat
+
+/**
+ * Represents a chat message.
+ *
+ * @param id Unique identifier for the message
+ * @param role The role of the message sender (User or Assistant)
+ * @param content The text content of the message
+ * @param isStreaming Whether the message is currently being streamed (for assistant messages)
+ * @param timestamp Optional timestamp for the message
+ */
+public data class Message(
+    val id: String,
+    val role: MessageRole,
+    val content: String,
+    val isStreaming: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis(),
+) {
+    /**
+     * Whether this message should show an avatar.
+     * Shows avatar for the first assistant message or when a new "turn" starts.
+     */
+    fun shouldShowAvatar(previousMessage: Message?): Boolean {
+        return when (role) {
+            is MessageRole.Assistant -> {
+                previousMessage == null || previousMessage.role is MessageRole.User
+            }
+            is MessageRole.User -> false
+        }
+    }
+}
