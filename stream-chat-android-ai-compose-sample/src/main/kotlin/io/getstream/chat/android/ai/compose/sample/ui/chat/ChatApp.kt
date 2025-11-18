@@ -91,11 +91,7 @@ public fun ChatApp(
             onStop = { viewModel.stopStreaming() },
             title = currentTitle,
             selectedModel = uiState.selectedModel,
-            onMenuClick = {
-                scope.launch {
-                    drawerState.open()
-                }
-            },
+            onMenuClick = { scope.launch { drawerState.open() } },
             onModelClick = {
                 // TODO: Show model selector dialog
             },

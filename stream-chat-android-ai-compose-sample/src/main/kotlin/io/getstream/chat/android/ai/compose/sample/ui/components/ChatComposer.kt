@@ -20,15 +20,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +73,7 @@ public fun ChatComposer(
                     ),
                 ),
             )
+            .imePadding()
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -87,7 +89,7 @@ public fun ChatComposer(
             ),
         ) {
             Icon(
-                imageVector = Icons.Default.AttachFile,
+                imageVector = Icons.Rounded.AttachFile,
                 contentDescription = "Attach file",
             )
         }
@@ -124,7 +126,7 @@ public fun ChatComposer(
                 modifier = Modifier.size(40.dp),
             ) {
                 Icon(
-                    imageVector = Icons.Default.Stop,
+                    imageVector = Icons.Rounded.Stop,
                     contentDescription = "Stop",
                 )
             }

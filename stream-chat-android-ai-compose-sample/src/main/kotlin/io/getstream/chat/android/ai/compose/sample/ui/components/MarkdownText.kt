@@ -20,20 +20,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.mikepenz.markdown.annotator.annotatorSettings
 import com.mikepenz.markdown.compose.components.MarkdownComponent
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeFence
+import com.mikepenz.markdown.compose.elements.MarkdownTable
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
-
-private val HighlightedCodeFence: MarkdownComponent = {
-    MarkdownHighlightedCodeFence(content = it.content, node = it.node, style = it.typography.code, showHeader = true)
-}
-
-private val HighlightedCodeBlock: MarkdownComponent = {
-    MarkdownHighlightedCodeBlock(content = it.content, node = it.node, style = it.typography.code, showHeader = true)
-}
 
 /**
  * Renders markdown text with proper styling.
@@ -44,18 +38,64 @@ public fun MarkdownText(
     modifier: Modifier = Modifier,
     textColor: Color? = null,
 ) {
-    val defaultTextColor = textColor ?: MaterialTheme.colorScheme.onSurface
+    val defaultTextColor = textColor ?: MaterialTheme.colorScheme.onBackground
 
     Markdown(
         content = text,
         colors = markdownColor(
             text = defaultTextColor,
-            codeBackground = MaterialTheme.colorScheme.surfaceVariant,
         ),
         components = markdownComponents(
             codeFence = HighlightedCodeFence,
             codeBlock = HighlightedCodeBlock,
+            table = Table,
         ),
         modifier = modifier,
+    )
+}
+
+private val Table: MarkdownComponent = {
+    val annotatorSettings = annotatorSettings()
+    MarkdownTable(
+        content = it.content,
+        node = it.node,
+        style = it.typography.table,
+        annotatorSettings = annotatorSettings,
+        headerBlock = { content, header, tableWidth, style ->
+            MarkdownTableHeader(
+                content = content,
+                header = header,
+                tableWidth = tableWidth,
+                style = style,
+                annotatorSettings = annotatorSettings,
+            )
+        },
+        rowBlock = { content, header, tableWidth, style ->
+            MarkdownTableRow(
+                content = content,
+                header = header,
+                tableWidth = tableWidth,
+                style = style,
+                annotatorSettings = annotatorSettings,
+            )
+        },
+    )
+}
+
+private val HighlightedCodeFence: MarkdownComponent = {
+    MarkdownHighlightedCodeFence(
+        content = it.content,
+        node = it.node,
+        style = it.typography.code,
+        showHeader = true,
+    )
+}
+
+private val HighlightedCodeBlock: MarkdownComponent = {
+    MarkdownHighlightedCodeBlock(
+        content = it.content,
+        node = it.node,
+        style = it.typography.code,
+        showHeader = true,
     )
 }

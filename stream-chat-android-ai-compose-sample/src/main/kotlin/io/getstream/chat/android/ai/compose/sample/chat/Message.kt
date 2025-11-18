@@ -31,17 +31,4 @@ public data class Message(
     val content: String,
     val isStreaming: Boolean = false,
     val timestamp: Long = System.currentTimeMillis(),
-) {
-    /**
-     * Whether this message should show an avatar.
-     * Shows avatar for the first assistant message or when a new "turn" starts.
-     */
-    fun shouldShowAvatar(previousMessage: Message?): Boolean {
-        return when (role) {
-            is MessageRole.Assistant -> {
-                previousMessage == null || previousMessage.role is MessageRole.User
-            }
-            is MessageRole.User -> false
-        }
-    }
-}
+)

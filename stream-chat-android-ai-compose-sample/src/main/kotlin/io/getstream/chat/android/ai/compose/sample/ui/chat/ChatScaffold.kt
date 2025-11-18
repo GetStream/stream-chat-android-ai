@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -96,11 +96,12 @@ public fun ChatScaffold(
                 bottom = composerHeight,
             ),
         ) {
-            itemsIndexed(messages) { index, message ->
-                val previousMessage = if (index > 0) messages[index - 1] else null
+            items(
+                key = Message::id,
+                items = messages,
+            ) { message ->
                 ChatMessageItem(
                     message = message,
-                    previousMessage = previousMessage,
                 )
             }
         }
