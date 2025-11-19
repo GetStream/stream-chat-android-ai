@@ -14,21 +14,9 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.chat
+package io.getstream.chat.android.ai.compose.sample.domain
 
-/**
- * Represents a chat message.
- *
- * @param id Unique identifier for the message
- * @param role The role of the message sender (User or Assistant)
- * @param content The text content of the message
- * @param isStreaming Whether the message is currently being streamed (for assistant messages)
- * @param timestamp Optional timestamp for the message
- */
-public data class Message(
-    val id: String,
-    val role: MessageRole,
-    val content: String,
-    val isStreaming: Boolean = false,
-    val timestamp: Long = System.currentTimeMillis(),
-)
+import io.getstream.chat.android.models.Message
+
+fun Message.isFromAi(): Boolean =
+    extraData["ai_generated"] == true || user.id.startsWith("ai_bot-")

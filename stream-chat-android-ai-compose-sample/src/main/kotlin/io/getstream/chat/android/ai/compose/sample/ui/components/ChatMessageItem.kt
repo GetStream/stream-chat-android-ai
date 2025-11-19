@@ -30,17 +30,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.sample.chat.Message
-import io.getstream.chat.android.ai.compose.sample.chat.MessageRole
-import io.getstream.chat.android.compose.ui.components.TypingIndicator
+import io.getstream.chat.android.ai.compose.component.StreamingText
+import io.getstream.chat.android.ai.compose.sample.domain.Message
+import io.getstream.chat.android.ai.compose.sample.domain.MessageRole
 
 /**
  * Displays a single chat message with proper styling based on role.
+ * User messages appear on the right with a colored bubble.
+ * Assistant messages fill the width without a bubble.
+ *
+ * @param message The message to display
+ * @param modifier Modifier to be applied to the message item
+ * @param isStreaming Whether this message is currently being streamed. When true, content will animate in.
  */
 @Composable
 public fun ChatMessageItem(
     message: Message,
     modifier: Modifier = Modifier,
+    isStreaming: Boolean = false,
 ) {
     val isUser = message.role is MessageRole.User
 
@@ -50,25 +57,34 @@ public fun ChatMessageItem(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
-        if (isUser) {
-            Spacer(modifier = Modifier.weight(.2f))
-            MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
-                if (message.isStreaming && message.content.isEmpty()) {
-                    TypingIndicator()
-                } else {
+        when (message.role) {
+            MessageRole.User -> {
+                Spacer(modifier = Modifier.weight(.2f))
+                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
                     MarkdownText(
                         text = message.content,
-                        textColor = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             }
-        } else {
-            if (message.isStreaming && message.content.isEmpty()) {
-                TypingIndicator()
-            } else {
-                MarkdownText(
+
+            MessageRole.Others -> {
+                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
+                    MarkdownText(
+                        text = message.content,
+                    )
+                }
+                Spacer(modifier = Modifier.weight(.2f))
+            }
+
+            MessageRole.Assistant -> {
+                StreamingText(
                     text = message.content,
-                )
+                    isStreaming = isStreaming,
+                ) { displayedText ->
+                    MarkdownText(
+                        text = displayedText,
+                    )
+                }
             }
         }
     }
@@ -82,8 +98,9 @@ private fun MessageBubble(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.primary)
+            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f))
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        content = content,
-    )
+    ) {
+        content()
+    }
 }

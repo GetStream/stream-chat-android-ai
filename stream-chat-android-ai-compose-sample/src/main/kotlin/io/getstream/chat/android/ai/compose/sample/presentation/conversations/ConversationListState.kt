@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.getstream.chat.android.ai
 
-object Configuration {
-    const val majorVersion = 0
-    const val minorVersion = 1
-    const val patchVersion = 0
-    const val versionName = "$majorVersion.$minorVersion.$patchVersion"
-    const val snapshotVersionName = "$majorVersion.$minorVersion.${patchVersion + 1}-SNAPSHOT"
-    const val artifactGroup = "io.getstream"
-}
+package io.getstream.chat.android.ai.compose.sample.presentation.conversations
+
+/**
+ * UI state for the conversation list.
+ */
+public data class ConversationListState(
+    val conversations: List<Conversation> = emptyList(),
+    val isLoading: Boolean = true,
+)
+
+/**
+ * Data class representing a chat conversation.
+ */
+public data class Conversation(
+    val id: String,
+    val title: String,
+)

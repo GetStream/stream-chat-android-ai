@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose
+package io.getstream.chat.android.ai.compose.sample.domain
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-
-@Composable
-public fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(text = "Hello $name!", modifier = modifier)
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun GreetingPreview() {
-    Greeting("Android")
-}
+/**
+ * Represents a user in the chat system.
+ *
+ * @param id Unique identifier for the user
+ * @param name Display name of the user
+ */
+data class User(
+    val id: String,
+    val name: String,
+)

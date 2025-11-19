@@ -16,10 +16,8 @@
 
 package io.getstream.chat.android.ai.compose.sample.ui.components
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.mikepenz.markdown.annotator.annotatorSettings
 import com.mikepenz.markdown.compose.components.MarkdownComponent
 import com.mikepenz.markdown.compose.components.markdownComponents
@@ -31,20 +29,19 @@ import com.mikepenz.markdown.m3.markdownColor
 
 /**
  * Renders markdown text with proper styling.
+ * Supports code blocks, tables, and other markdown features.
+ *
+ * @param text The markdown text to render
+ * @param modifier Modifier to be applied to the text
  */
 @Composable
 public fun MarkdownText(
     text: String,
     modifier: Modifier = Modifier,
-    textColor: Color? = null,
 ) {
-    val defaultTextColor = textColor ?: MaterialTheme.colorScheme.onBackground
-
     Markdown(
         content = text,
-        colors = markdownColor(
-            text = defaultTextColor,
-        ),
+        colors = markdownColor(),
         components = markdownComponents(
             codeFence = HighlightedCodeFence,
             codeBlock = HighlightedCodeBlock,

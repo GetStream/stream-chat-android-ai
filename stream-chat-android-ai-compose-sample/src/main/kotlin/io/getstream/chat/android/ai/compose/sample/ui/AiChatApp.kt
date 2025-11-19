@@ -1,0 +1,143 @@
+/*
+ * Copyright (c) 2014-2025 Stream.io Inc. All rights reserved.
+ *
+ * Licensed under the Stream License;
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    https://github.com/GetStream/stream-chat-android-ai/blob/main/LICENSE
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.getstream.chat.android.ai.compose.sample.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.DismissibleDrawerSheet
+import androidx.compose.material3.DismissibleNavigationDrawer
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.getstream.chat.android.ai.compose.sample.di.ConversationListViewModelFactory
+import io.getstream.chat.android.ai.compose.sample.domain.User
+import io.getstream.chat.android.ai.compose.sample.presentation.conversations.ConversationListViewModel
+import io.getstream.chat.android.ai.compose.sample.ui.chat.ChatScreen
+import io.getstream.chat.android.ai.compose.sample.ui.components.ChatDrawer
+import io.getstream.chat.android.ai.compose.sample.ui.components.ViewModelStore
+import io.getstream.chat.android.client.ChatClient
+import kotlinx.coroutines.launch
+
+/**
+ * Top-level chat app composable.
+ * Manages the navigation drawer and coordinates the chat UI components.
+ */
+@Composable
+public fun AiChatApp(
+    modifier: Modifier = Modifier,
+) {
+    val conversationListViewModel = viewModel<ConversationListViewModel>(factory = ConversationListViewModelFactory())
+    val conversationListState by conversationListViewModel.uiState.collectAsState()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    // Get current user from ChatClient (could be moved to a separate use case)
+    val user = ChatClient.instance().getCurrentUser()?.let {
+        User(
+            id = it.id,
+            name = it.name,
+        )
+    }
+
+    var selectedConversationId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Hide keyboard when drawer opens
+    LaunchedEffect(drawerState.currentValue) {
+        if (drawerState.isOpen) {
+            keyboardController?.hide()
+        }
+    }
+
+    BackHandler(enabled = drawerState.isOpen) {
+        scope.launch { drawerState.close() }
+    }
+
+    DismissibleNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DismissibleDrawerSheet(
+                drawerState = drawerState,
+                windowInsets = WindowInsets(),
+            ) {
+                ChatDrawer(
+                    user = user,
+                    conversations = conversationListState.conversations,
+                    selectedConversationId = selectedConversationId,
+                    onNewChatClick = {
+                        selectedConversationId = null
+                        scope.launch { drawerState.close() }
+                    },
+                    onConversationClick = { conversationId ->
+                        selectedConversationId = conversationId
+                        scope.launch { drawerState.close() }
+                    },
+                    onUserInfoClick = {
+                        // TODO: Navigate to settings
+                        scope.launch { drawerState.close() }
+                    },
+                )
+            }
+        },
+        modifier = modifier,
+    ) {
+        Box {
+            AnimatedContent(
+                targetState = selectedConversationId,
+            ) { conversationId ->
+                ViewModelStore(conversationId) {
+                    ChatScreen(
+                        conversationId = conversationId,
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onChatDeleted = {
+                            // Navigate back to new chat after deletion
+                            selectedConversationId = null
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+
+            if (drawerState.isOpen) {
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .clickable(
+                            indication = null,
+                            interactionSource = null,
+                        ) {
+                            scope.launch { drawerState.close() }
+                        },
+                )
+            }
+        }
+    }
+}

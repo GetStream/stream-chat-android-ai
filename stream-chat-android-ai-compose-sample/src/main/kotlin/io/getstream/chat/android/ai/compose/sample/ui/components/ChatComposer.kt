@@ -16,6 +16,7 @@
 
 package io.getstream.chat.android.ai.compose.sample.ui.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -25,11 +26,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.AttachFile
-import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,10 +39,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import io.getstream.chat.android.ai.compose.sample.R
 
 /**
  * Chat composer with attach, voice, and send buttons.
+ * Displays different action buttons based on state:
+ * - Stop button when streaming
+ * - Send button when text is entered
+ * - Voice button when text is empty
+ *
+ * @param text The current text input value
+ * @param onTextChange Callback when text changes
+ * @param onSend Callback when send button is clicked
+ * @param onStop Callback when stop button is clicked (during streaming)
+ * @param isStreaming Whether the AI is currently streaming a response
+ * @param modifier Modifier to be applied to the composer
+ * @param onAttachClick Callback when attach button is clicked
+ * @param onVoiceClick Callback when voice button is clicked
  */
 @Composable
 public fun ChatComposer(
@@ -60,6 +71,7 @@ public fun ChatComposer(
     onVoiceClick: () -> Unit = {},
 ) {
     // Main input field content with blur gradient applied to modifier
+    // The gradient creates a visual fade effect that blends with the message list behind it
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -75,11 +87,10 @@ public fun ChatComposer(
             )
             .imePadding()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 8.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Attach button
         FilledIconButton(
             onClick = onAttachClick,
             modifier = Modifier.size(40.dp),
@@ -89,21 +100,59 @@ public fun ChatComposer(
             ),
         ) {
             Icon(
-                imageVector = Icons.Rounded.AttachFile,
-                contentDescription = "Attach file",
+                painter = painterResource(R.drawable.ic_add),
+                contentDescription = "Add context",
             )
         }
 
-        // Text input field
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
             placeholder = {
                 Text(
-                    text = "Message",
+                    text = "Ask Assistant",
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 )
+            },
+            trailingIcon = {
+                val button = when {
+                    isStreaming -> "stop"
+                    text.isNotBlank() -> "send"
+                    else -> "voice"
+                }
+                AnimatedContent(
+                    targetState = button,
+                ) { state ->
+                    when (state) {
+                        "stop" -> FilledIconButton(
+                            onClick = onStop,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_stop),
+                                contentDescription = "Stop",
+                            )
+                        }
+
+                        "send" -> FilledIconButton(
+                            onClick = onSend,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_send),
+                                contentDescription = "Send",
+                            )
+                        }
+
+                        else -> IconButton(
+                            onClick = onVoiceClick,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_mic),
+                                contentDescription = "Voice input",
+                            )
+                        }
+                    }
+                }
             },
             shape = RoundedCornerShape(24.dp),
             colors = TextFieldDefaults.colors(
@@ -117,45 +166,5 @@ public fun ChatComposer(
             minLines = 1,
             enabled = !isStreaming,
         )
-
-        // Voice or Send/Stop button
-        if (isStreaming) {
-            // Stop button when streaming
-            FilledIconButton(
-                onClick = onStop,
-                modifier = Modifier.size(40.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Stop,
-                    contentDescription = "Stop",
-                )
-            }
-        } else if (text.isNotBlank()) {
-            // Send button when text is not empty
-            FilledIconButton(
-                onClick = onSend,
-                modifier = Modifier.size(40.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.Send,
-                    contentDescription = "Send",
-                )
-            }
-        } else {
-            // Voice button when text is empty
-            IconButton(
-                onClick = onVoiceClick,
-                modifier = Modifier.size(40.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Mic,
-                    contentDescription = "Voice input",
-                )
-            }
-        }
     }
 }

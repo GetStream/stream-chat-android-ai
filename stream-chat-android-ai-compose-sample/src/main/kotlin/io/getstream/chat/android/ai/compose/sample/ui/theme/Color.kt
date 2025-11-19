@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.Color
 
 private val Blue600 = Color(0xFF0169CC)
 private val White = Color(0xFFFFFFFF)
-private val Grey50 = Color(0xFFF9F9F9)
 private val Grey200 = Color(0xFFECECEC)
 private val Grey900 = Color(0xFF0D0D0D)
 private val Grey500 = Color(0xFF5D5D5D)
@@ -48,6 +47,8 @@ internal val DarkColorScheme =
         onPrimaryContainer = Blue400,
         secondary = BlueGrey80,
         onSecondary = White,
+        secondaryContainer = BlueGrey80.copy(alpha = 0.2f),
+        onSecondaryContainer = BlueGrey80,
         tertiary = Blue400,
         onTertiary = White,
         background = Grey800,
@@ -72,11 +73,13 @@ internal val LightColorScheme =
         onPrimaryContainer = Blue600,
         secondary = BlueGrey40,
         onSecondary = White,
+        secondaryContainer = BlueGrey40.copy(alpha = 0.1f),
+        onSecondaryContainer = BlueGrey40,
         tertiary = Blue600,
         onTertiary = White,
         background = White,
         onBackground = Grey900,
-        surface = Grey50,
+        surface = Grey100,
         onSurface = Grey900,
         surfaceVariant = Grey200,
         onSurfaceVariant = Grey500,

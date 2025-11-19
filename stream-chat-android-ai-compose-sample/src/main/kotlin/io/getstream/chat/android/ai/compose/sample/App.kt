@@ -17,6 +17,8 @@
 package io.getstream.chat.android.ai.compose.sample
 
 import android.app.Application
+import android.os.StrictMode
+import io.getstream.chat.android.ai.compose.sample.di.AppContainer
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogLevel
 import io.getstream.chat.android.models.User
@@ -27,9 +29,19 @@ import io.getstream.log.AndroidStreamLogger
 import io.getstream.log.streamLog
 
 class App : Application() {
+    // Application-level dependency container
+    lateinit var appContainer: AppContainer
+        private set
 
     override fun onCreate() {
+        setupStrictMode()
         super.onCreate()
+
+        // Initialize dependency container
+        appContainer = AppContainer(
+            baseUrl = "http://10.0.2.2:3000", // Android emulator localhost
+            enableLogging = BuildConfig.DEBUG,
+        )
 
         initializeStreamChat()
     }
@@ -68,4 +80,21 @@ class App : Application() {
                 }
             }
     }
+}
+
+private fun setupStrictMode() {
+    StrictMode.ThreadPolicy.Builder().detectAll()
+        .penaltyLog()
+        .build()
+        .apply {
+            StrictMode.setThreadPolicy(this)
+        }
+
+    StrictMode.VmPolicy.Builder()
+        .detectAll()
+        .penaltyLog()
+        .build()
+        .apply {
+            StrictMode.setVmPolicy(this)
+        }
 }

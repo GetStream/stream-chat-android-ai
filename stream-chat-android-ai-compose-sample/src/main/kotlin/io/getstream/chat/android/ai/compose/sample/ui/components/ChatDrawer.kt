@@ -30,34 +30,32 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.sample.chat.ChatConversation
+import io.getstream.chat.android.ai.compose.sample.R
+import io.getstream.chat.android.ai.compose.sample.domain.User
+import io.getstream.chat.android.ai.compose.sample.presentation.conversations.Conversation
 
-/**
- * Sidebar drawer with user info, chat history, and settings.
- */
 @Composable
-public fun ChatDrawer(
-    userName: String,
-    userEmail: String,
-    conversations: List<ChatConversation>,
-    currentChatId: String?,
+fun ChatDrawer(
+    user: User?,
+    conversations: List<Conversation>,
+    selectedConversationId: String?,
     onNewChatClick: () -> Unit,
-    onConversationClick: (String) -> Unit,
-    onSettingsClick: () -> Unit,
+    onConversationClick: (conversationId: String) -> Unit,
+    onUserInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -68,13 +66,6 @@ public fun ChatDrawer(
             .padding(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        UserInfo(
-            userName = userName,
-            userEmail = userEmail,
-        )
-
-        HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-
         NewChatButton(onClick = onNewChatClick)
 
         HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
@@ -91,32 +82,46 @@ public fun ChatDrawer(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(
-                key = ChatConversation::id,
+                key = Conversation::id,
                 items = conversations,
             ) { conversation ->
-                ChatHistoryItem(
-                    title = conversation.title,
-                    isSelected = conversation.id == currentChatId,
+                NavigationDrawerItem(
+                    label = {
+                        Text(
+                            text = conversation.title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    selected = conversation.id == selectedConversationId,
                     onClick = { onConversationClick(conversation.id) },
+                    modifier = Modifier,
+                    shape = RectangleShape,
                 )
             }
         }
 
         HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
 
-        SettingsButton(onClick = onSettingsClick)
+        if (user != null) {
+            UserInfo(
+                user = user,
+                onClick = onUserInfoClick,
+            )
+        }
     }
 }
 
 @Composable
 private fun UserInfo(
-    userName: String,
-    userEmail: String,
+    user: User,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -129,7 +134,7 @@ private fun UserInfo(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = userName.take(1).uppercase(),
+                text = user.initials,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold,
@@ -138,19 +143,21 @@ private fun UserInfo(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = userName,
+                text = user.name,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = userEmail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
+
+private val User.initials
+    get() = name.trim()
+        .split("\\s+".toRegex())
+        .mapNotNull(String::firstOrNull)
+        .joinToString("")
+        .uppercase()
 
 @Composable
 private fun NewChatButton(
@@ -166,7 +173,7 @@ private fun NewChatButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = Icons.Rounded.Add,
+            painter = painterResource(R.drawable.ic_new),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
         )
@@ -174,67 +181,6 @@ private fun NewChatButton(
             text = "New chat",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary,
-        )
-    }
-}
-
-@Composable
-private fun ChatHistoryItem(
-    title: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(
-                if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                } else {
-                    Color.Transparent
-                },
-            )
-            .padding(horizontal = 28.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-            maxLines = 1,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun SettingsButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Settings,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }

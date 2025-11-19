@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2014-2025 Stream.io Inc. All rights reserved.
+ *
+ * Licensed under the Stream License;
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    https://github.com/GetStream/stream-chat-android-ai/blob/main/LICENSE
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.getstream.chat.android.ai.compose.sample.data
+
+/**
+ * Repository interface for Chat AI operations.
+ * This abstraction allows for easier testing and swapping implementations.
+ */
+public interface ChatAiRepository {
+    /**
+     * Starts an AI agent for the given channel.
+     *
+     * @param channelType The channel type (e.g., "messaging")
+     * @param channelId The channel ID (e.g., "channel-id")
+     * @param platform The AI platform to use ("openai", "anthropic", "gemini", or "xai")
+     * @param model Optional model override (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")
+     */
+    public suspend fun startAIAgent(
+        channelType: String,
+        channelId: String,
+        platform: String,
+        model: String? = null,
+    ): Result<Unit>
+
+    /**
+     * Stops the AI agent for the given channel.
+     *
+     * @param channelId The channel ID (e.g., "channel-id")
+     */
+    public suspend fun stopAIAgent(channelId: String): Result<Unit>
+}

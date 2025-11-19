@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.getstream.chat.android.ai
 
-object Configuration {
-    const val majorVersion = 0
-    const val minorVersion = 1
-    const val patchVersion = 0
-    const val versionName = "$majorVersion.$minorVersion.$patchVersion"
-    const val snapshotVersionName = "$majorVersion.$minorVersion.${patchVersion + 1}-SNAPSHOT"
-    const val artifactGroup = "io.getstream"
+package io.getstream.chat.android.ai.compose.sample.domain
+
+/**
+ * Represents the role of a message sender.
+ */
+public sealed class MessageRole {
+    public object Assistant : MessageRole()
+    public object User : MessageRole()
+    public object Others : MessageRole()
 }
