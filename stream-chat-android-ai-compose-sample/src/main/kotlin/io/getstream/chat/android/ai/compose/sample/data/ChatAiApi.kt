@@ -41,6 +41,15 @@ public interface ChatAiApi {
      */
     @POST("/stop-ai-agent")
     suspend fun stopAIAgent(@Body request: StopAIAgentRequest): AIAgentResponse
+
+    /**
+     * Summarizes text using the specified AI platform.
+     *
+     * @param request Contains the text to summarize, platform, and optional model
+     * @return Response containing the summary or error details
+     */
+    @POST("/summarize")
+    suspend fun summarize(@Body request: SummarizeRequest): SummarizeResponse
 }
 
 /**
@@ -68,16 +77,45 @@ public data class StopAIAgentRequest(
 )
 
 /**
- * Response model from the Chat AI API.
+ * Request model for summarizing text.
+ *
+ * @param text The text to summarize
+ * @param platform The AI platform to use ("openai", "anthropic", "gemini", or "xai")
+ * @param model Optional model override. If null, the platform's default model is used
+ */
+public data class SummarizeRequest(
+    val text: String,
+    val platform: String,
+    val model: String? = null,
+)
+
+/**
+ * Response model from the Chat AI API (success responses only).
  *
  * @param message Success message from the server
  * @param data Additional data returned by the server (typically empty)
- * @param error Error message if the operation failed, null otherwise
- * @param reason Additional error reason/details if available
  */
 public data class AIAgentResponse(
     val message: String,
     val data: List<String> = emptyList(),
-    val error: String? = null,
+)
+
+/**
+ * Response model from the summarize API (success responses only).
+ *
+ * @param summary The summarized text
+ */
+public data class SummarizeResponse(
+    val summary: String,
+)
+
+/**
+ * Error response model for parsing error responses (4xx/5xx status codes).
+ *
+ * @param error Error message
+ * @param reason Additional error reason/details if available
+ */
+internal data class ErrorResponse(
+    val error: String,
     val reason: String? = null,
 )

@@ -45,8 +45,8 @@ import io.getstream.chat.android.ai.compose.sample.R
 public fun ChatTopBar(
     title: String,
     onMenuClick: () -> Unit,
-    onDeleteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    onDeleteClick: (() -> Unit)? = null,
 ) {
     Box(
         modifier = modifier

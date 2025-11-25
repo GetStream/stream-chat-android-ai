@@ -18,6 +18,7 @@ package io.getstream.chat.android.ai.compose.sample.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,16 +26,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DismissibleDrawerSheet
 import androidx.compose.material3.DismissibleNavigationDrawer
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.getstream.chat.android.ai.compose.sample.di.ConversationListViewModelFactory
@@ -81,12 +86,17 @@ public fun AiChatApp(
         scope.launch { drawerState.close() }
     }
 
+    var drawerSheetWidth by remember { mutableIntStateOf(0) }
+
     DismissibleNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             DismissibleDrawerSheet(
                 drawerState = drawerState,
                 windowInsets = WindowInsets(),
+                modifier = Modifier.onGloballyPositioned { coordinates ->
+                    drawerSheetWidth = coordinates.size.width
+                },
             ) {
                 ChatDrawer(
                     user = user,
@@ -126,10 +136,18 @@ public fun AiChatApp(
                 }
             }
 
-            if (drawerState.isOpen) {
+            // Calculate scrim alpha based on drawer position
+            // When drawer is fully open, alpha = 0.5
+            // When drawer is closed, alpha = 0
+            val drawerOffset = drawerState.currentOffset
+            val fraction = (drawerSheetWidth + drawerOffset) / drawerSheetWidth
+            val scrimAlpha = DRAWER_SCRIM_ALPHA * fraction
+
+            if (scrimAlpha > 0f) {
                 Box(
                     Modifier
-                        .matchParentSize()
+                        .fillMaxSize()
+                        .background(color = MaterialTheme.colorScheme.scrim.copy(alpha = scrimAlpha))
                         .clickable(
                             indication = null,
                             interactionSource = null,
@@ -141,3 +159,5 @@ public fun AiChatApp(
         }
     }
 }
+
+private const val DRAWER_SCRIM_ALPHA = 0.5f

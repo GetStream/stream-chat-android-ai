@@ -26,39 +26,52 @@ import kotlinx.coroutines.delay
 
 /**
  * A composable that wraps content and provides streaming animation.
- * Progressively reveals text content word-by-word when streaming is active.
- * Animation continues until all content is displayed, even if streaming stops.
+ * Progressively reveals text content word-by-word.
+ * 
+ * - Every change to the text animates word-by-word
+ * - If the change is a new text (doesn't start with previous), animates from the beginning
+ * - If the change is a continuation (next text starts with previous text), keeps animating
  *
  * @param text The full text content to display
- * @param isStreaming Whether the content is currently being streamed.
- * When false and no animation has started, content is shown immediately.
  * @param chunkDelayMs Delay in milliseconds between each chunk reveal. Lower values result in faster animation.
  * @param content The composable content that will receive the animated text
  */
 @Composable
 public fun StreamingText(
     text: String,
-    isStreaming: Boolean = false,
-    chunkDelayMs: Int = 30,
+    chunkDelayMs: Long = 30,
     content: @Composable (displayedText: String) -> Unit,
 ) {
     // Track the displayed text for animation
     var displayedText by remember { mutableStateOf("") }
+    // Track the previous full text to detect new text vs continuation
+    var previousText by remember { mutableStateOf("") }
 
-    // Update displayed text progressively
-    LaunchedEffect(text, isStreaming) {
+    LaunchedEffect(text) {
         when {
-            isNewMessage(displayedText, text) || !shouldAnimate(displayedText, isStreaming) -> {
-                // New message or no animation needed - show immediately
-                displayedText = text
+            text.isEmpty() -> {
+                displayedText = ""
+                previousText = text
             }
-            shouldAnimateNewContent(displayedText, text, isStreaming) -> {
-                // Animate new content chunk-by-chunk
+            previousText.isEmpty() || !text.startsWith(previousText) -> {
+                // New text - reset and animate from the beginning
+                displayedText = ""
+                previousText = text
+                animateNewContent("", text, chunkDelayMs) { newText ->
+                    displayedText = newText
+                }
+            }
+            text.length > previousText.length -> {
+                // Continuation - keep animating from where we left off
+                previousText = text
                 animateNewContent(displayedText, text, chunkDelayMs) { newText ->
                     displayedText = newText
                 }
             }
-            // If shouldAnimate is true but text hasn't grown, do nothing (wait for new content)
+            else -> {
+                // Text hasn't changed
+                previousText = text
+            }
         }
     }
 
@@ -66,31 +79,12 @@ public fun StreamingText(
 }
 
 /**
- * Checks if the incoming text represents a new message (not a continuation).
- */
-private fun isNewMessage(displayedText: String, newText: String): Boolean =
-    displayedText.isNotEmpty() && !newText.startsWith(displayedText)
-
-/**
- * Determines if animation should occur based on current state.
- * Animation occurs if there's already displayed content (to continue animation) or if streaming is active.
- */
-private fun shouldAnimate(displayedText: String, isStreaming: Boolean): Boolean =
-    displayedText.isNotEmpty() || isStreaming
-
-/**
- * Checks if new content should be animated.
- */
-private fun shouldAnimateNewContent(displayedText: String, text: String, isStreaming: Boolean): Boolean =
-    text.length > displayedText.length && shouldAnimate(displayedText, isStreaming)
-
-/**
  * Animates new content chunk-by-chunk.
  */
 private suspend fun animateNewContent(
     currentText: String,
     fullText: String,
-    chunkDelayMs: Int,
+    chunkDelayMs: Long,
     onUpdate: (String) -> Unit,
 ) {
     val newContent = fullText.substring(currentText.length)
@@ -101,7 +95,7 @@ private suspend fun animateNewContent(
     for (chunk in chunks) {
         builder.append(chunk)
         onUpdate(builder.toString())
-        delay(chunkDelayMs.toLong())
+        delay(chunkDelayMs)
     }
 }
 

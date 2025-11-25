@@ -21,104 +21,95 @@ import retrofit2.HttpException
 
 /**
  * Service implementation for communicating with the Chat AI server.
- *
- * @param chatAiApi The Retrofit API interface for Chat AI endpoints
- * @param moshi The Moshi instance for JSON serialization/deserialization
  */
 public class ChatAiService(
     private val chatAiApi: ChatAiApi,
     private val moshi: Moshi,
 ) : ChatAiRepository {
 
-    /**
-     * Starts an AI agent for the given channel.
-     *
-     * @param channelType The channel type (e.g., "messaging")
-     * @param channelId The channel ID (e.g., "channel-id")
-     * @param platform The AI platform to use ("openai", "anthropic", "gemini", or "xai")
-     * @param model Optional model override (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")
-     */
     override suspend fun startAIAgent(
         channelType: String,
         channelId: String,
         platform: String,
         model: String?,
-    ): Result<Unit> = try {
-        val requestBody = StartAIAgentRequest(
-            channel_type = channelType,
-            channel_id = channelId,
-            platform = platform,
-            model = model,
+    ): Result<Unit> = executeApiCall {
+        chatAiApi.startAIAgent(
+            request = StartAIAgentRequest(
+                channel_type = channelType,
+                channel_id = channelId,
+                platform = platform,
+                model = model,
+            ),
         )
-        val response = chatAiApi.startAIAgent(requestBody)
-
-        // The API can return HTTP 200 with an error field in the response body
-        // Check if response has an error field set
-        if (response.error != null) {
-            Result.failure(
-                Exception(
-                    response.error + (response.reason?.let { ": $it" } ?: ""),
-                ),
-            )
-        } else {
-            Result.success(Unit)
-        }
-    } catch (e: HttpException) {
-        // HTTP errors (4xx, 5xx) may contain structured error responses
-        // Try to parse the error body to extract a meaningful error message
-        val errorMessage = try {
-            val errorBody = e.response()?.errorBody()?.string()
-            if (errorBody != null) {
-                val errorResponse = moshi.adapter(AIAgentResponse::class.java).fromJson(errorBody)
-                errorResponse?.error ?: "HTTP ${e.code()}: ${e.message()}"
-            } else {
-                "HTTP ${e.code()}: ${e.message()}"
-            }
-        } catch (parseException: Exception) {
-            // If parsing fails, fall back to HTTP status code and message
-            "HTTP ${e.code()}: ${e.message()}"
-        }
-        Result.failure(Exception(errorMessage))
-    } catch (e: Exception) {
-        Result.failure(e)
     }
 
-    /**
-     * Stops the AI agent for the given channel.
-     *
-     * @param channelId The channel ID (e.g., "channel-id")
-     */
-    override suspend fun stopAIAgent(channelId: String): Result<Unit> = try {
-        val response = chatAiApi.stopAIAgent(StopAIAgentRequest(channel_id = channelId))
+    override suspend fun stopAIAgent(channelId: String): Result<Unit> = executeApiCall {
+        chatAiApi.stopAIAgent(request = StopAIAgentRequest(channel_id = channelId))
+    }
 
-        // The API can return HTTP 200 with an error field in the response body
-        // Check if response has an error field set
-        if (response.error != null) {
-            Result.failure(
-                Exception(
-                    response.error + (response.reason?.let { ": $it" } ?: ""),
-                ),
-            )
-        } else {
+    override suspend fun summarize(
+        text: String,
+        platform: String,
+        model: String?,
+    ): Result<String> = executeSummarizeApiCall {
+        chatAiApi.summarize(
+            request = SummarizeRequest(
+                text = text,
+                platform = platform,
+                model = model,
+            ),
+        )
+    }
+
+    private suspend fun executeApiCall(apiCall: suspend () -> Unit): Result<Unit> {
+        return try {
+            apiCall()
             Result.success(Unit)
+        } catch (e: HttpException) {
+            handleHttpException(e)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-    } catch (e: HttpException) {
-        // HTTP errors (4xx, 5xx) may contain structured error responses
-        // Try to parse the error body to extract a meaningful error message
+    }
+
+    private suspend fun executeSummarizeApiCall(apiCall: suspend () -> SummarizeResponse): Result<String> {
+        return try {
+            val response = apiCall()
+            Result.success(response.summary)
+        } catch (e: HttpException) {
+            handleSummarizeHttpException(e)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun handleHttpException(e: HttpException): Result<Unit> {
         val errorMessage = try {
             val errorBody = e.response()?.errorBody()?.string()
             if (errorBody != null) {
-                val errorResponse = moshi.adapter(AIAgentResponse::class.java).fromJson(errorBody)
-                errorResponse?.error ?: "HTTP ${e.code()}: ${e.message()}"
+                val errorResponse = moshi.adapter(ErrorResponse::class.java).fromJson(errorBody)
+                errorResponse?.let { it.error + it.reason?.let { reason -> ": $reason" }.orEmpty() }
             } else {
-                "HTTP ${e.code()}: ${e.message()}"
-            }
-        } catch (parseException: Exception) {
-            // If parsing fails, fall back to HTTP status code and message
+                null
+            } ?: "HTTP ${e.code()}: ${e.message()}"
+        } catch (_: Exception) {
             "HTTP ${e.code()}: ${e.message()}"
         }
-        Result.failure(Exception(errorMessage))
-    } catch (e: Exception) {
-        Result.failure(e)
+        return Result.failure(RuntimeException(errorMessage))
+    }
+
+    private fun handleSummarizeHttpException(e: HttpException): Result<String> {
+        val errorMessage = try {
+            val errorBody = e.response()?.errorBody()?.string()
+            if (errorBody != null) {
+                val errorResponse = moshi.adapter(ErrorResponse::class.java).fromJson(errorBody)
+                errorResponse?.let { it.error + it.reason?.let { reason -> ": $reason" }.orEmpty() }
+            } else {
+                null
+            } ?: "HTTP ${e.code()}: ${e.message()}"
+        } catch (_: Exception) {
+            "HTTP ${e.code()}: ${e.message()}"
+        }
+        return Result.failure(RuntimeException(errorMessage))
     }
 }

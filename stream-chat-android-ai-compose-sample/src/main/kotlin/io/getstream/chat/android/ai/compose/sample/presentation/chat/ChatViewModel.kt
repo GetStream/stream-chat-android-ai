@@ -94,8 +94,8 @@ public class ChatViewModel(
                     message.toChatMessage(currentUserId)
                 }.reversed()
                 val title = channel.name.takeIf(String::isNotBlank)
-                    ?: channel.messages.firstOrNull()?.text
-                    ?: "Chat"
+                    ?: channel.messages.firstOrNull()?.text?.takeIf(String::isNotBlank)
+                    ?: "Unnamed Chat"
 
                 _uiState.update { state ->
                     state.copy(
@@ -170,6 +170,28 @@ public class ChatViewModel(
                 sendMessage(cid, message) {
                     // Remove from pending once sent
                     pendingMessage = message
+                    // Summarize after the first message is sent
+                    viewModelScope.launch {
+                        val platform = "openai"
+                        logger.d { "Summarizing message: ${message.text}" }
+                        chatAiRepository.summarize(
+                            text = message.text,
+                            platform = platform,
+                        ).onSuccess {
+                            logger.d { "Message summarized successfully" }
+                            chatClient.channel(cid).updatePartial(
+                                set = mapOf("name" to it),
+                            ).enqueue { result ->
+                                result.onSuccess {
+                                    logger.d { "Channel updated with summary successfully" }
+                                }.onError { e ->
+                                    logger.e { "Failed to update channel with summary: ${e.message}" }
+                                }
+                            }
+                        }.onFailure { e ->
+                            logger.e { "Failed to summarize message: ${e.message}" }
+                        }
+                    }
                 }
             }
         }.onFailure { e ->
@@ -206,17 +228,15 @@ public class ChatViewModel(
         }
 
         viewModelScope.launch {
-            try {
-                chatClient.channel(cid)
-                    .sendEvent(EventType.AI_TYPING_INDICATOR_STOP)
-                    .enqueue { result ->
-                        if (result.isFailure) {
-                            logger.e { "Failed to stop streaming: ${result.errorOrNull()}" }
-                        }
+            chatClient.channel(cid)
+                .sendEvent(EventType.AI_TYPING_INDICATOR_STOP)
+                .enqueue { result ->
+                    result.onSuccess {
+                        logger.d { "Successfully sent AI typing indicator stop event" }
+                    }.onError { e ->
+                        logger.e { "Failed to stop streaming: ${e.message}" }
                     }
-            } catch (e: Exception) {
-                logger.e(e) { "Error stopping stream: ${e.message}" }
-            }
+                }
         }
 
         _uiState.update { state ->
@@ -361,6 +381,5 @@ private fun StreamMessage.toChatMessage(currentUserId: String?): Message {
         id = id,
         role = role,
         content = text,
-        timestamp = createdAt?.time ?: System.currentTimeMillis(),
     )
 }

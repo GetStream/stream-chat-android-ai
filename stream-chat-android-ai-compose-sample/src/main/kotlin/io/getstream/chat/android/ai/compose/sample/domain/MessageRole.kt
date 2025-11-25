@@ -20,7 +20,7 @@ package io.getstream.chat.android.ai.compose.sample.domain
  * Represents the role of a message sender.
  */
 public sealed class MessageRole {
-    public object Assistant : MessageRole()
-    public object User : MessageRole()
-    public object Others : MessageRole()
+    public data object Assistant : MessageRole()
+    public data object User : MessageRole()
+    public data object Others : MessageRole()
 }

@@ -22,11 +22,9 @@ package io.getstream.chat.android.ai.compose.sample.domain
  * @param id Unique identifier for the message
  * @param role The role of the message sender (User or Assistant)
  * @param content The text content of the message
- * @param timestamp Optional timestamp for the message
  */
 public data class Message(
     val id: String,
     val role: MessageRole,
     val content: String,
-    val timestamp: Long = System.currentTimeMillis(),
 )

@@ -18,7 +18,6 @@ package io.getstream.chat.android.ai.compose.sample.data
 
 /**
  * Repository interface for Chat AI operations.
- * This abstraction allows for easier testing and swapping implementations.
  */
 public interface ChatAiRepository {
     /**
@@ -42,4 +41,18 @@ public interface ChatAiRepository {
      * @param channelId The channel ID (e.g., "channel-id")
      */
     public suspend fun stopAIAgent(channelId: String): Result<Unit>
+
+    /**
+     * Summarizes a text using the specified AI platform.
+     *
+     * @param text The text to summarize
+     * @param platform The AI platform to use ("openai", "anthropic", "gemini", or "xai")
+     * @param model Optional model override (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")
+     * @return Result containing the summary string on success
+     */
+    suspend fun summarize(
+        text: String,
+        platform: String,
+        model: String? = null,
+    ): Result<String>
 }

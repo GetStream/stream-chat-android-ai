@@ -29,15 +29,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -59,18 +57,14 @@ public fun LoadingIndicator(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CompositionLocalProvider(
-            LocalTextStyle provides MaterialTheme.typography.bodyMedium,
-            LocalContentColor provides MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-        ) {
-            label()
-        }
+        label()
         indicator()
     }
 }
 
 @Composable
 private fun AnimatedDots() {
+    val contentColor = LocalContentColor.current
     val infiniteTransition = rememberInfiniteTransition(label = "dots_transition")
     val progress by infiniteTransition.animateFloat(
         initialValue = PROGRESS_START,
@@ -80,12 +74,13 @@ private fun AnimatedDots() {
             repeatMode = RepeatMode.Restart,
         ),
     )
-
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        repeat(DOT_COUNT) { AnimatedDot(it, progress) }
+        repeat(DOT_COUNT) { index ->
+            AnimatedDot(index, progress, contentColor)
+        }
     }
 }
 
@@ -95,10 +90,11 @@ private fun AnimatedDots() {
 @Composable
 private fun AnimatedDot(
     index: Int,
-    baseProgress: Float,
+    progress: Float,
+    contentColor: Color,
 ) {
     val startOffset = (index * DOT_STAGGER_DELAY).toFloat() / DOT_CYCLE_DURATION
-    val t = ((baseProgress - startOffset + PROGRESS_FULL) % PROGRESS_FULL) * DOT_CYCLE_DURATION / DOT_ANIMATION_DURATION
+    val t = ((progress - startOffset + PROGRESS_FULL) % PROGRESS_FULL) * DOT_CYCLE_DURATION / DOT_ANIMATION_DURATION
 
     val alpha = when {
         t <= PROGRESS_START || t >= PROGRESS_FULL -> DOT_MIN_ALPHA
@@ -108,7 +104,7 @@ private fun AnimatedDot(
         }
     }
 
-    Dot(alpha = alpha)
+    Dot(alpha = alpha, contentColor = contentColor)
 }
 
 private fun smoothstep(t: Float) = t * t * (SMOOTHSTEP_FACTOR_1 - SMOOTHSTEP_FACTOR_2 * t)
@@ -119,14 +115,17 @@ private fun smoothstep(t: Float) = t * t * (SMOOTHSTEP_FACTOR_1 - SMOOTHSTEP_FAC
 @Composable
 private fun Dot(
     alpha: Float,
+    contentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .size(6.dp)
-            .alpha(alpha)
+            .graphicsLayer {
+                this.alpha = alpha
+            }
             .background(
-                color = LocalContentColor.current.copy(alpha = 0.6f),
+                color = contentColor,
                 shape = CircleShape,
             ),
     )
