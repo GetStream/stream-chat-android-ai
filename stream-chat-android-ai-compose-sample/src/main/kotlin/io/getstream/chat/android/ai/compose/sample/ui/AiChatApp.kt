@@ -43,7 +43,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.getstream.chat.android.ai.compose.sample.di.ConversationListViewModelFactory
-import io.getstream.chat.android.ai.compose.sample.domain.User
 import io.getstream.chat.android.ai.compose.sample.presentation.conversations.ConversationListViewModel
 import io.getstream.chat.android.ai.compose.sample.ui.chat.ChatScreen
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatDrawer
@@ -65,13 +64,7 @@ public fun AiChatApp(
     val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    // Get current user from ChatClient (could be moved to a separate use case)
-    val user = ChatClient.instance().getCurrentUser()?.let {
-        User(
-            id = it.id,
-            name = it.name,
-        )
-    }
+    val user by ChatClient.instance().clientState.user.collectAsState()
 
     var selectedConversationId by rememberSaveable { mutableStateOf<String?>(null) }
 

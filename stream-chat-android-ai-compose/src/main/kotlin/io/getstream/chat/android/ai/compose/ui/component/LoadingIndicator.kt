@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.component
+package io.getstream.chat.android.ai.compose.ui.component
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -40,11 +40,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 /**
- * A loading indicator that displays label and an animated indicator.
+ * A loading indicator composable that displays an optional label and an animated indicator.
  *
- * @param modifier Modifier to be applied to the indicator
- * @param label Optional label to display before the indicator
- * @param indicator Indicator to display (defaults to animated dots)
+ * By default, displays three animated dots that sequentially highlight in a smooth, overlapping
+ * animation. The indicator uses [LocalContentColor] to match the current theme's content color.
+ *
+ * @param modifier Modifier to be applied to the root Row container
+ * @param label Optional composable label to display before the indicator. Defaults to empty content.
+ * @param indicator Composable indicator to display. Defaults to [AnimatedDots] which shows three
+ *   animated dots with sequential highlighting.
  */
 @Composable
 public fun LoadingIndicator(
@@ -62,6 +66,10 @@ public fun LoadingIndicator(
     }
 }
 
+/**
+ * Displays three animated dots with sequential highlighting animation.
+ * Uses [LocalContentColor] for the dot color.
+ */
 @Composable
 private fun AnimatedDots() {
     val contentColor = LocalContentColor.current
@@ -85,7 +93,8 @@ private fun AnimatedDots() {
 }
 
 /**
- * A single animated dot with overlapping sequential highlighting.
+ * A single animated dot that fades in and out based on its position in the sequence.
+ * Each dot has a staggered start time to create a sequential highlighting effect.
  */
 @Composable
 private fun AnimatedDot(
@@ -107,10 +116,14 @@ private fun AnimatedDot(
     Dot(alpha = alpha, contentColor = contentColor)
 }
 
+/**
+ * Smoothstep interpolation function for easing animation transitions.
+ * Provides a smooth S-curve transition between 0 and 1.
+ */
 private fun smoothstep(t: Float) = t * t * (SMOOTHSTEP_FACTOR_1 - SMOOTHSTEP_FACTOR_2 * t)
 
 /**
- * A single animated dot.
+ * Renders a single circular dot with the specified alpha and color.
  */
 @Composable
 private fun Dot(

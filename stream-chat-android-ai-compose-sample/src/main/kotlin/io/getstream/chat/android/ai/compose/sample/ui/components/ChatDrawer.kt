@@ -45,8 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.sample.R
-import io.getstream.chat.android.ai.compose.sample.domain.User
 import io.getstream.chat.android.ai.compose.sample.presentation.conversations.Conversation
+import io.getstream.chat.android.models.User
 
 @Composable
 fun ChatDrawer(

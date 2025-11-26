@@ -14,7 +14,7 @@
 
 ## 🛥 What is Stream?
 
-Stream allows developers to rapidly deploy scalable feeds, chat messaging and video with an industry leading 99.999% uptime SLA guarantee.
+Stream allows developers to rapidly deploy scalable feeds, chat messaging and video with an industry leading 99.99% uptime SLA guarantee.
 
 Stream provides UI components and state handling that make it easy to build real-time chat and video calling for your app. Stream runs and maintains a global network of edge servers around the world, ensuring optimal latency and reliability regardless of where your users are located.
 

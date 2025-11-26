@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.data
+@file:Suppress("ConstructorParameterNaming")
+
+package io.getstream.chat.android.ai.compose.data
 
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -23,30 +25,21 @@ import retrofit2.http.POST
  * Retrofit API interface for Chat AI endpoints.
  * These endpoints communicate with the backend server to manage AI agents for chat channels.
  */
-public interface ChatAiApi {
+internal interface ChatAiApi {
     /**
      * Starts an AI agent for a specific channel.
-     *
-     * @param request Contains channel information and AI platform/model configuration
-     * @return Response indicating success or failure with optional error details
      */
     @POST("/start-ai-agent")
     suspend fun startAIAgent(@Body request: StartAIAgentRequest): AIAgentResponse
 
     /**
      * Stops the AI agent for a specific channel.
-     *
-     * @param request Contains the channel ID to stop the agent for
-     * @return Response indicating success or failure with optional error details
      */
     @POST("/stop-ai-agent")
     suspend fun stopAIAgent(@Body request: StopAIAgentRequest): AIAgentResponse
 
     /**
      * Summarizes text using the specified AI platform.
-     *
-     * @param request Contains the text to summarize, platform, and optional model
-     * @return Response containing the summary or error details
      */
     @POST("/summarize")
     suspend fun summarize(@Body request: SummarizeRequest): SummarizeResponse
@@ -60,7 +53,7 @@ public interface ChatAiApi {
  * @param platform The AI platform to use ("openai", "anthropic", "gemini", or "xai")
  * @param model Optional model override. If null, the platform's default model is used
  */
-public data class StartAIAgentRequest(
+internal data class StartAIAgentRequest(
     val channel_type: String,
     val channel_id: String,
     val platform: String,
@@ -70,9 +63,9 @@ public data class StartAIAgentRequest(
 /**
  * Request model for stopping an AI agent.
  *
- * @param channel_id The unique identifier for the channel (without type prefix)
+ * @param channel_id The full identifier for the channel, including type prefix (e.g., "messaging:channel-id")
  */
-public data class StopAIAgentRequest(
+internal data class StopAIAgentRequest(
     val channel_id: String,
 )
 
@@ -83,29 +76,29 @@ public data class StopAIAgentRequest(
  * @param platform The AI platform to use ("openai", "anthropic", "gemini", or "xai")
  * @param model Optional model override. If null, the platform's default model is used
  */
-public data class SummarizeRequest(
+internal data class SummarizeRequest(
     val text: String,
     val platform: String,
     val model: String? = null,
 )
 
 /**
- * Response model from the Chat AI API (success responses only).
+ * Response model from the Chat AI API.
  *
  * @param message Success message from the server
  * @param data Additional data returned by the server (typically empty)
  */
-public data class AIAgentResponse(
+internal data class AIAgentResponse(
     val message: String,
     val data: List<String> = emptyList(),
 )
 
 /**
- * Response model from the summarize API (success responses only).
+ * Response model from the summarize API.
  *
  * @param summary The summarized text
  */
-public data class SummarizeResponse(
+internal data class SummarizeResponse(
     val summary: String,
 )
 

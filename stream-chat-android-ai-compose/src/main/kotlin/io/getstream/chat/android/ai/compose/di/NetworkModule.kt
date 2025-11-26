@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.di
+package io.getstream.chat.android.ai.compose.di
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -27,23 +27,18 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  * Network module for providing network-related dependencies.
  * This module encapsulates the creation of Retrofit, OkHttp, and Moshi instances.
  */
-public object NetworkModule {
-    /**
-     * Creates a Moshi instance with Kotlin reflection support.
-     */
-    public fun createMoshi(): Moshi {
-        return Moshi.Builder()
+internal object NetworkModule {
+
+    fun createMoshi(): Moshi =
+        Moshi.Builder()
             .addLast(KotlinJsonAdapterFactory())
             .build()
-    }
 
     /**
-     * Creates an OkHttpClient with logging interceptor.
-     *
      * @param enableLogging Whether to enable HTTP request/response logging (default: true in debug builds)
      */
-    public fun createOkHttpClient(enableLogging: Boolean = true): OkHttpClient {
-        return OkHttpClient.Builder()
+    fun createOkHttpClient(enableLogging: Boolean = true): OkHttpClient =
+        OkHttpClient.Builder()
             .apply {
                 if (enableLogging) {
                     addInterceptor(
@@ -54,16 +49,8 @@ public object NetworkModule {
                 }
             }
             .build()
-    }
 
-    /**
-     * Creates a Retrofit instance.
-     *
-     * @param baseUrl The base URL for the API
-     * @param okHttpClient The OkHttpClient to use
-     * @param moshi The Moshi instance for JSON serialization
-     */
-    public fun createRetrofit(
+    fun createRetrofit(
         baseUrl: String,
         okHttpClient: OkHttpClient,
         moshi: Moshi,

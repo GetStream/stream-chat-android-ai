@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.data
+package io.getstream.chat.android.ai.compose.data
 
 /**
  * Repository interface for Chat AI operations.
@@ -38,7 +38,7 @@ public interface ChatAiRepository {
     /**
      * Stops the AI agent for the given channel.
      *
-     * @param channelId The channel ID (e.g., "channel-id")
+     * @param channelId The full identifier for the channel, including type prefix (e.g., "messaging:channel-id")
      */
     public suspend fun stopAIAgent(channelId: String): Result<Unit>
 
@@ -50,7 +50,7 @@ public interface ChatAiRepository {
      * @param model Optional model override (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")
      * @return Result containing the summary string on success
      */
-    suspend fun summarize(
+    public suspend fun summarize(
         text: String,
         platform: String,
         model: String? = null,

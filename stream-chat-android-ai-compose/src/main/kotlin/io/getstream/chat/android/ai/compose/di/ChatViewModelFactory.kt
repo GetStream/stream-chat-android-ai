@@ -14,30 +14,23 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.di
+package io.getstream.chat.android.ai.compose.di
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import io.getstream.chat.android.ai.compose.sample.App
-import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatViewModel
+import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
 import io.getstream.chat.android.client.ChatClient
 
 /**
  * Factory for creating ChatViewModel with dependencies.
- * This factory injects required dependencies (ChatClient, ChatAiRepository, conversationId) into ChatViewModel.
  *
- * @param application The application instance
  * @param chatClient The Stream Chat client instance
  * @param conversationId The optional conversation ID for the chat
  */
 public class ChatViewModelFactory(
-    private val application: Application,
     private val chatClient: ChatClient = ChatClient.instance(),
     private val conversationId: String?,
 ) : ViewModelProvider.Factory {
-
-    private val appContainer = (application as App).appContainer
 
     /**
      * Creates a ChatViewModel instance.
@@ -53,7 +46,7 @@ public class ChatViewModelFactory(
         }
         return ChatViewModel(
             chatClient = chatClient,
-            chatAiRepository = appContainer.chatAiRepository,
+            chatAiRepository = ServiceLocator.get(),
             conversationId = conversationId,
         ) as T
     }

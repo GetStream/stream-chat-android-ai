@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.data
+package io.getstream.chat.android.ai.compose.data
 
 import com.squareup.moshi.Moshi
 import retrofit2.HttpException
@@ -22,7 +22,7 @@ import retrofit2.HttpException
 /**
  * Service implementation for communicating with the Chat AI server.
  */
-public class ChatAiService(
+internal class ChatAiService(
     private val chatAiApi: ChatAiApi,
     private val moshi: Moshi,
 ) : ChatAiRepository {
@@ -43,28 +43,32 @@ public class ChatAiService(
         )
     }
 
-    override suspend fun stopAIAgent(channelId: String): Result<Unit> = executeApiCall {
-        chatAiApi.stopAIAgent(request = StopAIAgentRequest(channel_id = channelId))
+    override suspend fun stopAIAgent(
+        channelId: String,
+    ): Result<Unit> = executeApiCall {
+        chatAiApi.stopAIAgent(
+            request = StopAIAgentRequest(channel_id = channelId),
+        )
     }
 
     override suspend fun summarize(
         text: String,
         platform: String,
         model: String?,
-    ): Result<String> = executeSummarizeApiCall {
+    ): Result<String> = executeApiCall {
         chatAiApi.summarize(
             request = SummarizeRequest(
                 text = text,
                 platform = platform,
                 model = model,
             ),
-        )
+        ).summary
     }
 
-    private suspend fun executeApiCall(apiCall: suspend () -> Unit): Result<Unit> {
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun <T> executeApiCall(apiCall: suspend () -> T): Result<T> {
         return try {
-            apiCall()
-            Result.success(Unit)
+            Result.success(apiCall())
         } catch (e: HttpException) {
             handleHttpException(e)
         } catch (e: Exception) {
@@ -72,44 +76,17 @@ public class ChatAiService(
         }
     }
 
-    private suspend fun executeSummarizeApiCall(apiCall: suspend () -> SummarizeResponse): Result<String> {
-        return try {
-            val response = apiCall()
-            Result.success(response.summary)
-        } catch (e: HttpException) {
-            handleSummarizeHttpException(e)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    private fun handleHttpException(e: HttpException): Result<Unit> {
+    private fun <T> handleHttpException(e: HttpException): Result<T> {
         val errorMessage = try {
-            val errorBody = e.response()?.errorBody()?.string()
-            if (errorBody != null) {
+            e.response()?.errorBody()?.string()?.let { errorBody ->
                 val errorResponse = moshi.adapter(ErrorResponse::class.java).fromJson(errorBody)
                 errorResponse?.let { it.error + it.reason?.let { reason -> ": $reason" }.orEmpty() }
-            } else {
-                null
-            } ?: "HTTP ${e.code()}: ${e.message()}"
+            } ?: e.toHttpString()
         } catch (_: Exception) {
-            "HTTP ${e.code()}: ${e.message()}"
-        }
-        return Result.failure(RuntimeException(errorMessage))
-    }
-
-    private fun handleSummarizeHttpException(e: HttpException): Result<String> {
-        val errorMessage = try {
-            val errorBody = e.response()?.errorBody()?.string()
-            if (errorBody != null) {
-                val errorResponse = moshi.adapter(ErrorResponse::class.java).fromJson(errorBody)
-                errorResponse?.let { it.error + it.reason?.let { reason -> ": $reason" }.orEmpty() }
-            } else {
-                null
-            } ?: "HTTP ${e.code()}: ${e.message()}"
-        } catch (_: Exception) {
-            "HTTP ${e.code()}: ${e.message()}"
+            e.toHttpString()
         }
         return Result.failure(RuntimeException(errorMessage))
     }
 }
+
+private fun HttpException.toHttpString(): String = "HTTP ${code()}: ${message()}"
