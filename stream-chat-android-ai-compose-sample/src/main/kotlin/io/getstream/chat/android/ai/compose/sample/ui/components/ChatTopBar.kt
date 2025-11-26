@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import io.getstream.chat.android.ai.compose.sample.R
+import io.getstream.chat.android.ai.compose.ui.component.StreamingText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +74,11 @@ public fun ChatTopBar(
                 }
             },
             title = {
-                Text(text = title)
+                StreamingText(
+                    text = title,
+                ) { displayedText ->
+                    Text(text = displayedText)
+                }
             },
             actions = {
                 if (onDeleteClick != null) {

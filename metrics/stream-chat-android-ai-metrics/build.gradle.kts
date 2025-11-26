@@ -50,7 +50,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    implementation(libs.bundles.stream.chat)
+    implementation(libs.kotlinx.coroutines.core)
 
     "stream-chat-android-ai-compose-streamImplementation"(project(":stream-chat-android-ai-compose"))
 }

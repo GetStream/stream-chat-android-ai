@@ -16,7 +16,6 @@
 
 package io.getstream.chat.android.ai.compose.sample.ui.chat
 
-import android.app.Application
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,19 +36,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.getstream.chat.android.ai.compose.component.LoadingIndicator
-import io.getstream.chat.android.ai.compose.sample.di.ChatViewModelFactory
-import io.getstream.chat.android.ai.compose.sample.domain.Message
-import io.getstream.chat.android.ai.compose.sample.domain.MessageRole
-import io.getstream.chat.android.ai.compose.sample.presentation.chat.AIState
-import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatViewModel
+import io.getstream.chat.android.ai.compose.di.ChatViewModelFactory
+import io.getstream.chat.android.ai.compose.presentation.ChatUiState
+import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatComposer
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatTopBar
+import io.getstream.chat.android.ai.compose.ui.component.LoadingIndicator
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,12 +55,9 @@ public fun ChatScreen(
     modifier: Modifier = Modifier,
     onChatDeleted: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-    val application = context.applicationContext as Application
     val chatViewModel = viewModel<ChatViewModel>(
         key = conversationId,
         factory = ChatViewModelFactory(
-            application = application,
             conversationId = conversationId,
         ),
     )
@@ -75,8 +68,9 @@ public fun ChatScreen(
     val title = state.title
     val messages = state.messages
     val inputText = state.inputText
-    val isStreaming = state.isStreaming
-    val aiState = state.aiState
+//    val isStreaming = state.isStreaming
+    val isStreaming = state.assistantState.isBusy()
+    val assistantState = state.assistantState
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var hasScrolledToBottomInitially by remember(conversationId) { mutableStateOf(false) }
@@ -102,8 +96,7 @@ public fun ChatScreen(
         )
     }
 
-    val mostRecentAssistantMessage = messages.firstOrNull { message -> message.role == MessageRole.Assistant }
-    val assistantMessageContent = mostRecentAssistantMessage?.content
+    val currentAssistantMessage = state.getCurrentAssistantMessage()
 
     ChatScaffold(
         modifier = modifier.fillMaxSize(),
@@ -137,37 +130,37 @@ public fun ChatScreen(
             reverseLayout = true,
         ) {
             // Assistant loading indicator appears at the bottom
-            item(key = "ai_state_indicator") {
-                when (aiState) {
-                    AIState.ERROR -> AssistantErrorMessage(
-                        text = "Sorry, I encountered an error while processing your request. Please try again.",
+            item(key = "assistant_indicator") {
+                when (assistantState) {
+                    ChatUiState.AssistantState.Error -> AssistantErrorMessage(
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
 
                     else -> {
-                        val text = when (aiState) {
-                            AIState.THINKING -> "Thinking"
-                            AIState.GENERATING -> "Generating response".takeIf { assistantMessageContent.isNullOrBlank() }
-                            AIState.CHECKING_SOURCES -> "Checking sources"
-                            else -> null
-                        }
-                        if (text != null) {
-                            LoadingIndicator(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                label = { Text(text = text) },
-                            )
-                        }
+                        AssistantLoadingIndicator(
+                            modifier = Modifier
+                                .animateItem()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            assistantState = assistantState,
+                            assistantMessage = state.getCurrentAssistantMessage(),
+                        )
                     }
                 }
             }
             // Messages appear above the Assistant loading indicator
             items(
-                key = Message::id,
+                key = ChatUiState.Message::id,
                 items = messages,
             ) { message ->
                 // Determine if this message is the one currently being streamed
-                val isMessageStreaming = isStreaming && mostRecentAssistantMessage?.id == message.id
+                val isMessageStreaming = isStreaming && currentAssistantMessage?.id == message.id
 
                 ChatMessageItem(
+                    modifier = Modifier
+                        .animateItem()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     message = message,
                     isStreaming = isMessageStreaming,
                 )
@@ -200,18 +193,36 @@ public fun ChatScreen(
     }
 }
 
-/**
- * Displays an assistant error message.
- */
 @Composable
 private fun AssistantErrorMessage(
-    text: String,
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = text,
+        text = "Sorry, I encountered an error while processing your request. Please try again.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.error,
         modifier = modifier,
     )
+}
+
+@Composable
+private fun AssistantLoadingIndicator(
+    assistantState: ChatUiState.AssistantState,
+    assistantMessage: ChatUiState.Message?,
+    modifier: Modifier = Modifier,
+) {
+    val text = when (assistantState) {
+        ChatUiState.AssistantState.Thinking -> "Thinking"
+        ChatUiState.AssistantState.CheckingSources -> "Checking sources"
+        ChatUiState.AssistantState.Generating -> "Generating response".takeIf { assistantMessage == null }
+        else -> null
+    }
+    if (text != null) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+            LoadingIndicator(
+                modifier = modifier,
+                label = { Text(text = text) },
+            )
+        }
+    }
 }

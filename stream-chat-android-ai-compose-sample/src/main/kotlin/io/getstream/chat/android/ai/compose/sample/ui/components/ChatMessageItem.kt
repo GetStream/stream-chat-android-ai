@@ -30,9 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.component.StreamingText
-import io.getstream.chat.android.ai.compose.sample.domain.Message
-import io.getstream.chat.android.ai.compose.sample.domain.MessageRole
+import io.getstream.chat.android.ai.compose.presentation.ChatUiState
+import io.getstream.chat.android.ai.compose.ui.component.StreamingText
 
 /**
  * Displays a single chat message with proper styling based on role.
@@ -45,46 +44,44 @@ import io.getstream.chat.android.ai.compose.sample.domain.MessageRole
  */
 @Composable
 public fun ChatMessageItem(
-    message: Message,
+    message: ChatUiState.Message,
     modifier: Modifier = Modifier,
     isStreaming: Boolean = false,
 ) {
-    val isUser = message.role is MessageRole.User
+    val isUser = message.role is ChatUiState.Message.Role.User
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
         when (message.role) {
-            MessageRole.User -> {
-                Spacer(modifier = Modifier.weight(.2f))
-                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
-                    MarkdownText(
-                        text = message.content,
-                    )
-                }
-            }
-
-            MessageRole.Others -> {
-                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
-                    MarkdownText(
-                        text = message.content,
-                    )
-                }
-                Spacer(modifier = Modifier.weight(.2f))
-            }
-
-            MessageRole.Assistant -> {
+            ChatUiState.Message.Role.Assistant -> {
                 StreamingText(
                     text = message.content,
-                    isStreaming = isStreaming,
+                    animate = isStreaming,
                 ) { displayedText ->
                     MarkdownText(
                         text = displayedText,
                     )
                 }
+            }
+
+            ChatUiState.Message.Role.User -> {
+                Spacer(modifier = Modifier.weight(.2f))
+                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
+                    MarkdownText(
+                        text = message.content,
+                    )
+                }
+            }
+
+            ChatUiState.Message.Role.Other -> {
+                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
+                    MarkdownText(
+                        text = message.content,
+                    )
+                }
+                Spacer(modifier = Modifier.weight(.2f))
             }
         }
     }

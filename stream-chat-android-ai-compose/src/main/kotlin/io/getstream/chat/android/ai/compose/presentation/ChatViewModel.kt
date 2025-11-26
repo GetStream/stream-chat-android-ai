@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.presentation.chat
+package io.getstream.chat.android.ai.compose.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.getstream.chat.android.ai.compose.sample.data.ChatAiRepository
-import io.getstream.chat.android.ai.compose.sample.domain.Message
-import io.getstream.chat.android.ai.compose.sample.domain.MessageRole
-import io.getstream.chat.android.ai.compose.sample.domain.isFromAi
+import io.getstream.chat.android.ai.compose.data.ChatAiRepository
+import io.getstream.chat.android.ai.compose.domain.isFromAi
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.channel.subscribeFor
 import io.getstream.chat.android.client.events.AIIndicatorClearEvent
+import io.getstream.chat.android.client.events.AIIndicatorStopEvent
 import io.getstream.chat.android.client.events.AIIndicatorUpdatedEvent
 import io.getstream.chat.android.client.events.ChatEvent
 import io.getstream.chat.android.client.extensions.cidToTypeAndId
@@ -58,8 +57,8 @@ public class ChatViewModel(
 
     private val cid = MutableStateFlow(conversationId)
 
-    private val _uiState = MutableStateFlow(ChatState())
-    val uiState: StateFlow<ChatState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ChatUiState())
+    public val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var currentUserId: String? = null
 
@@ -90,17 +89,18 @@ public class ChatViewModel(
                 }
             }
             .onEach { channel ->
-                val chatMessages = channel.messages.map { message ->
-                    message.toChatMessage(currentUserId)
-                }.reversed()
                 val title = channel.name.takeIf(String::isNotBlank)
                     ?: channel.messages.firstOrNull()?.text?.takeIf(String::isNotBlank)
                     ?: "Unnamed Chat"
 
+                val messages = channel.messages
+                    .mapNotNull { message -> message.toChatMessage(currentUserId) }
+                    .reversed()
+
                 _uiState.update { state ->
                     state.copy(
                         title = title,
-                        messages = chatMessages,
+                        messages = messages,
                     )
                 }
             }
@@ -110,7 +110,7 @@ public class ChatViewModel(
     /**
      * Updates the input text state when the user types in the input field.
      */
-    fun onInputTextChange(text: String) {
+    public fun onInputTextChange(text: String) {
         _uiState.update { state -> state.copy(inputText = text) }
     }
 
@@ -118,9 +118,9 @@ public class ChatViewModel(
      * Sends a message via Stream Chat.
      * If channelId is null (new chat), creates a new channel first.
      */
-    fun sendMessage() {
+    public fun sendMessage() {
         val text = _uiState.value.inputText.trim()
-        if (text.isEmpty() || _uiState.value.isStreaming) return
+        if (text.isEmpty() || _uiState.value.assistantState.isBusy()) return
 
         val message = StreamMessage(text = text)
 
@@ -151,9 +151,6 @@ public class ChatViewModel(
         }
     }
 
-    /**
-     * Starts the AI agent for the given channel.
-     */
     private suspend fun startAIAgentForChannel(cid: String): Result<Unit> {
         val (channelType, channelId) = cid.cidToTypeAndId()
         val platform = "openai"
@@ -221,91 +218,50 @@ public class ChatViewModel(
      * Stops the current streaming response by sending an AI typing indicator stop event to the server.
      * This tells the AI agent to stop generating content for the current message.
      */
-    fun stopStreaming() {
+    public fun stopStreaming() {
         val cid = cid.value ?: run {
             logger.d { "No channel available to stop streaming" }
             return
         }
 
-        viewModelScope.launch {
-            chatClient.channel(cid)
-                .sendEvent(EventType.AI_TYPING_INDICATOR_STOP)
-                .enqueue { result ->
-                    result.onSuccess {
-                        logger.d { "Successfully sent AI typing indicator stop event" }
-                    }.onError { e ->
-                        logger.e { "Failed to stop streaming: ${e.message}" }
-                    }
+        chatClient.channel(cid)
+            .sendEvent(EventType.AI_TYPING_INDICATOR_STOP)
+            .enqueue { result ->
+                result.onSuccess {
+                    logger.d { "Successfully sent AI typing indicator stop event" }
+                }.onError { e ->
+                    logger.e { "Failed to stop streaming: ${e.message}" }
                 }
-        }
-
-        _uiState.update { state ->
-            state.copy(
-                aiState = null,
-            )
-        }
+            }
     }
 
-    /**
-     * Handles chat events from Stream Chat.
-     * Routes AI indicator events to appropriate handlers.
-     */
     private fun handleChatEvent(event: ChatEvent) {
         logger.d { "Received chat event: $event" }
+
         when (event) {
             is AIIndicatorUpdatedEvent -> {
                 handleAIIndicatorUpdated(event)
             }
 
-            is AIIndicatorClearEvent -> {
-                handleAIIndicatorClear(event)
+            is AIIndicatorClearEvent, is AIIndicatorStopEvent -> {
+                _uiState.update { state ->
+                    state.copy(
+                        assistantState = ChatUiState.AssistantState.Idle,
+                    )
+                }
             }
 
-            else -> {
-                logger.d { "Received unhandled event type: ${event::class.java.simpleName}" }
-            }
+            else -> Unit
         }
     }
 
-    /**
-     * Handles AI indicator updated events.
-     * These events provide granular AI state updates (THINKING, GENERATING, CHECKING_SOURCES, ERROR)
-     * that complement the message content updates.
-     */
     private fun handleAIIndicatorUpdated(event: AIIndicatorUpdatedEvent) {
-        viewModelScope.launch {
-            logger.d { "Processing $event" }
+        logger.d { "Processing $event" }
 
-            val aiState = when (event.aiState) {
-                "AI_STATE_THINKING" -> AIState.THINKING
-                "AI_STATE_GENERATING" -> AIState.GENERATING
-                "AI_STATE_CHECKING_SOURCES" -> AIState.CHECKING_SOURCES
-                "AI_STATE_ERROR" -> AIState.ERROR
-                else -> null
-            }
-
-            _uiState.update { state ->
-                state.copy(
-                    aiState = aiState,
-                )
-            }
-        }
-    }
-
-    /**
-     * Handles AI indicator clear events.
-     * These events signal the end of AI processing.
-     */
-    private fun handleAIIndicatorClear(event: AIIndicatorClearEvent) {
-        viewModelScope.launch {
-            logger.d { "Processing $event" }
-
-            _uiState.update { state ->
-                state.copy(
-                    aiState = null,
-                )
-            }
-            logger.d { "AI indicator cleared - isStreaming should now be false" }
+        _uiState.update { state ->
+            state.copy(
+                assistantState = event.aiState.toAssistantState(),
+            )
         }
     }
 
@@ -317,7 +273,7 @@ public class ChatViewModel(
      * @param onSuccess Callback invoked when the channel is successfully deleted
      * @param onError Callback invoked when deletion fails, with the error details
      */
-    fun deleteChannel(
+    public fun deleteChannel(
         onSuccess: () -> Unit = {},
         onError: (Error) -> Unit = {},
     ) {
@@ -364,22 +320,29 @@ public class ChatViewModel(
     }
 }
 
-/**
- * Converts a Stream Chat message to the app's Message model.
- * Determines the message role based on whether it's Assistant-generated or from the current user.
- */
-private fun StreamMessage.toChatMessage(currentUserId: String?): Message {
-    val isFromAi = isFromAi()
-    val isFromCurrentUser = user.id == currentUserId
-    val role = when {
-        isFromAi -> MessageRole.Assistant
-        isFromCurrentUser -> MessageRole.User
-        else -> MessageRole.Others
+private fun StreamMessage.toChatMessage(currentUserId: String?): ChatUiState.Message? {
+    if (text.isBlank()) {
+        return null
     }
 
-    return Message(
+    val isFromCurrentUser = user.id == currentUserId
+    val role = when {
+        isFromAi() -> ChatUiState.Message.Role.Assistant
+        isFromCurrentUser -> ChatUiState.Message.Role.User
+        else -> ChatUiState.Message.Role.Other
+    }
+
+    return ChatUiState.Message(
         id = id,
         role = role,
         content = text,
     )
+}
+
+private fun String.toAssistantState() = when (this) {
+    "AI_STATE_THINKING" -> ChatUiState.AssistantState.Thinking
+    "AI_STATE_CHECKING_SOURCES" -> ChatUiState.AssistantState.CheckingSources
+    "AI_STATE_GENERATING" -> ChatUiState.AssistantState.Generating
+    "AI_STATE_ERROR" -> ChatUiState.AssistantState.Error
+    else -> ChatUiState.AssistantState.Idle
 }

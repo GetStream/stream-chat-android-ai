@@ -51,14 +51,14 @@ tasks.withType<KotlinCompile>().configureEach {
 dependencies {
     detektPlugins(libs.detekt.formatting)
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
+    implementation(libs.bundles.stream.chat)
 
     implementation(libs.kotlinx.coroutines.core)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)
+
+    implementation(libs.bundles.retrofit)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
