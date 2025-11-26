@@ -27,6 +27,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "stream-chat-android-ai"
 
 include(
+    ":metrics:stream-chat-android-ai-metrics",
     ":stream-chat-android-ai-compose",
     ":stream-chat-android-ai-compose-sample",
 )

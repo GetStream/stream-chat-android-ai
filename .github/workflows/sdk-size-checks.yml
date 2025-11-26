@@ -1,0 +1,15 @@
+name: SDK size checks
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compare-sdk-sizes:
+    uses: GetStream/android-ci-actions/.github/workflows/sdk-size-checks.yml@main
+    with:
+      modules: "stream-chat-android-ai-compose"
+      metrics-project: "stream-chat-android-ai-metrics"

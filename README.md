@@ -6,6 +6,12 @@
   <a href="https://github.com/GetStream/stream-chat-android-ai/releases"><img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai" /></a>
 </p>
 
+<div align="center">
+
+![stream-chat-android-ai-compose](https://img.shields.io/badge/stream--chat--android--ai--compose-0%20MB-lightgreen)
+
+</div>
+
 ## 🛥 What is Stream?
 
 Stream allows developers to rapidly deploy scalable feeds, chat messaging and video with an industry leading 99.999% uptime SLA guarantee.

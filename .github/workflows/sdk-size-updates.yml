@@ -1,0 +1,21 @@
+name: SDK size updates
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  update-sdk-sizes:
+    uses: GetStream/android-ci-actions/.github/workflows/sdk-size-updates.yml@main
+    with:
+      modules: "stream-chat-android-ai-compose"
+      metrics-project: "stream-chat-android-ai-metrics"
+    secrets:
+      GITHUB_PAT: ${{ secrets.STREAM_PUBLIC_BOT_TOKEN }}
