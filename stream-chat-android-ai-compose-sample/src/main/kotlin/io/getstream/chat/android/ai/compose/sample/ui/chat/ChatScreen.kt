@@ -68,7 +68,6 @@ public fun ChatScreen(
     val title = state.title
     val messages = state.messages
     val inputText = state.inputText
-//    val isStreaming = state.isStreaming
     val isStreaming = state.assistantState.isBusy()
     val assistantState = state.assistantState
 
@@ -124,8 +123,8 @@ public fun ChatScreen(
         },
     ) { contentPadding ->
         LazyColumn(
-            state = listState,
             modifier = Modifier.fillMaxSize(),
+            state = listState,
             contentPadding = contentPadding,
             reverseLayout = true,
         ) {
@@ -133,18 +132,14 @@ public fun ChatScreen(
             item(key = "assistant_indicator") {
                 when (assistantState) {
                     ChatUiState.AssistantState.Error -> AssistantErrorMessage(
-                        modifier = Modifier
-                            .animateItem()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
 
                     else -> {
                         AssistantLoadingIndicator(
-                            modifier = Modifier
-                                .animateItem()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             assistantState = assistantState,
-                            assistantMessage = state.getCurrentAssistantMessage(),
+                            assistantMessage = currentAssistantMessage,
                         )
                     }
                 }
@@ -158,9 +153,7 @@ public fun ChatScreen(
                 val isMessageStreaming = isStreaming && currentAssistantMessage?.id == message.id
 
                 ChatMessageItem(
-                    modifier = Modifier
-                        .animateItem()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     message = message,
                     isStreaming = isMessageStreaming,
                 )

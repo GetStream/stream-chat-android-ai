@@ -86,6 +86,7 @@ fun ChatDrawer(
                 items = conversations,
             ) { conversation ->
                 NavigationDrawerItem(
+                    modifier = Modifier,
                     label = {
                         Text(
                             text = conversation.title,
@@ -95,7 +96,6 @@ fun ChatDrawer(
                     },
                     selected = conversation.id == selectedConversationId,
                     onClick = { onConversationClick(conversation.id) },
-                    modifier = Modifier,
                     shape = RectangleShape,
                 )
             }

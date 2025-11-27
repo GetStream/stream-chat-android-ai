@@ -82,14 +82,15 @@ public fun AiChatApp(
     var drawerSheetWidth by remember { mutableIntStateOf(0) }
 
     DismissibleNavigationDrawer(
+        modifier = modifier,
         drawerState = drawerState,
         drawerContent = {
             DismissibleDrawerSheet(
-                drawerState = drawerState,
-                windowInsets = WindowInsets(),
                 modifier = Modifier.onGloballyPositioned { coordinates ->
                     drawerSheetWidth = coordinates.size.width
                 },
+                drawerState = drawerState,
+                windowInsets = WindowInsets(),
             ) {
                 ChatDrawer(
                     user = user,
@@ -110,7 +111,6 @@ public fun AiChatApp(
                 )
             }
         },
-        modifier = modifier,
     ) {
         Box {
             AnimatedContent(
@@ -118,13 +118,13 @@ public fun AiChatApp(
             ) { conversationId ->
                 ViewModelStore(conversationId) {
                     ChatScreen(
+                        modifier = Modifier.fillMaxSize(),
                         conversationId = conversationId,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onChatDeleted = {
                             // Navigate back to new chat after deletion
                             selectedConversationId = null
                         },
-                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }

@@ -38,42 +38,42 @@ val Typography =
         displayLarge = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp, // H1
+            fontSize = 16.sp,
             lineHeight = 22.sp,
             letterSpacing = 0.sp,
         ),
         displayMedium = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 15.sp, // H2
+            fontSize = 15.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.sp,
         ),
         displaySmall = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp, // H3
+            fontSize = 14.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.sp,
         ),
         headlineMedium = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp, // H4
+            fontSize = 14.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.sp,
         ),
         headlineSmall = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp, // H5
+            fontSize = 13.sp,
             lineHeight = 18.sp,
             letterSpacing = 0.sp,
         ),
         titleLarge = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Medium,
-            fontSize = 13.sp, // H6
+            fontSize = 13.sp,
             lineHeight = 18.sp,
             letterSpacing = 0.sp,
         ),

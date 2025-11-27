@@ -19,6 +19,7 @@ package io.getstream.chat.android.ai.compose.sample.ui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.mikepenz.markdown.annotator.annotatorSettings
+import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.components.MarkdownComponent
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeBlock
@@ -26,6 +27,7 @@ import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeFence
 import com.mikepenz.markdown.compose.elements.MarkdownTable
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
+import com.mikepenz.markdown.model.rememberMarkdownState
 
 /**
  * Renders markdown text with proper styling.
@@ -39,15 +41,17 @@ public fun MarkdownText(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Markdown(
+    val markdownState = rememberMarkdownState(
         content = text,
-        colors = markdownColor(),
-        components = markdownComponents(
-            codeFence = HighlightedCodeFence,
-            codeBlock = HighlightedCodeBlock,
-            table = Table,
-        ),
+        retainState = true,
+    )
+
+    Markdown(
         modifier = modifier,
+        markdownState = markdownState,
+        colors = markdownColor(),
+        components = MarkdownComponents,
+        imageTransformer = Coil3ImageTransformerImpl,
     )
 }
 
@@ -96,3 +100,9 @@ private val HighlightedCodeBlock: MarkdownComponent = {
         showHeader = true,
     )
 }
+
+private val MarkdownComponents = markdownComponents(
+    codeFence = HighlightedCodeFence,
+    codeBlock = HighlightedCodeBlock,
+    table = Table,
+)

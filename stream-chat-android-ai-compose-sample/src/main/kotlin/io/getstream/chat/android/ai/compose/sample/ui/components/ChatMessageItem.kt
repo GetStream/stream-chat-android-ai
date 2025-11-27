@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -50,38 +51,40 @@ public fun ChatMessageItem(
 ) {
     val isUser = message.role is ChatUiState.Message.Role.User
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-    ) {
-        when (message.role) {
-            ChatUiState.Message.Role.Assistant -> {
-                StreamingText(
-                    text = message.content,
-                    animate = isStreaming,
-                ) { displayedText ->
-                    MarkdownText(
-                        text = displayedText,
-                    )
-                }
-            }
-
-            ChatUiState.Message.Role.User -> {
-                Spacer(modifier = Modifier.weight(.2f))
-                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
-                    MarkdownText(
+    SelectionContainer {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+        ) {
+            when (message.role) {
+                ChatUiState.Message.Role.Assistant -> {
+                    StreamingText(
                         text = message.content,
-                    )
+                        animate = isStreaming,
+                    ) { displayedText ->
+                        MarkdownText(
+                            text = displayedText,
+                        )
+                    }
                 }
-            }
 
-            ChatUiState.Message.Role.Other -> {
-                MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
-                    MarkdownText(
-                        text = message.content,
-                    )
+                ChatUiState.Message.Role.User -> {
+                    Spacer(modifier = Modifier.weight(.2f))
+                    MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
+                        MarkdownText(
+                            text = message.content,
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.weight(.2f))
+
+                ChatUiState.Message.Role.Other -> {
+                    MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
+                        MarkdownText(
+                            text = message.content,
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(.2f))
+                }
             }
         }
     }
