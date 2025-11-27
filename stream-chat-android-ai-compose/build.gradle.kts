@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.bundles.androidx.compose)
 
     implementation(libs.bundles.retrofit)
