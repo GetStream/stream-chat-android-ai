@@ -37,12 +37,12 @@ dependencies {
 
     implementation(libs.bundles.stream.chat)
 
+    implementation(libs.kotlinx.coroutines.core)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
-
-    implementation(libs.kotlinx.coroutines.core)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)

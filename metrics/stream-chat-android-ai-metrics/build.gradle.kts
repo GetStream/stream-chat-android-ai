@@ -47,10 +47,10 @@ afterEvaluate {
 }
 
 dependencies {
+    implementation(libs.kotlinx.coroutines.core)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-
-    implementation(libs.kotlinx.coroutines.core)
 
     "stream-chat-android-ai-compose-streamImplementation"(project(":stream-chat-android-ai-compose"))
 }

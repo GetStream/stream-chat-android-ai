@@ -41,6 +41,8 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 stream-log = { group = "io.getstream", name = "stream-log", version.ref = "streamLog" }
+stream-chat-android-client = { group = "io.getstream", name = "stream-chat-android-client", version.ref = "streamChatAndroid" }
+stream-chat-android-state = { group = "io.getstream", name = "stream-chat-android-state", version.ref = "streamChatAndroid" }
 stream-chat-android-offline = { group = "io.getstream", name = "stream-chat-android-offline", version.ref = "streamChatAndroid" }
 stream-chat-android-compose = { group = "io.getstream", name = "stream-chat-android-compose", version.ref = "streamChatAndroid" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
@@ -64,8 +66,9 @@ maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPubli
 [bundles]
 stream-chat = [
     "stream-log",
+    "stream-chat-android-client",
+    "stream-chat-android-state",
     "stream-chat-android-offline",
-    "stream-chat-android-compose",
 ]
 retrofit = [
     "retrofit",

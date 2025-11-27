@@ -21,15 +21,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import io.getstream.chat.android.ai.compose.sample.ui.AiChatApp
 import io.getstream.chat.android.ai.compose.sample.ui.theme.AppTheme
 import io.getstream.chat.android.client.ChatClient
-import io.getstream.chat.android.compose.ui.components.LoadingIndicator
-import io.getstream.chat.android.compose.ui.theme.ChatTheme
 import io.getstream.chat.android.models.InitializationState
 
 class MainActivity : ComponentActivity() {
@@ -40,19 +41,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AppTheme {
-                ChatTheme {
-                    val initializationState by ChatClient.instance().clientState.initializationState.collectAsState()
-                    AnimatedContent(
-                        targetState = initializationState,
-                    ) { state ->
-                        if (state == InitializationState.COMPLETE) {
-                            AiChatApp(
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        } else {
-                            LoadingIndicator(
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                val initializationState by ChatClient.instance().clientState.initializationState.collectAsState()
+                AnimatedContent(
+                    targetState = initializationState,
+                ) { state ->
+                    if (state == InitializationState.COMPLETE) {
+                        AiChatApp(
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
                         }
                     }
                 }
