@@ -8,7 +8,7 @@
 
 <div align="center">
 
-![stream-chat-android-ai-compose](https://img.shields.io/badge/stream--chat--android--ai--compose-0%20MB-lightgreen)
+![stream-chat-android-ai-compose](https://img.shields.io/badge/stream--chat--android--ai--compose-6.70%20MB-lightgreen)
 
 </div>
 
