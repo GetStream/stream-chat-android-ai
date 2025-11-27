@@ -1,8 +1,8 @@
 {
   "debug": {
-    "stream-chat-android-ai-compose": 16704
+    "stream-chat-android-ai-compose": 6592
   },
   "release": {
-    "stream-chat-android-ai-compose": 6864
+    "stream-chat-android-ai-compose": 1868
   }
 }
