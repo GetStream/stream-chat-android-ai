@@ -20,7 +20,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -74,7 +73,6 @@ public fun ChatComposer(
     // The gradient creates a visual fade effect that blends with the message list behind it
     Row(
         modifier = modifier
-            .fillMaxWidth()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(

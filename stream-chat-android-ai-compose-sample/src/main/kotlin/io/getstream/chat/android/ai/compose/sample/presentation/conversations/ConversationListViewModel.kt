@@ -95,9 +95,7 @@ public class ConversationListViewModel(
 }
 
 private fun Channel.toConversation(): Conversation {
-    val title = name.takeIf(String::isNotBlank)
-        ?: messages.firstOrNull()?.text?.takeIf(String::isNotBlank)
-        ?: "Unnamed Chat"
+    val title = name.takeIf(String::isNotBlank) ?: "Unnamed Chat"
 
     return Conversation(
         id = cid,
