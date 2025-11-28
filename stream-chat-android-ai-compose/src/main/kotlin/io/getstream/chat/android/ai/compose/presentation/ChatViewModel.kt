@@ -28,19 +28,23 @@ import io.getstream.chat.android.client.events.AIIndicatorUpdatedEvent
 import io.getstream.chat.android.client.events.ChatEvent
 import io.getstream.chat.android.client.extensions.cidToTypeAndId
 import io.getstream.chat.android.models.EventType
+import io.getstream.chat.android.models.User
 import io.getstream.chat.android.state.extensions.watchChannelAsState
 import io.getstream.log.taggedLogger
 import io.getstream.result.Error
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -60,15 +64,18 @@ public class ChatViewModel(
     private val _uiState = MutableStateFlow(ChatUiState())
     public val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private var currentUserId: String? = null
+    private val currentUserId = chatClient.clientState.user
+        .mapNotNull { user -> user?.id }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = "",
+        )
 
     // Message to be sent once the AI agent is started
     private var pendingMessage: StreamMessage? = null
 
     init {
-        // Get current user ID
-        currentUserId = chatClient.getCurrentUser()?.id
-
         cid.filterNotNull()
             // Start the AI agent
             .onEach(::startAIAgentForChannel)
@@ -89,12 +96,10 @@ public class ChatViewModel(
                 }
             }
             .onEach { channel ->
-                val title = channel.name.takeIf(String::isNotBlank)
-                    ?: channel.messages.firstOrNull()?.text?.takeIf(String::isNotBlank)
-                    ?: "Unnamed Chat"
+                val title = channel.name.takeIf(String::isNotBlank) ?: "New Chat"
 
                 val messages = channel.messages
-                    .mapNotNull { message -> message.toChatMessage(currentUserId) }
+                    .mapNotNull { message -> message.toChatMessage(currentUserId.value) }
                     .reversed()
 
                 _uiState.update { state ->
@@ -122,7 +127,10 @@ public class ChatViewModel(
         val text = _uiState.value.inputText.trim()
         if (text.isEmpty() || _uiState.value.assistantState.isBusy()) return
 
-        val message = StreamMessage(text = text)
+        val message = StreamMessage(
+            text = text,
+            user = User(id = currentUserId.value),
+        )
 
         val cid = cid.value
 
@@ -131,7 +139,16 @@ public class ChatViewModel(
             // Add a pending message to send after AI agent starts
             pendingMessage = message
 
-            val memberIds = listOfNotNull(currentUserId)
+            // Optimistically add the message to UI
+            _uiState.update { state ->
+                state.copy(
+                    messages = listOfNotNull(message.toChatMessage(currentUserId.value)) + state.messages,
+                    inputText = "",
+                    assistantState = ChatUiState.AssistantState.Thinking,
+                )
+            }
+
+            val memberIds = listOf(currentUserId.value)
             chatClient.createChannel(
                 channelType = "messaging",
                 channelId = UUID.randomUUID().toString(),
@@ -320,7 +337,7 @@ public class ChatViewModel(
     }
 }
 
-private fun StreamMessage.toChatMessage(currentUserId: String?): ChatUiState.Message? {
+private fun StreamMessage.toChatMessage(currentUserId: String): ChatUiState.Message? {
     if (text.isBlank()) {
         return null
     }
