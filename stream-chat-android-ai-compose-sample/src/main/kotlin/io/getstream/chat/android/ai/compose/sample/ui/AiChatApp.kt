@@ -121,6 +121,9 @@ public fun AiChatApp(
                         modifier = Modifier.fillMaxSize(),
                         conversationId = conversationId,
                         onMenuClick = { scope.launch { drawerState.open() } },
+                        onNewChatClick = {
+                            selectedConversationId = null
+                        },
                         onChatDeleted = {
                             // Navigate back to new chat after deletion
                             selectedConversationId = null

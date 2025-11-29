@@ -16,31 +16,32 @@
 
 package io.getstream.chat.android.ai.compose.sample.ui.components
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.sample.R
+import io.getstream.chat.android.ai.compose.sample.ui.theme.AppTheme
 
 /**
  * Chat composer with attach, voice, and send buttons.
@@ -89,13 +90,8 @@ public fun ChatComposer(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FilledIconButton(
+        ChatFloatingButton(
             onClick = onAttachClick,
-            modifier = Modifier.size(40.dp),
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_add),
@@ -104,9 +100,9 @@ public fun ChatComposer(
         }
 
         OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
             value = text,
             onValueChange = onTextChange,
-            modifier = Modifier.weight(1f),
             placeholder = {
                 Text(
                     text = "Ask Assistant",
@@ -152,17 +148,61 @@ public fun ChatComposer(
                     }
                 }
             },
-            shape = RoundedCornerShape(24.dp),
-            colors = TextFieldDefaults.colors(
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
+                disabledContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.outline,
             ),
             maxLines = 6,
             minLines = 1,
             enabled = !isStreaming,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerEmptyPreview() {
+    AppTheme {
+        ChatComposer(
+            text = "",
+            onTextChange = {},
+            onSend = {},
+            onStop = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerFilledPreview() {
+    AppTheme {
+        ChatComposer(
+            text = "What is Stream Chat?",
+            onTextChange = {},
+            onSend = {},
+            onStop = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerStreamingPreview() {
+    AppTheme {
+        ChatComposer(
+            text = "",
+            onTextChange = {},
+            onSend = {},
+            onStop = {},
+            isStreaming = true,
         )
     }
 }

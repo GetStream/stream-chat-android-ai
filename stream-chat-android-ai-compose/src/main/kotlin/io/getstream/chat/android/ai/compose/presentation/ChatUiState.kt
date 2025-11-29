@@ -17,11 +17,18 @@
 package io.getstream.chat.android.ai.compose.presentation
 
 public data class ChatUiState(
+    val isLoading: Boolean = false,
     val title: String = "New Chat",
+    val actions: List<Action> = emptyList(),
     val messages: List<Message> = emptyList(),
     val inputText: String = "",
     val assistantState: AssistantState = AssistantState.Idle,
 ) {
+    public enum class Action {
+        NewChat,
+        DeleteChat,
+    }
+
     public data class Message(
         val id: String,
         val role: Role,

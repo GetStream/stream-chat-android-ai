@@ -27,6 +27,7 @@ import io.getstream.chat.android.client.events.AIIndicatorStopEvent
 import io.getstream.chat.android.client.events.AIIndicatorUpdatedEvent
 import io.getstream.chat.android.client.events.ChatEvent
 import io.getstream.chat.android.client.extensions.cidToTypeAndId
+import io.getstream.chat.android.models.ChannelCapabilities
 import io.getstream.chat.android.models.EventType
 import io.getstream.chat.android.models.User
 import io.getstream.chat.android.state.extensions.watchChannelAsState
@@ -77,6 +78,7 @@ public class ChatViewModel(
 
     init {
         cid.filterNotNull()
+            .onEach { _uiState.update { state -> state.copy(isLoading = state.messages.isEmpty()) } }
             // Start the AI agent
             .onEach(::startAIAgentForChannel)
             // Subscribe to channel events
@@ -104,7 +106,16 @@ public class ChatViewModel(
 
                 _uiState.update { state ->
                     state.copy(
+                        isLoading = false,
                         title = title,
+                        actions = buildList {
+                            if (cid.value != null) {
+                                add(ChatUiState.Action.NewChat)
+                                if (channel.ownCapabilities.contains(ChannelCapabilities.DELETE_CHANNEL)) {
+                                    add(ChatUiState.Action.DeleteChat)
+                                }
+                            }
+                        },
                         messages = messages,
                     )
                 }

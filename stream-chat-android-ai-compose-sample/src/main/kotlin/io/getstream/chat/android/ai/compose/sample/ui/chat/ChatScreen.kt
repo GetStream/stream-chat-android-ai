@@ -16,6 +16,8 @@
 
 package io.getstream.chat.android.ai.compose.sample.ui.chat
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,11 +38,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.getstream.chat.android.ai.compose.di.ChatViewModelFactory
 import io.getstream.chat.android.ai.compose.presentation.ChatUiState
+import io.getstream.chat.android.ai.compose.presentation.ChatUiState.Action
 import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatComposer
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
@@ -53,6 +58,7 @@ public fun ChatScreen(
     conversationId: String?,
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onNewChatClick: () -> Unit = {},
     onChatDeleted: () -> Unit = {},
 ) {
     val chatViewModel = viewModel<ChatViewModel>(
@@ -65,9 +71,7 @@ public fun ChatScreen(
     val listState = rememberLazyListState()
     val state by chatViewModel.uiState.collectAsState()
 
-    val title = state.title
     val messages = state.messages
-    val inputText = state.inputText
     val isStreaming = state.assistantState.isBusy()
     val assistantState = state.assistantState
 
@@ -102,9 +106,14 @@ public fun ChatScreen(
         topBar = { modifier ->
             ChatTopBar(
                 modifier = modifier,
-                title = title,
+                title = state.title,
                 onMenuClick = onMenuClick,
-                onDeleteClick = if (conversationId != null) {
+                onNewChatClick = if (state.actions.contains(Action.NewChat)) {
+                    { onNewChatClick() }
+                } else {
+                    null
+                },
+                onDeleteClick = if (state.actions.contains(Action.DeleteChat)) {
                     { showDeleteConfirmation = true }
                 } else {
                     null
@@ -114,7 +123,7 @@ public fun ChatScreen(
         bottomBar = { modifier ->
             ChatComposer(
                 modifier = modifier,
-                text = inputText,
+                text = state.inputText,
                 onTextChange = chatViewModel::onInputTextChange,
                 onSend = chatViewModel::sendMessage,
                 onStop = chatViewModel::stopStreaming,
@@ -122,41 +131,54 @@ public fun ChatScreen(
             )
         },
     ) { contentPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            state = listState,
-            contentPadding = contentPadding,
-            reverseLayout = true,
-        ) {
-            // Assistant loading indicator appears at the bottom
-            item(key = "assistant_indicator") {
-                when (assistantState) {
-                    ChatUiState.AssistantState.Error -> AssistantErrorMessage(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
+        AnimatedContent(
+            targetState = state.isLoading,
+        ) { isLoading ->
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = contentPadding,
+                    reverseLayout = true,
+                ) {
+                    // Assistant loading indicator appears at the bottom
+                    item(key = "assistant_indicator") {
+                        when (assistantState) {
+                            ChatUiState.AssistantState.Error -> AssistantErrorMessage(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
 
-                    else -> {
-                        AssistantLoadingIndicator(
+                            else -> {
+                                AssistantLoadingIndicator(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    assistantState = assistantState,
+                                    assistantMessage = currentAssistantMessage,
+                                )
+                            }
+                        }
+                    }
+                    // Messages appear above the Assistant loading indicator
+                    items(
+                        key = ChatUiState.Message::id,
+                        items = messages,
+                    ) { message ->
+                        // Determine if this message is the one currently being streamed
+                        val isMessageStreaming = isStreaming && currentAssistantMessage?.id == message.id
+
+                        ChatMessageItem(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            assistantState = assistantState,
-                            assistantMessage = currentAssistantMessage,
+                            message = message,
+                            isStreaming = isMessageStreaming,
                         )
                     }
                 }
-            }
-            // Messages appear above the Assistant loading indicator
-            items(
-                key = ChatUiState.Message::id,
-                items = messages,
-            ) { message ->
-                // Determine if this message is the one currently being streamed
-                val isMessageStreaming = isStreaming && currentAssistantMessage?.id == message.id
-
-                ChatMessageItem(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    message = message,
-                    isStreaming = isMessageStreaming,
-                )
             }
         }
     }

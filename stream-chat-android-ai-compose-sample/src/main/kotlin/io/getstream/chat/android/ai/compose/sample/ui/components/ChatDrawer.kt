@@ -70,13 +70,6 @@ fun ChatDrawer(
 
         HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
 
-        Text(
-            text = "Recent",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
