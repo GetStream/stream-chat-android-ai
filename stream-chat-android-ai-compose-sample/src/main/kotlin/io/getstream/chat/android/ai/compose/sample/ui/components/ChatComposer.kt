@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +39,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.sample.R
@@ -70,6 +74,12 @@ public fun ChatComposer(
     onAttachClick: () -> Unit = {},
     onVoiceClick: () -> Unit = {},
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val handleSend = {
+        keyboardController?.hide()
+        onSend()
+    }
+
     // Main input field content with blur gradient applied to modifier
     // The gradient creates a visual fade effect that blends with the message list behind it
     Row(
@@ -103,6 +113,8 @@ public fun ChatComposer(
             modifier = Modifier.fillMaxWidth(),
             value = text,
             onValueChange = onTextChange,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(onSend = { handleSend() }),
             placeholder = {
                 Text(
                     text = "Ask Assistant",
@@ -129,7 +141,7 @@ public fun ChatComposer(
                         }
 
                         "send" -> FilledIconButton(
-                            onClick = onSend,
+                            onClick = handleSend,
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_send),
