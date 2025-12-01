@@ -21,6 +21,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -48,8 +49,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -65,8 +68,8 @@ import io.getstream.chat.android.ai.compose.sample.ui.theme.AppTheme
  *
  * @param text The current text input value
  * @param onTextChange Callback when text changes
- * @param onSend Callback when send button is clicked
- * @param onStop Callback when stop button is clicked (during streaming)
+ * @param onSendClick Callback when send button is clicked
+ * @param onStopClick Callback when stop button is clicked (during streaming)
  * @param isStreaming Whether the AI is currently streaming a response
  * @param modifier Modifier to be applied to the composer
  * @param isRecording Whether the microphone is currently recording (voice input)
@@ -78,8 +81,8 @@ import io.getstream.chat.android.ai.compose.sample.ui.theme.AppTheme
 public fun ChatComposer(
     text: String,
     onTextChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onStop: () -> Unit,
+    onSendClick: () -> Unit,
+    onStopClick: () -> Unit,
     isStreaming: Boolean,
     modifier: Modifier = Modifier,
     isRecording: Boolean = false,
@@ -88,18 +91,9 @@ public fun ChatComposer(
     onCancelVoiceClick: () -> Unit = {},
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
-    val handleSend = {
+    val handleSendClick = {
         keyboardController?.hide()
-        onSend()
-    }
-
-    val enabled = !isStreaming
-
-    val trailingButton = when {
-        isStreaming -> "stop"
-        text.isNotBlank() -> "send"
-        !isRecording -> "voice"
-        else -> null
+        onSendClick()
     }
 
     // Main input field content with blur gradient applied to modifier
@@ -131,106 +125,147 @@ public fun ChatComposer(
             )
         }
 
-        val colors = OutlinedTextFieldDefaults.colors()
-        val interactionSource = remember { MutableInteractionSource() }
+        TextField(
+            modifier = Modifier.fillMaxWidth(),
+            text = text,
+            onTextChange = onTextChange,
+            isStreaming = isStreaming,
+            isRecording = isRecording,
+            onSendClick = handleSendClick,
+            onStopClick = onStopClick,
+            onVoiceClick = onVoiceClick,
+            onCancelVoiceClick = onCancelVoiceClick,
+        )
+    }
+}
 
-        BasicTextField(
-            modifier = Modifier
-                .defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current)
-                .fillMaxWidth(),
-            value = text,
-            onValueChange = onTextChange,
-            enabled = enabled,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-            keyboardActions = KeyboardActions(onSend = { handleSend() }),
-            textStyle = LocalTextStyle.current,
-            cursorBrush = SolidColor(colors.cursorColor),
-            interactionSource = interactionSource,
-            maxLines = 6,
-            minLines = 1,
-            decorationBox = { innerTextField ->
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+@Composable
+private fun TextField(
+    modifier: Modifier,
+    text: String,
+    onTextChange: (String) -> Unit,
+    isStreaming: Boolean,
+    isRecording: Boolean,
+    onSendClick: () -> Unit,
+    onStopClick: () -> Unit,
+    onVoiceClick: () -> Unit,
+    onCancelVoiceClick: () -> Unit,
+) {
+    val colors = OutlinedTextFieldDefaults.colors()
+    val interactionSource = remember { MutableInteractionSource() }
+    // If color is not provided via the text style, use content color as a default
+    val textStyle = LocalTextStyle.current
+    val textColor = textStyle.color.takeOrElse {
+        val focused = interactionSource.collectIsFocusedAsState().value
+        when {
+            isStreaming -> colors.disabledTextColor
+            focused -> colors.focusedTextColor
+            else -> colors.unfocusedTextColor
+        }
+    }
+    val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
+
+    val trailingButton = when {
+        isStreaming -> "stop"
+        text.isNotBlank() -> "send"
+        !isRecording -> "voice"
+        else -> null
+    }
+
+    BasicTextField(
+        modifier = modifier.defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
+        value = text,
+        onValueChange = onTextChange,
+        enabled = !isStreaming,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+        keyboardActions = KeyboardActions(onSend = { onSendClick() }),
+        textStyle = mergedTextStyle,
+        cursorBrush = SolidColor(colors.cursorColor),
+        interactionSource = interactionSource,
+        maxLines = 6,
+        minLines = 1,
+        decorationBox = { innerTextField ->
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    // Leading icon
+                    AnimatedContent(
+                        targetState = isRecording,
+                    ) { visible ->
+                        if (visible) {
+                            IconButton(
+                                onClick = onCancelVoiceClick,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_cancel),
+                                    contentDescription = "Cancel voice input",
+                                )
+                            }
+                        }
+                    }
+
+                    // Text field
+                    Box(
+                        modifier = Modifier.weight(1f),
                     ) {
-                        // Leading icon
                         AnimatedContent(
-                            targetState = isRecording,
+                            modifier = Modifier.padding(start = 16.dp),
+                            targetState = !isRecording,
                         ) { visible ->
                             if (visible) {
-                                IconButton(
-                                    onClick = onCancelVoiceClick,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_cancel),
-                                        contentDescription = "Cancel voice input",
+                                if (text.isEmpty()) {
+                                    Text(
+                                        text = "Ask Assistant",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        style = MaterialTheme.typography.bodyLarge,
                                     )
                                 }
+                                innerTextField()
                             }
                         }
+                    }
 
-                        // Text field
-                        Box(
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            AnimatedContent(
-                                modifier = Modifier.padding(start = 16.dp),
-                                targetState = !isRecording,
-                            ) { visible ->
-                                if (visible) {
-                                    if (text.isEmpty()) {
-                                        Text(
-                                            text = "Ask Assistant",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            style = MaterialTheme.typography.bodyLarge,
-                                        )
-                                    }
-                                    innerTextField()
-                                }
+                    // Trailing icon
+                    AnimatedContent(
+                        targetState = trailingButton,
+                    ) { button ->
+                        when (button) {
+                            "stop" -> FilledIconButton(
+                                onClick = onStopClick,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_stop),
+                                    contentDescription = "Stop",
+                                )
                             }
-                        }
 
-                        // Trailing icon
-                        AnimatedContent(
-                            targetState = trailingButton,
-                        ) { button ->
-                            when (button) {
-                                "stop" -> FilledIconButton(
-                                    onClick = onStop,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_stop),
-                                        contentDescription = "Stop",
-                                    )
-                                }
+                            "send" -> FilledIconButton(
+                                onClick = onSendClick,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_send),
+                                    contentDescription = "Send",
+                                )
+                            }
 
-                                "send" -> FilledIconButton(
-                                    onClick = handleSend,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_send),
-                                        contentDescription = "Send",
-                                    )
-                                }
-
-                                "voice" -> IconButton(
-                                    onClick = onVoiceClick,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_mic),
-                                        contentDescription = "Voice input",
-                                    )
-                                }
+                            "voice" -> IconButton(
+                                onClick = onVoiceClick,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_mic),
+                                    contentDescription = "Voice input",
+                                )
                             }
                         }
                     }
                 }
-            },
-        )
-    }
+            }
+        },
+    )
 }
 
 @Preview(showBackground = true)
@@ -241,8 +276,8 @@ private fun ChatComposerEmptyPreview() {
         ChatComposer(
             text = "",
             onTextChange = {},
-            onSend = {},
-            onStop = {},
+            onSendClick = {},
+            onStopClick = {},
             isStreaming = false,
         )
     }
@@ -256,8 +291,8 @@ private fun ChatComposerFilledPreview() {
         ChatComposer(
             text = "What is Stream Chat?",
             onTextChange = {},
-            onSend = {},
-            onStop = {},
+            onSendClick = {},
+            onStopClick = {},
             isStreaming = false,
         )
     }
@@ -271,8 +306,8 @@ private fun ChatComposerStreamingPreview() {
         ChatComposer(
             text = "",
             onTextChange = {},
-            onSend = {},
-            onStop = {},
+            onSendClick = {},
+            onStopClick = {},
             isStreaming = true,
         )
     }
@@ -286,8 +321,8 @@ private fun ChatComposerRecordingPreview() {
         ChatComposer(
             text = "",
             onTextChange = {},
-            onSend = {},
-            onStop = {},
+            onSendClick = {},
+            onStopClick = {},
             isStreaming = false,
             isRecording = true,
         )

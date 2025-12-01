@@ -16,6 +16,11 @@
 
 package io.getstream.chat.android.ai.compose.sample.ui.chat
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,7 +47,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.getstream.chat.android.ai.compose.di.ChatViewModelFactory
 import io.getstream.chat.android.ai.compose.presentation.ChatUiState
@@ -51,11 +59,12 @@ import io.getstream.chat.android.ai.compose.sample.ui.components.ChatComposer
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatTopBar
+import io.getstream.chat.android.ai.compose.sample.ui.utils.rememberSpeechRecognizerHelper
 import io.getstream.chat.android.ai.compose.ui.component.LoadingIndicator
 import kotlinx.coroutines.delay
 
 @Composable
-public fun ChatScreen(
+fun ChatScreen(
     conversationId: String?,
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -78,6 +87,62 @@ public fun ChatScreen(
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var hasScrolledToBottomInitially by remember(conversationId) { mutableStateOf(false) }
+
+    // Speech recognition setup
+    val context = LocalContext.current
+    val activity = context as? ComponentActivity
+
+    var isRecording by remember { mutableStateOf(false) }
+
+    val speechRecognizerHelper = rememberSpeechRecognizerHelper(
+        onResult = { text ->
+            val current = state.inputText
+            chatViewModel.onInputTextChange(if (current.isBlank()) text else "$current $text")
+        },
+        onError = {
+            isRecording = false
+        },
+    )
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            isRecording = speechRecognizerHelper.isListening()
+            delay(100)
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        if (isGranted) {
+            speechRecognizerHelper.startListening()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (isRecording) speechRecognizerHelper.stopListening()
+        }
+    }
+
+    val handleVoiceClick = {
+        if (activity != null) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO,
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (hasPermission && !isRecording) {
+                speechRecognizerHelper.startListening()
+            } else if (!hasPermission) {
+                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
+    }
+
+    val handleCancelVoiceClick = {
+        speechRecognizerHelper.stopListening()
+    }
 
     // Scroll to bottom when messages are initially loaded
     // In reverse layout, item 0 is at the bottom (where new messages appear)
@@ -126,9 +191,12 @@ public fun ChatScreen(
                 modifier = modifier,
                 text = state.inputText,
                 onTextChange = chatViewModel::onInputTextChange,
-                onSend = chatViewModel::sendMessage,
-                onStop = chatViewModel::stopStreaming,
+                onSendClick = chatViewModel::sendMessage,
+                onStopClick = chatViewModel::stopStreaming,
                 isStreaming = isStreaming,
+                isRecording = isRecording,
+                onVoiceClick = handleVoiceClick,
+                onCancelVoiceClick = handleCancelVoiceClick,
             )
         },
     ) { contentPadding ->
