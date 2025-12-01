@@ -143,21 +143,21 @@ public class ChatViewModel(
             user = User(id = currentUserId.value),
         )
 
+        // Optimistically add the message to UI
+        _uiState.update { state ->
+            state.copy(
+                messages = listOfNotNull(message.toChatMessage(currentUserId.value)) + state.messages,
+                inputText = "",
+                assistantState = ChatUiState.AssistantState.Thinking,
+            )
+        }
+
         val cid = cid.value
 
         if (cid == null) {
             // Create a new channel before sending the first message
             // Add a pending message to send after AI agent starts
             pendingMessage = message
-
-            // Optimistically add the message to UI
-            _uiState.update { state ->
-                state.copy(
-                    messages = listOfNotNull(message.toChatMessage(currentUserId.value)) + state.messages,
-                    inputText = "",
-                    assistantState = ChatUiState.AssistantState.Thinking,
-                )
-            }
 
             val memberIds = listOf(currentUserId.value)
             chatClient.createChannel(
@@ -233,8 +233,6 @@ public class ChatViewModel(
             .sendMessage(message = message)
             .enqueue { result ->
                 result.onSuccess {
-                    // Clear input only on success
-                    _uiState.update { state -> state.copy(inputText = "") }
                     onSuccess()
                 }.onError { e ->
                     logger.e { "Failed to send message: ${e.message}" }
