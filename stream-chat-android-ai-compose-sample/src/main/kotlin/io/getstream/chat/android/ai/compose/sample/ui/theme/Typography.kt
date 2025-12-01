@@ -25,48 +25,45 @@ import androidx.compose.ui.unit.sp
 // Set of Material typography styles to start with
 val Typography =
     Typography(
-        bodyLarge = TextStyle(
-            fontFamily = FontFamily.Default,
-            fontWeight = FontWeight.Normal,
-            fontSize = 16.sp,
-            lineHeight = 24.sp,
-            letterSpacing = 0.5.sp,
-        ),
-        // Markdown library mapping:
-        // h1 → displayLarge, h2 → displayMedium, h3 → displaySmall
-        // h4 → headlineMedium, h5 → headlineSmall, h6 → titleLarge
+        // Markdown headline mapping:
+        // h1 → displayLarge
+        // h2 → displayMedium
+        // h3 → displaySmall
+        // h4 → headlineMedium
+        // h5 → headlineSmall
+        // h6 → titleLarge
         displayLarge = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             lineHeight = 22.sp,
             letterSpacing = 0.sp,
         ),
         displayMedium = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
+            fontSize = 17.sp,
+            lineHeight = 21.sp,
             letterSpacing = 0.sp,
         ),
         displaySmall = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
+            fontSize = 16.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.sp,
         ),
         headlineMedium = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
+            fontSize = 15.sp,
+            lineHeight = 19.sp,
             letterSpacing = 0.sp,
         ),
         headlineSmall = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             lineHeight = 18.sp,
             letterSpacing = 0.sp,
         ),
@@ -74,7 +71,7 @@ val Typography =
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Medium,
             fontSize = 13.sp,
-            lineHeight = 18.sp,
+            lineHeight = 17.sp,
             letterSpacing = 0.sp,
         ),
     )

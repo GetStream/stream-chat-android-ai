@@ -29,7 +29,6 @@ import com.mikepenz.markdown.compose.elements.MarkdownCodeFence
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCode
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeBlock
 import com.mikepenz.markdown.m3.Markdown
-import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.model.rememberMarkdownState
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.ASTNode
@@ -55,7 +54,6 @@ private val DefaultRichTextComponent: RichTextComponent = { text, modifier ->
     Markdown(
         modifier = modifier,
         markdownState = markdownState,
-        colors = markdownColor(),
         components = MarkdownComponents,
     )
 }
