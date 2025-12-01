@@ -58,6 +58,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.bundles.androidx.compose)
+    implementation(libs.bundles.markdown.renderer)
 
     implementation(libs.bundles.retrofit)
 

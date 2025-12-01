@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.ui.components
+package io.getstream.chat.android.ai.compose.ui.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.mikepenz.markdown.annotator.annotatorSettings
-import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.LocalMarkdownColors
 import com.mikepenz.markdown.compose.LocalMarkdownDimens
 import com.mikepenz.markdown.compose.components.MarkdownComponent
@@ -30,7 +28,6 @@ import com.mikepenz.markdown.compose.elements.MarkdownCodeBackground
 import com.mikepenz.markdown.compose.elements.MarkdownCodeFence
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCode
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeBlock
-import com.mikepenz.markdown.compose.elements.MarkdownTable
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.model.rememberMarkdownState
@@ -38,18 +35,18 @@ import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
 
-/**
- * Renders markdown text with proper styling.
- * Supports code blocks, tables, charts, and other markdown features.
- *
- * @param text The markdown text to render
- * @param modifier Modifier to be applied to the text
- */
+public typealias RichTextComponent = @Composable (text: String, modifier: Modifier) -> Unit
+
 @Composable
-public fun MarkdownText(
+public fun RichText(
     text: String,
     modifier: Modifier = Modifier,
+    component: RichTextComponent = DefaultRichTextComponent,
 ) {
+    component(text, modifier)
+}
+
+private val DefaultRichTextComponent: RichTextComponent = { text, modifier ->
     val markdownState = rememberMarkdownState(
         content = text,
         retainState = true,
@@ -60,35 +57,6 @@ public fun MarkdownText(
         markdownState = markdownState,
         colors = markdownColor(),
         components = MarkdownComponents,
-        imageTransformer = Coil3ImageTransformerImpl,
-    )
-}
-
-private val Table: MarkdownComponent = {
-    val annotatorSettings = annotatorSettings()
-    MarkdownTable(
-        content = it.content,
-        node = it.node,
-        style = it.typography.table,
-        annotatorSettings = annotatorSettings,
-        headerBlock = { content, header, tableWidth, style ->
-            MarkdownTableHeader(
-                content = content,
-                header = header,
-                tableWidth = tableWidth,
-                style = style,
-                annotatorSettings = annotatorSettings,
-            )
-        },
-        rowBlock = { content, header, tableWidth, style ->
-            MarkdownTableRow(
-                content = content,
-                header = header,
-                tableWidth = tableWidth,
-                style = style,
-                annotatorSettings = annotatorSettings,
-            )
-        },
     )
 }
 
@@ -99,18 +67,17 @@ private val CodeFence: MarkdownComponent = {
         style = it.typography.code,
     ) { code, language, style ->
         // If it's a chartjs and complete, render it as a chart diagram
-        val chartCode = extractCodeFenceContent(it.content, it.node)
-
-        if (language?.lowercase() == "chartjs" && chartCode != null) {
+        val codeContent = extractCodeFenceContent(it.content, it.node)
+        if (language?.lowercase() == "chartjs" && codeContent != null) {
             val backgroundCodeColor = LocalMarkdownColors.current.codeBackground
             val codeBackgroundCornerSize = LocalMarkdownDimens.current.codeBackgroundCornerSize
             MarkdownCodeBackground(
                 color = backgroundCodeColor,
                 shape = RoundedCornerShape(codeBackgroundCornerSize),
             ) {
-                ChartDiagram(
+                ChartJsDiagram(
                     modifier = Modifier.fillMaxWidth(),
-                    chartCode = chartCode,
+                    chartJsJson = codeContent,
                 )
             }
         } else {
@@ -137,7 +104,6 @@ private val CodeBlock: MarkdownComponent = {
 private val MarkdownComponents = markdownComponents(
     codeFence = CodeFence,
     codeBlock = CodeBlock,
-    table = Table,
 )
 
 /**

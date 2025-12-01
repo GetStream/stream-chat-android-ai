@@ -46,8 +46,6 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)
-    implementation(libs.bundles.markdown.renderer)
-    implementation(libs.coil.network.okhttp)
 
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
