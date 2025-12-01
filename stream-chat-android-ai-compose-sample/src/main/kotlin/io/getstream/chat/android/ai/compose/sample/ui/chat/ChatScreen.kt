@@ -35,6 +35,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -150,17 +151,19 @@ public fun ChatScreen(
                 ) {
                     // Assistant loading indicator appears at the bottom
                     item(key = "assistant_indicator") {
-                        when (assistantState) {
-                            ChatUiState.AssistantState.Error -> AssistantErrorMessage(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            )
-
-                            else -> {
-                                AssistantLoadingIndicator(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                    assistantState = assistantState,
-                                    assistantMessage = currentAssistantMessage,
+                        key(assistantState, currentAssistantMessage) {
+                            when (assistantState) {
+                                ChatUiState.AssistantState.Error -> AssistantErrorMessage(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                                 )
+
+                                else -> {
+                                    AssistantLoadingIndicator(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                        assistantState = assistantState,
+                                        assistantMessage = currentAssistantMessage,
+                                    )
+                                }
                             }
                         }
                     }

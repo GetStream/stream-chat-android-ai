@@ -51,9 +51,9 @@ public fun ChatMessageItem(
 ) {
     val isUser = message.role is ChatUiState.Message.Role.User
 
-    SelectionContainer {
+    SelectionContainer(modifier = modifier) {
         Row(
-            modifier = modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
         ) {
             when (message.role) {
