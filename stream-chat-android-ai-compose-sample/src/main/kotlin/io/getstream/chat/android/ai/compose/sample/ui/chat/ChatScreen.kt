@@ -232,7 +232,10 @@ private fun AssistantLoadingIndicator(
     val text = when (assistantState) {
         ChatUiState.AssistantState.Thinking -> "Thinking"
         ChatUiState.AssistantState.CheckingSources -> "Checking sources"
-        ChatUiState.AssistantState.Generating -> "Generating response".takeIf { assistantMessage == null }
+        ChatUiState.AssistantState.Generating -> "Generating response".takeIf {
+            assistantMessage == null || assistantMessage.content.isEmpty()
+        }
+
         else -> null
     }
     if (text != null) {
