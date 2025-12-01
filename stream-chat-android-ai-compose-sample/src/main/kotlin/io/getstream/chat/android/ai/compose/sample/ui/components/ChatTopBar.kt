@@ -55,7 +55,7 @@ public fun ChatTopBar(
     onDeleteClick: (() -> Unit)? = null,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 brush = Brush.verticalGradient(
