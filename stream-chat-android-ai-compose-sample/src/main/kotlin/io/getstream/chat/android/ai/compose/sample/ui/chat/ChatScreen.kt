@@ -56,6 +56,7 @@ import io.getstream.chat.android.ai.compose.presentation.ChatUiState
 import io.getstream.chat.android.ai.compose.presentation.ChatUiState.Action
 import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
 import io.getstream.chat.android.ai.compose.presentation.getCurrentAssistantMessage
+import io.getstream.chat.android.ai.compose.presentation.isBusy
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatComposer
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
@@ -83,7 +84,7 @@ fun ChatScreen(
     val state by chatViewModel.uiState.collectAsState()
 
     val messages = state.messages
-    val isStreaming = state.assistantState.isBusy()
+    val isAssistantBusy = state.assistantState.isBusy()
     val assistantState = state.assistantState
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -194,7 +195,7 @@ fun ChatScreen(
                 onTextChange = chatViewModel::onInputTextChange,
                 onSendClick = chatViewModel::sendMessage,
                 onStopClick = chatViewModel::stopStreaming,
-                isStreaming = isStreaming,
+                isStreaming = isAssistantBusy,
                 isRecording = isRecording,
                 onVoiceClick = handleVoiceClick,
                 onCancelVoiceClick = handleCancelVoiceClick,
@@ -241,13 +242,9 @@ fun ChatScreen(
                         key = ChatUiState.Message::id,
                         items = messages,
                     ) { message ->
-                        // Determine if this message is the one currently being streamed
-                        val isMessageStreaming = isStreaming && currentAssistantMessage?.id == message.id
-
                         ChatMessageItem(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             message = message,
-                            isStreaming = isMessageStreaming,
                         )
                     }
                 }

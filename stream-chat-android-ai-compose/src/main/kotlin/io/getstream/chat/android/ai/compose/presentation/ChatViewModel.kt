@@ -382,6 +382,7 @@ private fun StreamMessage.toChatMessage(currentUserId: String): ChatUiState.Mess
         id = id,
         role = role,
         content = text,
+        isGenerating = extraData["generating"] == true,
     )
 }
 

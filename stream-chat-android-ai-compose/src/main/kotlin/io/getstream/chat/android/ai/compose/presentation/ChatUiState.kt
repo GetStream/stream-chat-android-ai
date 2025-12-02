@@ -56,6 +56,7 @@ public data class ChatUiState(
         val id: String,
         val role: Role,
         val content: String,
+        val isGenerating: Boolean,
     ) {
         /**
          * Represents the role of a message sender in the conversation.
@@ -90,16 +91,16 @@ public data class ChatUiState(
 
         /** Assistant encountered an error. */
         Error,
-        ;
-
-        /**
-         * Checks if the assistant is currently busy (not idle and not in error state).
-         *
-         * @return true if the assistant is actively working, false otherwise
-         */
-        public fun isBusy(): Boolean = this != Idle && this != Error
     }
 }
+
+/**
+ * Checks if the assistant is currently busy (not idle and not in error state).
+ *
+ * @return true if the assistant is actively working, false otherwise
+ */
+public fun ChatUiState.AssistantState.isBusy(): Boolean =
+    this != ChatUiState.AssistantState.Idle && this != ChatUiState.AssistantState.Error
 
 /**
  * Gets the most recent assistant message from the conversation.

@@ -41,13 +41,11 @@ import io.getstream.chat.android.ai.compose.ui.component.StreamingText
  *
  * @param message The message to display
  * @param modifier Modifier to be applied to the message item
- * @param isStreaming Whether this message is currently being streamed. When true, content will animate in.
  */
 @Composable
 public fun ChatMessageItem(
     message: ChatUiState.Message,
     modifier: Modifier = Modifier,
-    isStreaming: Boolean = false,
 ) {
     val isUser = message.role is ChatUiState.Message.Role.User
 
@@ -60,7 +58,7 @@ public fun ChatMessageItem(
                 ChatUiState.Message.Role.Assistant -> {
                     StreamingText(
                         text = message.content,
-                        animate = isStreaming,
+                        animate = message.isGenerating,
                     ) { displayedText ->
                         RichText(
                             text = displayedText,
