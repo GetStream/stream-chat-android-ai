@@ -34,9 +34,10 @@ import java.util.Locale
  * Recording stops only when manually cancelled, not on timeout.
  */
 public class SpeechRecognizerHelper(
-    private val context: Context,
+    context: Context,
     private val onResult: (String) -> Unit,
     private val onError: (String) -> Unit,
+    private val onRmsChanged: ((Float) -> Unit)? = null,
 ) {
     private val logger by taggedLogger("SpeechRecognizerHelper")
     private var speechRecognizer: SpeechRecognizer? = null
@@ -97,8 +98,8 @@ public class SpeechRecognizerHelper(
         putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
         // Long timeout - recording stops only when manually cancelled
-        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 60000)
-        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 60000)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, SILENCE_TIMEOUT_MS)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, SILENCE_TIMEOUT_MS)
     }
 
     private fun createRecognitionListener(): RecognitionListener = object : RecognitionListener {
@@ -115,6 +116,7 @@ public class SpeechRecognizerHelper(
         // 3. Called repeatedly during speech - provides audio level updates
         override fun onRmsChanged(rmsdB: Float) {
             logger.v { "onRmsChanged: rmsdB=$rmsdB" }
+            onRmsChanged?.invoke(rmsdB)
         }
 
         // 4. Optional - may not be called, receives audio buffer
@@ -124,10 +126,7 @@ public class SpeechRecognizerHelper(
 
         // 5. Optional - called multiple times if EXTRA_PARTIAL_RESULTS is enabled
         override fun onPartialResults(partialResults: Bundle?) {
-            val results = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            logger.d { "onPartialResults: results=$results" }
-            // Track the last non-empty partial result as fallback for empty onResults
-            results?.firstOrNull()?.takeIf { it.isNotBlank() }?.let {
+            extractResult(partialResults)?.takeIf(String::isNotBlank)?.let {
                 lastPartialResult = it
                 logger.d { "onPartialResults: Stored last partial result: $it" }
             }
@@ -140,58 +139,33 @@ public class SpeechRecognizerHelper(
 
         // 7. Called last (in normal flow) - provides final recognition results
         override fun onResults(results: Bundle?) {
-            logger.d { "onResults: results=$results" }
-            if (results == null) {
-                logger.w { "onResults: Received null bundle, using last partial result: $lastPartialResult" }
-                lastPartialResult?.let {
-                    logger.d { "onResults: Processing fallback partial result: $it" }
-                    onResult(it)
-                    lastPartialResult = null
-                }
-                return
-            }
-            if (results.isEmpty) {
-                logger.w { "onResults: Received empty bundle, using last partial result: $lastPartialResult" }
-                lastPartialResult?.let {
-                    logger.d { "onResults: Processing fallback partial result: $it" }
-                    onResult(it)
-                    lastPartialResult = null
-                }
-                return
-            }
-            val recognitionResults = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            logger.d { "onResults: recognitionResults=$recognitionResults" }
-            recognitionResults?.firstOrNull()?.let {
-                logger.d { "onResults: Processing result: $it" }
-                onResult(it)
-                lastPartialResult = null // Clear partial result after successful final result
-            } ?: run {
-                logger.w { "onResults: No recognition results found, using last partial result: $lastPartialResult" }
-                lastPartialResult?.let {
-                    logger.d { "onResults: Processing fallback partial result: $it" }
-                    onResult(it)
-                    lastPartialResult = null
-                }
+            val finalResult = extractResult(results) ?: lastPartialResult
+
+            if (finalResult != null) {
+                logger.d { "onResults: Processing result: $finalResult" }
+                onResult(finalResult)
+                lastPartialResult = null
+            } else {
+                logger.w { "onResults: No results available" }
             }
         }
 
         // 8. Can be called at any time if an error occurs
         override fun onError(error: Int) {
-            val errorName = when (error) {
-                SpeechRecognizer.ERROR_AUDIO -> "ERROR_AUDIO"
-                SpeechRecognizer.ERROR_CLIENT -> "ERROR_CLIENT"
-                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "ERROR_INSUFFICIENT_PERMISSIONS"
-                SpeechRecognizer.ERROR_NETWORK -> "ERROR_NETWORK"
-                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "ERROR_NETWORK_TIMEOUT"
-                SpeechRecognizer.ERROR_NO_MATCH -> "ERROR_NO_MATCH"
-                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "ERROR_RECOGNIZER_BUSY"
-                SpeechRecognizer.ERROR_SERVER -> "ERROR_SERVER"
-                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "ERROR_SPEECH_TIMEOUT"
-                else -> "UNKNOWN_ERROR($error)"
+            val errorMessage = when (error) {
+                SpeechRecognizer.ERROR_AUDIO -> "Audio error"
+                SpeechRecognizer.ERROR_CLIENT -> "Client error"
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
+                SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                SpeechRecognizer.ERROR_NO_MATCH -> "No match"
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognizer busy"
+                SpeechRecognizer.ERROR_SERVER -> "Server error"
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Speech timeout"
+                else -> "Unknown error: $error"
             }
-            logger.w { "onError: $errorName ($error)" }
 
-            val criticalErrors = setOf(
+            val isCritical = error in setOf(
                 SpeechRecognizer.ERROR_AUDIO,
                 SpeechRecognizer.ERROR_CLIENT,
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS,
@@ -199,20 +173,12 @@ public class SpeechRecognizerHelper(
                 SpeechRecognizer.ERROR_SERVER,
             )
 
-            if (error in criticalErrors) {
+            if (isCritical) {
                 isListening = false
-                val message = when (error) {
-                    SpeechRecognizer.ERROR_AUDIO -> "Audio error"
-                    SpeechRecognizer.ERROR_CLIENT -> "Client error"
-                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
-                    SpeechRecognizer.ERROR_NETWORK -> "Network error"
-                    SpeechRecognizer.ERROR_SERVER -> "Server error"
-                    else -> "Error: $error"
-                }
-                logger.e { "onError: Critical error - $message" }
-                onError(message)
+                logger.e { "onError: Critical error - $errorMessage" }
+                onError(errorMessage)
             } else {
-                logger.d { "onError: Non-critical error, continuing..." }
+                logger.d { "onError: Non-critical error - $errorMessage" }
             }
         }
 
@@ -220,6 +186,10 @@ public class SpeechRecognizerHelper(
         override fun onEvent(eventType: Int, params: Bundle?) {
             logger.d { "onEvent: eventType=$eventType, params=$params" }
         }
+
+        private fun extractResult(bundle: Bundle?): String? =
+            bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+
     }
 }
 
@@ -227,10 +197,11 @@ public class SpeechRecognizerHelper(
 public fun rememberSpeechRecognizerHelper(
     onResult: (String) -> Unit,
     onError: (String) -> Unit,
+    onRmsChanged: ((Float) -> Unit)? = null,
 ): SpeechRecognizerHelper {
     val context = LocalContext.current
     val helper = remember {
-        SpeechRecognizerHelper(context, onResult, onError)
+        SpeechRecognizerHelper(context, onResult, onError, onRmsChanged)
     }
 
     DisposableEffect(Unit) {
@@ -239,3 +210,5 @@ public fun rememberSpeechRecognizerHelper(
 
     return helper
 }
+
+private const val SILENCE_TIMEOUT_MS = 60000

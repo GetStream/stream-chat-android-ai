@@ -95,6 +95,7 @@ fun ChatScreen(
     val activity = context as? ComponentActivity
 
     var isRecording by remember { mutableStateOf(false) }
+    var rmsdB by remember { mutableStateOf(0f) }
 
     val speechRecognizerHelper = rememberSpeechRecognizerHelper(
         onResult = { text ->
@@ -103,6 +104,9 @@ fun ChatScreen(
         },
         onError = {
             isRecording = false
+        },
+        onRmsChanged = { db ->
+            rmsdB = db
         },
     )
 
@@ -142,8 +146,14 @@ fun ChatScreen(
         }
     }
 
-    val handleCancelVoiceClick = {
+    val handleSeeTextClick = {
+        // Stop listening and get final result
         speechRecognizerHelper.stopListening()
+    }
+
+    val handleCancelVoiceClick = {
+        // Cancel listening without final result
+        speechRecognizerHelper.cancel()
     }
 
     // Scroll to bottom when messages are initially loaded
@@ -197,15 +207,17 @@ fun ChatScreen(
                 onStopClick = chatViewModel::stopStreaming,
                 isStreaming = isAssistantBusy,
                 isRecording = isRecording,
+                rmsdB = if (isRecording) rmsdB else 0f,
                 onVoiceClick = handleVoiceClick,
+                onSeeTextClick = handleSeeTextClick,
                 onCancelVoiceClick = handleCancelVoiceClick,
             )
         },
     ) { contentPadding ->
         AnimatedContent(
             targetState = state.isLoading,
-        ) { isLoading ->
-            if (isLoading) {
+        ) { loading ->
+            if (loading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
