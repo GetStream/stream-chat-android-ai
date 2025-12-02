@@ -55,6 +55,7 @@ import io.getstream.chat.android.ai.compose.di.ChatViewModelFactory
 import io.getstream.chat.android.ai.compose.presentation.ChatUiState
 import io.getstream.chat.android.ai.compose.presentation.ChatUiState.Action
 import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
+import io.getstream.chat.android.ai.compose.presentation.getCurrentAssistantMessage
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatComposer
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
