@@ -99,12 +99,12 @@ public data class ChatUiState(
          */
         public fun isBusy(): Boolean = this != Idle && this != Error
     }
-
-    /**
-     * Gets the most recent assistant message from the conversation.
-     *
-     * @return The latest assistant message, or null if there are no assistant messages
-     */
-    public fun getCurrentAssistantMessage(): Message? =
-        messages.firstOrNull()?.takeIf { message -> message.role == Message.Role.Assistant }
 }
+
+/**
+ * Gets the most recent assistant message from the conversation.
+ *
+ * @return The latest assistant message, or null if there are no assistant messages
+ */
+public fun ChatUiState.getCurrentAssistantMessage(): ChatUiState.Message? =
+    messages.firstOrNull()?.takeIf { message -> message.role == ChatUiState.Message.Role.Assistant }

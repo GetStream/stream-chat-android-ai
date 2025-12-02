@@ -154,7 +154,9 @@ public class ChatViewModel(
      */
     public fun sendMessage() {
         val text = _uiState.value.inputText.trim()
-        if (text.isEmpty() || _uiState.value.assistantState.isBusy()) return
+        if (text.isEmpty() || _uiState.value.assistantState.isBusy()) {
+            return
+        }
 
         val message = StreamMessage(
             text = text,

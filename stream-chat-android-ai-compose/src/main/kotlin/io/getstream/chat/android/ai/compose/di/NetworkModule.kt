@@ -55,7 +55,11 @@ internal object NetworkModule {
         okHttpClient: OkHttpClient,
         moshi: Moshi,
     ): Retrofit {
-        val normalizedBaseUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        val normalizedBaseUrl = if (baseUrl.endsWith("/")) {
+            baseUrl
+        } else {
+            "$baseUrl/"
+        }
         return Retrofit.Builder()
             .baseUrl(normalizedBaseUrl)
             .client(okHttpClient)

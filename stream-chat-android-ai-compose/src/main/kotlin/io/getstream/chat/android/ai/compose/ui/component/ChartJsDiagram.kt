@@ -81,7 +81,8 @@ private fun buildHtmlContent(escapedJson: String) = """
     <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; connect-src 'none';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline' 'unsafe-eval';
+            style-src 'unsafe-inline'; img-src data:; connect-src 'none';">
         <style>
             body { margin: 0; padding: 8px; background: transparent; }
             #chartContainer { width: 100%; height: 100%; min-height: 200px; }
@@ -149,10 +150,10 @@ private fun initializeChart(webView: WebView, chartJsCode: String?) {
     } else {
         webView.evaluateJavascript(
             """
-            var script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-            script.onload = function() { $initScript };
-            document.head.appendChild(script);
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+                script.onload = function() { $initScript };
+                document.head.appendChild(script);
             """.trimIndent(),
         ) { }
     }

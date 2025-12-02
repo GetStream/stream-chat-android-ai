@@ -158,7 +158,9 @@ private suspend fun animateNewContent(
 
 // Splits text into words and whitespace chunks, preserving line breaks.
 private fun splitIntoWords(text: String): List<String> {
-    if (text.isEmpty()) return emptyList()
+    if (text.isEmpty()) {
+        return emptyList()
+    }
 
     val chunks = mutableListOf<String>()
     val lines = text.split('\n')

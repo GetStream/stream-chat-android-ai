@@ -34,10 +34,12 @@ internal object ServiceLocator {
     inline fun <reified T : Any> get(): T =
         services[T::class]?.let { service ->
             when (service) {
-                is Lazy<*> -> (service as Lazy<T>).value
-                else ->
-                    service as? T
-                        ?: throw IllegalStateException("Service ${T::class.simpleName} is registered with wrong type")
+                is Lazy<*> -> {
+                    (service as Lazy<T>).value
+                }
+                else -> {
+                    service as? T ?: error("Service ${T::class.simpleName} is registered with wrong type")
+                }
             }
-        } ?: throw IllegalStateException("Service ${T::class.simpleName} not registered")
+        } ?: error("Service ${T::class.simpleName} not registered")
 }

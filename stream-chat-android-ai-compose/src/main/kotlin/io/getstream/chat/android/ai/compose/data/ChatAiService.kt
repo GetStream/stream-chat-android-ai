@@ -78,14 +78,18 @@ internal class ChatAiService(
 
     private fun <T> handleHttpException(e: HttpException): Result<T> {
         val errorMessage = try {
-            e.response()?.errorBody()?.string()?.let { errorBody ->
-                val errorResponse = moshi.adapter(ErrorResponse::class.java).fromJson(errorBody)
-                errorResponse?.let { it.error + it.reason?.let { reason -> ": $reason" }.orEmpty() }
-            } ?: e.toHttpString()
+            e.fromErrorResponse() ?: e.toHttpString()
         } catch (_: Exception) {
             e.toHttpString()
         }
         return Result.failure(RuntimeException(errorMessage))
+    }
+
+    private fun HttpException.fromErrorResponse(): String? {
+        val errorBody = response()?.errorBody()?.string() ?: return null
+        val errorResponse = moshi.adapter(ErrorResponse::class.java).fromJson(errorBody) ?: return null
+        val reason = errorResponse.reason?.let { ": $it" }.orEmpty()
+        return errorResponse.error + reason
     }
 }
 

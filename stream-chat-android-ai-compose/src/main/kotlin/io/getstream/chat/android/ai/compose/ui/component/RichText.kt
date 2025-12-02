@@ -124,18 +124,24 @@ private val MarkdownComponents = markdownComponents(
  * Extracts the code content from a code fence (without the language identifier).
  */
 private fun extractCodeFenceContent(content: String, node: ASTNode): String? {
-    if (node.type != MarkdownElementTypes.CODE_FENCE) return null
+    if (node.type != MarkdownElementTypes.CODE_FENCE) {
+        return null
+    }
 
     // Get the full text of the code fence node
     val fullText = node.getTextInNode(content).toString()
     val lines = fullText.lines()
 
     // Must have at least opening fence and closing fence
-    if (lines.size < 2) return null
+    if (lines.size < 2) {
+        return null
+    }
 
     // Check if last line is closing fence (starts with ```)
     val lastLine = lines.last().trim()
-    if (!lastLine.startsWith("```")) return null
+    if (!lastLine.startsWith("```")) {
+        return null
+    }
 
     return lines.drop(1).dropLast(1).joinToString("\n").trim()
 }
