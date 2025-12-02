@@ -1,6 +1,9 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import io.getstream.chat.android.ai.Configuration
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.TimeZone
 
 plugins {
     alias(libs.plugins.stream.project)
@@ -22,7 +25,15 @@ detekt {
 }
 
 private val isSnapshot = System.getenv("SNAPSHOT")?.toBoolean() == true
-version = if (isSnapshot) Configuration.snapshotVersionName else Configuration.versionName
+version = if (isSnapshot) {
+    val timestamp = SimpleDateFormat("yyyyMMddHHmmss").run {
+        timeZone = TimeZone.getTimeZone("UTC")
+        format(Date())
+    }
+    "${Configuration.versionName}-${timestamp}-SNAPSHOT"
+} else {
+    Configuration.versionName
+}
 
 subprojects {
     plugins.withId("com.vanniktech.maven.publish") {

@@ -10,6 +10,9 @@
   <a href="https://github.com/GetStream/stream-chat-android-ai/releases">
     <img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai" />
   </a>
+  <a href="https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/">
+    <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot" />
+  </a>
 </p>
 
 <div align="center">
@@ -54,6 +57,22 @@ dependencies {
     implementation("io.getstream:stream-chat-android-ai-compose:$version")
 }
 ```
+
+### Snapshot Releases
+
+To use snapshot releases, you need to add the Sonatype snapshot repository to your `settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
+    }
+}
+```
+
+Find the latest snapshot version in the badge above, or check the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/) for available versions.
 
 ## 🚀 Usage
 
