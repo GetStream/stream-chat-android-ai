@@ -23,8 +23,25 @@ import io.getstream.chat.android.ai.compose.di.NetworkModule
 import io.getstream.chat.android.ai.compose.di.ServiceLocator
 import retrofit2.Retrofit
 
+/**
+ * Main entry point for initializing the Chat AI Compose module.
+ * This object provides the initialization method to set up all required dependencies
+ * for the Chat AI functionality, including network components and repositories.
+ */
 public object ChatAi {
 
+    /**
+     * Initializes the Chat AI module with the required configuration.
+     * This method sets up all necessary dependencies including:
+     * - Network components (Moshi, OkHttp, Retrofit)
+     * - API interfaces
+     * - Repository implementations
+     *
+     * Must be called before using any Chat AI functionality.
+     *
+     * @param baseUrl The base URL of the Chat AI backend server
+     * @param enableLogging Whether to enable HTTP request/response logging. Defaults to true.
+     */
     public fun initialize(
         baseUrl: String,
         enableLogging: Boolean = true,

@@ -34,8 +34,24 @@ import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
 
+/**
+ * Type alias for a composable function that renders rich text content.
+ * Custom implementations can be provided to override the default markdown rendering behavior.
+ */
 public typealias RichTextComponent = @Composable (text: String, modifier: Modifier) -> Unit
 
+/**
+ * Composable that renders rich text content with markdown support.
+ * Supports standard markdown features including code blocks, code fences, and Chart.js diagrams.
+ *
+ * When a code fence is marked with the "chartjs" language, it will be rendered as an interactive
+ * chart diagram instead of plain code.
+ *
+ * @param text The markdown text content to render
+ * @param modifier Modifier to be applied to the rich text container
+ * @param component Custom component for rendering the text. Defaults to markdown rendering with
+ *   Chart.js diagram support.
+ */
 @Composable
 public fun RichText(
     text: String,

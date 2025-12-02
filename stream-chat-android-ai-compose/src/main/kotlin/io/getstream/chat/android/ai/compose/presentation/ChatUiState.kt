@@ -16,6 +16,16 @@
 
 package io.getstream.chat.android.ai.compose.presentation
 
+/**
+ * Represents the UI state for a chat conversation.
+ *
+ * @param isLoading Whether the chat is currently loading initial data
+ * @param title The title of the chat conversation
+ * @param actions Available actions for the chat (e.g., NewChat, DeleteChat)
+ * @param messages List of messages in the conversation, ordered from newest to oldest
+ * @param inputText The current text in the message input field
+ * @param assistantState The current state of the AI assistant
+ */
 public data class ChatUiState(
     val isLoading: Boolean = false,
     val title: String = "New Chat",
@@ -24,34 +34,77 @@ public data class ChatUiState(
     val inputText: String = "",
     val assistantState: AssistantState = AssistantState.Idle,
 ) {
+    /**
+     * Available actions that can be performed on the chat.
+     */
     public enum class Action {
+        /** Action to start a new chat conversation. */
         NewChat,
+
+        /** Action to delete the current chat conversation. */
         DeleteChat,
     }
 
+    /**
+     * Represents a message in the chat conversation.
+     *
+     * @param id Unique identifier for the message
+     * @param role The role of the message sender (Assistant, User, or Other)
+     * @param content The text content of the message
+     */
     public data class Message(
         val id: String,
         val role: Role,
         val content: String,
     ) {
+        /**
+         * Represents the role of a message sender in the conversation.
+         */
         public sealed class Role {
+            /** Message from the AI assistant. */
             public data object Assistant : Role()
+
+            /** Message from the current user. */
             public data object User : Role()
+
+            /** Message from another user. */
             public data object Other : Role()
         }
     }
 
+    /**
+     * Represents the current state of the AI assistant.
+     */
     public enum class AssistantState {
+        /** Assistant is idle and ready. */
         Idle,
+
+        /** Assistant is thinking/processing. */
         Thinking,
+
+        /** Assistant is checking sources. */
         CheckingSources,
+
+        /** Assistant is generating a response. */
         Generating,
+
+        /** Assistant encountered an error. */
         Error,
         ;
 
+        /**
+         * Checks if the assistant is currently busy (not idle and not in error state).
+         *
+         * @return true if the assistant is actively working, false otherwise
+         */
         public fun isBusy(): Boolean = this != Idle && this != Error
     }
 
+    /**
+     * Gets the most recent assistant message from the conversation.
+     *
+     * @return The latest assistant message, or null if there are no assistant messages
+     */
     public fun getCurrentAssistantMessage(): Message? =
         messages.firstOrNull()?.takeIf { message -> message.role == Message.Role.Assistant }
 }

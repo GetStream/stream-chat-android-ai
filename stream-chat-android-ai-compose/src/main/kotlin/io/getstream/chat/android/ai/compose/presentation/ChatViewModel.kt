@@ -51,6 +51,14 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import io.getstream.chat.android.models.Message as StreamMessage
 
+/**
+ * ViewModel for managing chat conversation state and interactions.
+ * Handles message sending, AI agent management, and UI state updates.
+ *
+ * @param chatClient The Stream Chat client instance
+ * @param chatAiRepository Repository for Chat AI operations
+ * @param conversationId Optional conversation ID. If null, a new conversation will be created on first message.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 public class ChatViewModel(
     private val chatClient: ChatClient,
@@ -63,6 +71,11 @@ public class ChatViewModel(
     private val cid = MutableStateFlow(conversationId)
 
     private val _uiState = MutableStateFlow(ChatUiState())
+
+    /**
+     * The current UI state of the chat conversation.
+     * Observing this StateFlow allows the UI to reactively update when the state changes.
+     */
     public val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private val currentUserId = chatClient.clientState.user
@@ -132,7 +145,12 @@ public class ChatViewModel(
 
     /**
      * Sends a message via Stream Chat.
-     * If channelId is null (new chat), creates a new channel first.
+     *
+     * This function:
+     * - Validates that the input text is not empty and the assistant is not busy
+     * - Optimistically updates the UI by adding the message, clearing the input, and setting assistant state to Thinking
+     * - If no channel exists (cid is null), creates a new channel first and queues the message to be sent after the AI agent starts
+     * - If a channel exists, sends the message immediately
      */
     public fun sendMessage() {
         val text = _uiState.value.inputText.trim()

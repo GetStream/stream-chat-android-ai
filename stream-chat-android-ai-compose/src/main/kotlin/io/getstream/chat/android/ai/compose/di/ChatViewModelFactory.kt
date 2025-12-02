@@ -24,8 +24,9 @@ import io.getstream.chat.android.client.ChatClient
 /**
  * Factory for creating ChatViewModel with dependencies.
  *
- * @param chatClient The Stream Chat client instance
- * @param conversationId The optional conversation ID for the chat
+ * @param chatClient The Stream Chat client instance. Defaults to [ChatClient.instance] if not provided.
+ * @param conversationId The optional channel ID (CID) for an existing conversation.
+ * If null, a new conversation will be created when the first message is sent.
  */
 public class ChatViewModelFactory(
     private val chatClient: ChatClient = ChatClient.instance(),
@@ -39,7 +40,7 @@ public class ChatViewModelFactory(
      * @return An instance of ChatViewModel
      * @throws IllegalArgumentException if the ViewModel type is not ChatViewModel
      */
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST", "OutdatedDocumentation")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             "Unknown ViewModel class: ${modelClass.name}"

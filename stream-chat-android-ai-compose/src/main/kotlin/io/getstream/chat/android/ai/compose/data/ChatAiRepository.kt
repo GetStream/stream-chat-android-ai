@@ -27,6 +27,7 @@ public interface ChatAiRepository {
      * @param channelId The channel ID (e.g., "channel-id")
      * @param platform The AI platform to use ("openai", "anthropic", "gemini", or "xai")
      * @param model Optional model override (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")
+     * @return Result containing Unit on success, or an error on failure
      */
     public suspend fun startAIAgent(
         channelType: String,
@@ -39,6 +40,7 @@ public interface ChatAiRepository {
      * Stops the AI agent for the given channel.
      *
      * @param channelId The full identifier for the channel, including type prefix (e.g., "messaging:channel-id")
+     * @return Result containing Unit on success, or an error on failure
      */
     public suspend fun stopAIAgent(channelId: String): Result<Unit>
 
