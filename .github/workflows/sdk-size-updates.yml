@@ -3,7 +3,7 @@ name: SDK size updates
 on:
   push:
     branches:
-      - main
+      - develop
 
   workflow_dispatch:
 
