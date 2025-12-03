@@ -189,7 +189,6 @@ public class SpeechRecognizerHelper(
 
         private fun extractResult(bundle: Bundle?): String? =
             bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-
     }
 }
 
