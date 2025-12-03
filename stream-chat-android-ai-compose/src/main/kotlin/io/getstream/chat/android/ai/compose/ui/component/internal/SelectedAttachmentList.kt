@@ -65,7 +65,7 @@ import kotlinx.coroutines.withContext
  * @param modifier Optional [Modifier] for customizing the layout of the list.
  */
 @Composable
-public fun SelectedAttachmentList(
+internal fun SelectedAttachmentList(
     uris: List<Uri>,
     onRemoveAttachment: (Uri) -> Unit,
     modifier: Modifier = Modifier,
