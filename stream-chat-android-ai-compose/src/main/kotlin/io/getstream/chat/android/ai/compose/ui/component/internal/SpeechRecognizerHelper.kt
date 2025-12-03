@@ -27,7 +27,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
-import io.getstream.chat.android.ai.compose.util.simpleLogger
+import io.getstream.chat.android.ai.compose.util.internal.simpleLogger
 import java.util.Locale
 
 /**

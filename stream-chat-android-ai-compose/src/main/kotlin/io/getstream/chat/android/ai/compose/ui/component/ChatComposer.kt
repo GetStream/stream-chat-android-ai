@@ -63,11 +63,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.R
+import io.getstream.chat.android.ai.compose.ui.component.internal.ChatAiIcons
 import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
 import io.getstream.chat.android.ai.compose.ui.component.internal.rememberPhotoPickerLauncher
 
@@ -214,7 +213,7 @@ public fun ChatComposer(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_add),
+                    imageVector = ChatAiIcons.Add,
                     contentDescription = "Add context",
                 )
             }
@@ -344,7 +343,7 @@ private fun TextField(
                                         onClick = onStopClick,
                                     ) {
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_stop),
+                                            imageVector = ChatAiIcons.Stop,
                                             contentDescription = "Stop",
                                         )
                                     }
@@ -355,7 +354,7 @@ private fun TextField(
                                         onClick = onSendClick,
                                     ) {
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_send),
+                                            imageVector = ChatAiIcons.Send,
                                             contentDescription = "Send",
                                         )
                                     }
