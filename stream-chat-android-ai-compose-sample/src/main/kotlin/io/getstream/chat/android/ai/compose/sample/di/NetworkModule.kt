@@ -27,7 +27,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  * Network module for providing network-related dependencies.
  * This module encapsulates the creation of Retrofit, OkHttp, and Moshi instances.
  */
-internal object NetworkModule {
+public class NetworkModule {
 
     fun createMoshi(): Moshi =
         Moshi.Builder()

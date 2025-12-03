@@ -19,7 +19,7 @@ A lightweight, framework-agnostic UI component library providing AI-focused Comp
 Complete reference implementation showing how to integrate the UI components with Stream Chat, including:
 - ChatViewModel & state management
 - Network layer (Retrofit + custom backend API)
-- Dependency injection (custom ServiceLocator)
+- Dependency wiring via a lightweight `ChatDependencies` holder
 - Full conversation UI with AI agent lifecycle management
 
 **Modules:**
@@ -149,7 +149,7 @@ The `stream-chat-android-ai-compose-sample` module demonstrates a **complete int
 ```
 stream-chat-android-ai-compose-sample/
 └── src/main/kotlin/io/getstream/chat/android/ai/compose/sample/
-    ├── ChatAi.kt                    # Initialization entry point
+    ├── ChatDependencies.kt          # Dependency holder
     ├── App.kt                       # Application class
     ├── presentation/
     │   ├── chat/                    # Chat screen ViewModels
@@ -165,7 +165,6 @@ stream-chat-android-ai-compose-sample/
     │       ├── ChatAiRepository.kt   # Repository interface
     │       └── ChatAiService.kt      # Repository implementation
     ├── di/
-    │   ├── ServiceLocator.kt        # Custom DI container
     │   ├── ChatViewModelFactory.kt  # ViewModel factory
     │   └── NetworkModule.kt         # Retrofit/OkHttp/Moshi setup
     └── ui/                          # Full UI implementation
@@ -222,11 +221,14 @@ The sample app shows one way to integrate with Stream Chat:
 
 **Initialization** (`App.kt`):
 ```kotlin
+lateinit var chatDependencies: ChatDependencies
+    private set
+
 override fun onCreate() {
     // 1. Initialize backend API client
-    ChatAi.initialize(
+    chatDependencies = ChatDependencies(
         baseUrl = "http://10.0.2.2:3000",
-        enableLogging = BuildConfig.DEBUG
+        enableLogging = BuildConfig.DEBUG,
     )
 
     // 2. Initialize Stream Chat
@@ -588,7 +590,7 @@ implementation("io.getstream:stream-chat-android-ai-compose:0.1.0")
 **Enable All Logging:**
 ```kotlin
 // In sample App.kt
-ChatAi.initialize(baseUrl, enableLogging = true)
+ChatDependencies(baseUrl, enableLogging = true)
 ChatClient.Builder(apiKey, context).logLevel(ChatLogLevel.ALL)
 AndroidStreamLogger.installOnDebuggableApp(context)
 ```

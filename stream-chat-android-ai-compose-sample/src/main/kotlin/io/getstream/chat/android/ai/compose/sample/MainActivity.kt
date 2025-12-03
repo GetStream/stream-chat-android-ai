@@ -39,6 +39,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val chatDependencies = (application as App).chatDependencies
+
         setContent {
             AppTheme {
                 val initializationState by ChatClient.instance().clientState.initializationState.collectAsState()
@@ -47,6 +49,7 @@ class MainActivity : ComponentActivity() {
                 ) { state ->
                     if (state == InitializationState.COMPLETE) {
                         AiChatApp(
+                            chatDependencies = chatDependencies,
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {

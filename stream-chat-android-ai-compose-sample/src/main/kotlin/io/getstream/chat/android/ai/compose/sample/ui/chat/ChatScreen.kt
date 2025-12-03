@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.getstream.chat.android.ai.compose.sample.ChatDependencies
 import io.getstream.chat.android.ai.compose.sample.di.ChatViewModelFactory
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState.Action
@@ -68,6 +69,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun ChatScreen(
     conversationId: String?,
+    chatDependencies: ChatDependencies,
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     onNewChatClick: () -> Unit = {},
@@ -76,6 +78,7 @@ fun ChatScreen(
     val chatViewModel = viewModel<ChatViewModel>(
         key = conversationId,
         factory = ChatViewModelFactory(
+            chatAiRepository = chatDependencies.chatAiRepository,
             conversationId = conversationId,
         ),
     )

@@ -58,6 +58,9 @@ dependencies {
 }
 ```
 
+Provide the `ChatAiRepository` parameter via your DI container. The sample app obtains it by creating
+`ChatDependencies(... )`, which surfaces the repository for reuse across the UI layer.
+
 ### Snapshot Releases
 
 To use snapshot releases, you need to add the Sonatype snapshot repository to your `settings.gradle.kts`:
@@ -220,10 +223,16 @@ import io.getstream.chat.android.ai.compose.di.ChatViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun ChatScreen(conversationId: String?) {
+fun ChatScreen(
+    conversationId: String?,
+    chatAiRepository: ChatAiRepository,
+) {
     val viewModel = viewModel<ChatViewModel>(
         key = conversationId,
-        factory = ChatViewModelFactory(conversationId = conversationId)
+        factory = ChatViewModelFactory(
+            chatAiRepository = chatAiRepository,
+            conversationId = conversationId,
+        ),
     )
     
     val state by viewModel.uiState.collectAsState()
@@ -236,6 +245,9 @@ fun ChatScreen(conversationId: String?) {
     }
 }
 ```
+
+Provide the `ChatAiRepository` via your own DI container. The sample app surfaces the repository through a
+`ChatDependencies(...)` instance and passes it to `ChatViewModelFactory`.
 
 **ChatViewModel API:**
 
@@ -303,10 +315,16 @@ val currentMessage = state.getCurrentAssistantMessage()
 
 ```kotlin
 @Composable
-fun ChatScreen(conversationId: String?) {
+fun ChatScreen(
+    conversationId: String?,
+    chatAiRepository: ChatAiRepository,
+) {
     val viewModel = viewModel<ChatViewModel>(
         key = conversationId,
-        factory = ChatViewModelFactory(conversationId = conversationId)
+        factory = ChatViewModelFactory(
+            chatAiRepository = chatAiRepository,
+            conversationId = conversationId,
+        ),
     )
     
     val state by viewModel.uiState.collectAsState()

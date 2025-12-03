@@ -29,11 +29,14 @@ import io.getstream.log.streamLog
 
 class App : Application() {
 
+    lateinit var chatDependencies: ChatDependencies
+        private set
+
     override fun onCreate() {
         setupStrictMode()
         super.onCreate()
 
-        ChatAi.initialize(
+        chatDependencies = ChatDependencies(
             baseUrl = "http://10.0.2.2:3000", // Android emulator localhost
             enableLogging = BuildConfig.DEBUG,
         )
