@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.util
+package io.getstream.chat.android.ai.compose.util.internal
 
 import android.util.Log
 

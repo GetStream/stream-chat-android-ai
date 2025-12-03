@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.ui.components
+@file:Suppress("MatchingDeclarationName")
+
+package io.getstream.chat.android.ai.compose.ui.component
 
 import android.content.res.Configuration
 import android.net.Uri
@@ -39,9 +41,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,24 +62,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.sample.R
-import io.getstream.chat.android.ai.compose.sample.ui.theme.AppTheme
-import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
+import io.getstream.chat.android.ai.compose.ui.component.internal.ChatAiIcons
 import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
 import io.getstream.chat.android.ai.compose.ui.component.internal.rememberPhotoPickerLauncher
-import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextButtonState
-import kotlin.collections.emptyList
 
+/**
+ * Data class representing a message composed by the user.
+ *
+ * @param text The text content of the message.
+ * @param attachments The list of attachment URIs to include with the message.
+ */
 public data class MessageData(
     val text: String = "",
     val attachments: List<Uri> = emptyList(),
 )
 
+/**
+ * Chat composer with internal state management.
+ *
+ * This is a convenience composable that manages the message state internally.
+ * For more control over the state, use the overload that accepts state parameters.
+ *
+ * The composer displays different action buttons based on state:
+ * - Stop button when streaming
+ * - Send button when text is entered
+ * - Voice button when text is empty
+ *
+ * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
+ * @param onStopClick Callback invoked when the stop button is clicked (during AI streaming).
+ * @param isStreaming Whether the AI is currently streaming a response.
+ * @param modifier The modifier to be applied to the composer.
+ */
 @Composable
 public fun ChatComposer(
     onSendClick: (MessageData) -> Unit,
@@ -108,18 +129,32 @@ public fun ChatComposer(
 
 /**
  * Chat composer with attach, voice, and send buttons.
- * Displays different action buttons based on state:
+ *
+ * This composable provides full control over the message state. It displays different
+ * action buttons based on state:
  * - Stop button when streaming
  * - Send button when text is entered
  * - Voice button when text is empty
  *
- * @param text The current text input value
- * @param onTextChange Callback when text changes
- * @param onSendClick Callback when send button is clicked
- * @param onStopClick Callback when stop button is clicked (during streaming)
- * @param isStreaming Whether the AI is currently streaming a response
- * @param modifier Modifier to be applied to the composer
+ * The composer includes:
+ * - Text input field with placeholder
+ * - Attachment button for selecting images
+ * - Voice input button with speech-to-text
+ * - Send button (shown when text is not empty)
+ * - Stop button (shown during AI streaming)
+ * - Visual fade gradient background
+ *
+ * @param text The current text input value.
+ * @param attachments The list of attachment URIs.
+ * @param onTextChange Callback invoked when the text changes.
+ * @param onAttachmentsAdded Callback invoked when new attachments are selected.
+ * @param onAttachmentRemoved Callback invoked when an attachment is removed.
+ * @param onSendClick Callback invoked when the send button is clicked.
+ * @param onStopClick Callback invoked when the stop button is clicked (during streaming).
+ * @param isStreaming Whether the AI is currently streaming a response.
+ * @param modifier The modifier to be applied to the composer.
  */
+@Suppress("LongParameterList")
 @Composable
 public fun ChatComposer(
     text: String,
@@ -162,7 +197,7 @@ public fun ChatComposer(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        ChatFloatingButton(
+        OutlinedIconButton(
             onClick = {
                 photoPickerLauncher.launch(
                     PickVisualMediaRequest(
@@ -171,9 +206,13 @@ public fun ChatComposer(
                     ),
                 )
             },
+            colors = IconButtonDefaults.outlinedIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_add),
+                imageVector = ChatAiIcons.Add,
                 contentDescription = "Add context",
             )
         }
@@ -191,6 +230,7 @@ public fun ChatComposer(
     }
 }
 
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")
 @Composable
 private fun TextField(
     modifier: Modifier,
@@ -281,7 +321,13 @@ private fun TextField(
                             SpeechToTextButton(
                                 state = speechToTextState,
                                 onTextRecognized = { recognizedText ->
-                                    onTextChange(if (currentText.isBlank()) recognizedText else "$currentText $recognizedText")
+                                    onTextChange(
+                                        if (currentText.isBlank()) {
+                                            recognizedText
+                                        } else {
+                                            "$currentText $recognizedText"
+                                        },
+                                    )
                                 },
                             )
                         }
@@ -290,22 +336,26 @@ private fun TextField(
                             targetState = trailingButton,
                         ) { button ->
                             when (button) {
-                                "stop" -> FilledIconButton(
-                                    onClick = onStopClick,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_stop),
-                                        contentDescription = "Stop",
-                                    )
+                                "stop" -> {
+                                    FilledIconButton(
+                                        onClick = onStopClick,
+                                    ) {
+                                        Icon(
+                                            imageVector = ChatAiIcons.Stop,
+                                            contentDescription = "Stop",
+                                        )
+                                    }
                                 }
 
-                                "send" -> FilledIconButton(
-                                    onClick = onSendClick,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_send),
-                                        contentDescription = "Send",
-                                    )
+                                "send" -> {
+                                    FilledIconButton(
+                                        onClick = onSendClick,
+                                    ) {
+                                        Icon(
+                                            imageVector = ChatAiIcons.Send,
+                                            contentDescription = "Send",
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -320,7 +370,7 @@ private fun TextField(
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ChatComposerEmptyPreview() {
-    AppTheme {
+    MaterialTheme {
         ChatComposer(
             text = "",
             attachments = emptyList(),
@@ -338,7 +388,7 @@ private fun ChatComposerEmptyPreview() {
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ChatComposerFilledPreview() {
-    AppTheme {
+    MaterialTheme {
         ChatComposer(
             text = "What is Stream Chat?",
             attachments = emptyList(),
@@ -356,7 +406,7 @@ private fun ChatComposerFilledPreview() {
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ChatComposerStreamingPreview() {
-    AppTheme {
+    MaterialTheme {
         ChatComposer(
             text = "",
             attachments = emptyList(),
