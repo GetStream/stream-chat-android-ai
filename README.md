@@ -35,7 +35,7 @@ animation, perfect for displaying AI-generated responses in real-time, similar t
 **RichText** - a composable that renders markdown content with support for code blocks, code
 fences, and Chart.js diagrams.
 
-**LoadingIndicator** - a component that displays animated loading indicators with optional
+**AITypingIndicator** - a component that displays animated typing indicators with optional
 labels, able to show different states of the LLM (thinking, checking external sources, etc).
 
 **ChatViewModel & ChatUiState** - a ViewModel and state management solution that handles chat
@@ -79,19 +79,19 @@ Find the latest snapshot version in the badge above, or check the [Maven Central
 
 ## 🚀 Usage
 
-### LoadingIndicator
+### AITypingIndicator
 
-`LoadingIndicator` is a composable that displays an animated loading indicator with an optional
+`AITypingIndicator` is a composable that displays an animated typing indicator with an optional
 label. By default, it shows three animated dots that sequentially highlight.
 
 **Basic Usage:**
 
 ```kotlin
-import io.getstream.chat.android.ai.compose.ui.component.LoadingIndicator
+import io.getstream.chat.android.ai.compose.ui.component.AITypingIndicator
 
 @Composable
 fun MyScreen() {
-    LoadingIndicator(
+    AITypingIndicator(
         label = { Text("Thinking") }
     )
 }
@@ -100,7 +100,7 @@ fun MyScreen() {
 **Customization:**
 
 ```kotlin
-LoadingIndicator(
+AITypingIndicator(
     modifier = Modifier.padding(16.dp),
     label = { Text("Processing...") },
     indicator = { 
@@ -352,7 +352,7 @@ fun ChatScreen(
         
         // Loading indicator
         if (state.assistantState.isBusy()) {
-            LoadingIndicator(
+            AITypingIndicator(
                 label = { 
                     Text(
                         when (state.assistantState) {
