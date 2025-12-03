@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.ui.components
+package io.getstream.chat.android.ai.compose.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 @Composable
-public fun WaveformIndicator(
+internal fun WaveformIndicator(
     rmsdB: Float,
     modifier: Modifier = Modifier,
 ) {

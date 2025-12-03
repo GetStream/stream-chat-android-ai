@@ -52,6 +52,8 @@ dependencies {
     detektPlugins(libs.detekt.formatting)
 
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.bundles.androidx.compose)
     implementation(libs.bundles.markdown.renderer)
 
