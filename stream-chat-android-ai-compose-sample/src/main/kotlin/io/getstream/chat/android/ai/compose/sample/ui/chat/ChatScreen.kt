@@ -51,12 +51,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.getstream.chat.android.ai.compose.di.ChatViewModelFactory
-import io.getstream.chat.android.ai.compose.presentation.ChatUiState
-import io.getstream.chat.android.ai.compose.presentation.ChatUiState.Action
-import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
-import io.getstream.chat.android.ai.compose.presentation.getCurrentAssistantMessage
-import io.getstream.chat.android.ai.compose.presentation.isBusy
+import io.getstream.chat.android.ai.compose.sample.ChatDependencies
+import io.getstream.chat.android.ai.compose.sample.di.ChatViewModelFactory
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState.Action
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatViewModel
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.getCurrentAssistantMessage
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.isBusy
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatComposer
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
@@ -68,6 +69,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun ChatScreen(
     conversationId: String?,
+    chatDependencies: ChatDependencies,
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     onNewChatClick: () -> Unit = {},
@@ -76,6 +78,7 @@ fun ChatScreen(
     val chatViewModel = viewModel<ChatViewModel>(
         key = conversationId,
         factory = ChatViewModelFactory(
+            chatAiRepository = chatDependencies.chatAiRepository,
             conversationId = conversationId,
         ),
     )

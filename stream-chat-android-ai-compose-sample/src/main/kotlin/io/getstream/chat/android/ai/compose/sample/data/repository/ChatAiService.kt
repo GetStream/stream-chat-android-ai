@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.data
+package io.getstream.chat.android.ai.compose.sample.data.repository
 
 import com.squareup.moshi.Moshi
+import io.getstream.chat.android.ai.compose.sample.data.api.ChatAiApi
+import io.getstream.chat.android.ai.compose.sample.data.api.ErrorResponse
+import io.getstream.chat.android.ai.compose.sample.data.api.StartAIAgentRequest
+import io.getstream.chat.android.ai.compose.sample.data.api.StopAIAgentRequest
+import io.getstream.chat.android.ai.compose.sample.data.api.SummarizeRequest
 import retrofit2.HttpException
 
 /**

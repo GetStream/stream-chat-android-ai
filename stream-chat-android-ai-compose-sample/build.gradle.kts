@@ -47,6 +47,8 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)
 
+    implementation(libs.bundles.retrofit)
+
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

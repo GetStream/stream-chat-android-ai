@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.getstream.chat.android.ai.compose.sample.ChatDependencies
 import io.getstream.chat.android.ai.compose.sample.di.ConversationListViewModelFactory
 import io.getstream.chat.android.ai.compose.sample.presentation.conversations.ConversationListViewModel
 import io.getstream.chat.android.ai.compose.sample.ui.chat.ChatScreen
@@ -56,6 +57,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 public fun AiChatApp(
+    chatDependencies: ChatDependencies,
     modifier: Modifier = Modifier,
 ) {
     val conversationListViewModel = viewModel<ConversationListViewModel>(factory = ConversationListViewModelFactory())
@@ -120,6 +122,7 @@ public fun AiChatApp(
                     ChatScreen(
                         modifier = Modifier.fillMaxSize(),
                         conversationId = conversationId,
+                        chatDependencies = chatDependencies,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onNewChatClick = {
                             selectedConversationId = null

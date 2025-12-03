@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.data
+package io.getstream.chat.android.ai.compose.sample.data.repository
 
 /**
  * Repository interface for Chat AI operations.
  */
-public interface ChatAiRepository {
+interface ChatAiRepository {
     /**
      * Starts an AI agent for the given channel.
      *
@@ -29,7 +29,7 @@ public interface ChatAiRepository {
      * @param model Optional model override (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")
      * @return Result containing Unit on success, or an error on failure
      */
-    public suspend fun startAIAgent(
+    suspend fun startAIAgent(
         channelType: String,
         channelId: String,
         platform: String,
@@ -42,7 +42,7 @@ public interface ChatAiRepository {
      * @param channelId The full identifier for the channel, including type prefix (e.g., "messaging:channel-id")
      * @return Result containing Unit on success, or an error on failure
      */
-    public suspend fun stopAIAgent(channelId: String): Result<Unit>
+    suspend fun stopAIAgent(channelId: String): Result<Unit>
 
     /**
      * Summarizes a text using the specified AI platform.
@@ -52,7 +52,7 @@ public interface ChatAiRepository {
      * @param model Optional model override (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")
      * @return Result containing the summary string on success
      */
-    public suspend fun summarize(
+    suspend fun summarize(
         text: String,
         platform: String,
         model: String? = null,
