@@ -32,9 +32,6 @@ To start, this library includes the following components which assist with this 
 **StreamingText** - a composable that progressively reveals text content word-by-word with smooth
 animation, perfect for displaying AI-generated responses in real-time, similar to ChatGPT.
 
-**RichText** - a composable that renders markdown content with support for code blocks, code
-fences, and Chart.js diagrams.
-
 **AITypingIndicator** - a component that displays animated typing indicators with optional
 labels, able to show different states of the LLM (thinking, checking external sources, etc).
 
@@ -115,53 +112,12 @@ AITypingIndicator(
 - `label`: Optional composable label to display before the indicator (defaults to empty)
 - `indicator`: Composable indicator to display (defaults to `AnimatedDots`)
 
-### RichText
-
-`RichText` is a composable that renders markdown content with support for code blocks, code
-fences, and Chart.js diagrams.
-
-**Basic Usage:**
-
-```kotlin
-import io.getstream.chat.android.ai.compose.ui.component.RichText
-
-@Composable
-fun MessageContent(text: String) {
-    RichText(
-        text = text,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-```
-
-**Custom Rendering:**
-
-```kotlin
-RichText(
-    text = markdownContent,
-    component = { text, modifier ->
-        // Custom markdown rendering
-        Markdown(text = text, modifier = modifier)
-    }
-)
-```
-
-**Features:**
-- Supports standard markdown syntax
-- Code blocks and code fences with syntax highlighting
-- Chart.js diagrams (when code fence language is `chartjs`)
-- Customizable rendering via `RichTextComponent` type alias
-
-**Parameters:**
-- `text`: The markdown text content to render
-- `modifier`: Modifier to be applied to the rich text container
-- `component`: Custom component for rendering (defaults to markdown rendering with Chart.js
-  support)
-
 ### StreamingText
 
 `StreamingText` progressively reveals text content word-by-word with smooth animation, perfect
-for displaying AI-generated responses.
+for displaying AI-generated responses. By default it renders the streamed text using the same
+markdown formatter as the sample app, so you can drop it directly into chat bubbles without any
+extra setup.
 
 **Basic Usage:**
 
@@ -175,10 +131,8 @@ fun AssistantMessage(
 ) {
     StreamingText(
         text = text,
-        animate = isGenerating
-    ) { displayedText ->
-        RichText(text = displayedText)
-    }
+        animate = isGenerating,
+    )
 }
 ```
 
@@ -208,7 +162,8 @@ StreamingText(
 - `text`: The full text content to display
 - `animate`: Whether to animate the text reveal (default: `true`)
 - `chunkDelayMs`: Delay in milliseconds between each chunk reveal (default: `30`)
-- `content`: Composable that receives the animated text as `displayedText`
+- `content`: Optional composable that receives the animated text as `displayedText`. Defaults to
+  the library's markdown renderer used across the sample app.
 
 ### ChatViewModel and ChatUiState
 
@@ -337,13 +292,14 @@ fun ChatScreen(
                     ChatUiState.Message.Role.Assistant -> {
                         StreamingText(
                             text = message.content,
-                            animate = message.isGenerating
-                        ) { displayedText ->
-                            RichText(text = displayedText)
-                        }
+                            animate = message.isGenerating,
+                        )
                     }
                     ChatUiState.Message.Role.User -> {
-                        RichText(text = message.content)
+                        StreamingText(
+                            text = message.content,
+                            animate = false,
+                        )
                     }
                     else -> { /* Other users */ }
                 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.ui.component
+package io.getstream.chat.android.ai.compose.ui.component.internal
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,7 +30,6 @@ import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCode
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeBlock
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.model.rememberMarkdownState
-import io.getstream.chat.android.ai.compose.ui.component.internal.ChartJsDiagram
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
@@ -39,7 +38,7 @@ import org.intellij.markdown.ast.getTextInNode
  * Type alias for a composable function that renders rich text content.
  * Custom implementations can be provided to override the default markdown rendering behavior.
  */
-public typealias RichTextComponent = @Composable (text: String, modifier: Modifier) -> Unit
+internal typealias RichTextComponent = @Composable (text: String, modifier: Modifier) -> Unit
 
 /**
  * Composable that renders rich text content with markdown support.
@@ -54,7 +53,7 @@ public typealias RichTextComponent = @Composable (text: String, modifier: Modifi
  *   Chart.js diagram support.
  */
 @Composable
-public fun RichText(
+internal fun RichText(
     text: String,
     modifier: Modifier = Modifier,
     component: RichTextComponent = DefaultRichTextComponent,
