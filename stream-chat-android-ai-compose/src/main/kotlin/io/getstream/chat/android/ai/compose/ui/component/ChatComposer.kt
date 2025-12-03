@@ -419,4 +419,3 @@ private fun ChatComposerStreamingPreview() {
         )
     }
 }
-
