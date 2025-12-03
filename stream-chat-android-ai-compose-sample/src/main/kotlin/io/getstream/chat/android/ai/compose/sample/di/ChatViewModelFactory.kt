@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.di
+package io.getstream.chat.android.ai.compose.sample.di
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatViewModel
 import io.getstream.chat.android.client.ChatClient
 
 /**
@@ -28,7 +28,7 @@ import io.getstream.chat.android.client.ChatClient
  * @param conversationId The optional channel ID (CID) for an existing conversation.
  * If null, a new conversation will be created when the first message is sent.
  */
-public class ChatViewModelFactory(
+class ChatViewModelFactory(
     private val chatClient: ChatClient = ChatClient.instance(),
     private val conversationId: String?,
 ) : ViewModelProvider.Factory {

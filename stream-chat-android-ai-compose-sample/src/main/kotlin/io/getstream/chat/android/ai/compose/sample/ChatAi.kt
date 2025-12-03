@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose
+package io.getstream.chat.android.ai.compose.sample
 
-import io.getstream.chat.android.ai.compose.data.ChatAiApi
-import io.getstream.chat.android.ai.compose.data.ChatAiRepository
-import io.getstream.chat.android.ai.compose.data.ChatAiService
-import io.getstream.chat.android.ai.compose.di.NetworkModule
-import io.getstream.chat.android.ai.compose.di.ServiceLocator
+import io.getstream.chat.android.ai.compose.sample.data.api.ChatAiApi
+import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiRepository
+import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiService
+import io.getstream.chat.android.ai.compose.sample.di.NetworkModule
+import io.getstream.chat.android.ai.compose.sample.di.ServiceLocator
 import retrofit2.Retrofit
 
 /**
@@ -28,7 +28,7 @@ import retrofit2.Retrofit
  * This object provides the initialization method to set up all required dependencies
  * for the Chat AI functionality, including network components and repositories.
  */
-public object ChatAi {
+object ChatAi {
 
     /**
      * Initializes the Chat AI module with the required configuration.
@@ -42,7 +42,7 @@ public object ChatAi {
      * @param baseUrl The base URL of the Chat AI backend server
      * @param enableLogging Whether to enable HTTP request/response logging. Defaults to true.
      */
-    public fun initialize(
+    fun initialize(
         baseUrl: String,
         enableLogging: Boolean = true,
     ) {

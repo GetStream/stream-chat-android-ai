@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.presentation
+package io.getstream.chat.android.ai.compose.sample.presentation.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.getstream.chat.android.ai.compose.data.ChatAiRepository
-import io.getstream.chat.android.ai.compose.domain.isFromAi
+import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiRepository
+import io.getstream.chat.android.ai.compose.sample.domain.isFromAi
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.channel.subscribeFor
 import io.getstream.chat.android.client.events.AIIndicatorClearEvent
@@ -60,7 +60,7 @@ import io.getstream.chat.android.models.Message as StreamMessage
  * @param conversationId Optional conversation ID. If null, a new conversation will be created on first message.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-public class ChatViewModel(
+class ChatViewModel(
     private val chatClient: ChatClient,
     private val chatAiRepository: ChatAiRepository,
     conversationId: String?,
@@ -76,7 +76,7 @@ public class ChatViewModel(
      * The current UI state of the chat conversation.
      * Observing this StateFlow allows the UI to reactively update when the state changes.
      */
-    public val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private val currentUserId = chatClient.clientState.user
         .mapNotNull { user -> user?.id }
@@ -139,7 +139,7 @@ public class ChatViewModel(
     /**
      * Updates the input text state when the user types in the input field.
      */
-    public fun onInputTextChange(text: String) {
+    fun onInputTextChange(text: String) {
         _uiState.update { state -> state.copy(inputText = text) }
     }
 
@@ -152,7 +152,7 @@ public class ChatViewModel(
      * - If no channel exists (cid is null), creates a new channel first and queues the message to be sent after the AI agent starts
      * - If a channel exists, sends the message immediately
      */
-    public fun sendMessage() {
+    fun sendMessage() {
         val text = _uiState.value.inputText.trim()
         if (text.isEmpty() || _uiState.value.assistantState.isBusy()) {
             return
@@ -264,7 +264,7 @@ public class ChatViewModel(
      * Stops the current streaming response by sending an AI typing indicator stop event to the server.
      * This tells the AI agent to stop generating content for the current message.
      */
-    public fun stopStreaming() {
+    fun stopStreaming() {
         val cid = cid.value ?: run {
             logger.d { "No channel available to stop streaming" }
             return
@@ -319,7 +319,7 @@ public class ChatViewModel(
      * @param onSuccess Callback invoked when the channel is successfully deleted
      * @param onError Callback invoked when deletion fails, with the error details
      */
-    public fun deleteChannel(
+    fun deleteChannel(
         onSuccess: () -> Unit = {},
         onError: (Error) -> Unit = {},
     ) {

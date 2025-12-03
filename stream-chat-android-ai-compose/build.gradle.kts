@@ -51,19 +51,11 @@ tasks.withType<KotlinCompile>().configureEach {
 dependencies {
     detektPlugins(libs.detekt.formatting)
 
-    implementation(libs.bundles.stream.chat)
-
-    implementation(libs.kotlinx.coroutines.core)
-
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.bundles.androidx.compose)
     implementation(libs.bundles.markdown.renderer)
 
-    implementation(libs.bundles.retrofit)
-
     testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

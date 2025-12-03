@@ -30,7 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.presentation.ChatUiState
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState
 import io.getstream.chat.android.ai.compose.ui.component.RichText
 import io.getstream.chat.android.ai.compose.ui.component.StreamingText
 

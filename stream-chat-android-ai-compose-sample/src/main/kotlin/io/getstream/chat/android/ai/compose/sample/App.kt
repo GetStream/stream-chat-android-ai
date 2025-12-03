@@ -18,7 +18,6 @@ package io.getstream.chat.android.ai.compose.sample
 
 import android.app.Application
 import android.os.StrictMode
-import io.getstream.chat.android.ai.compose.ChatAi
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogLevel
 import io.getstream.chat.android.models.User

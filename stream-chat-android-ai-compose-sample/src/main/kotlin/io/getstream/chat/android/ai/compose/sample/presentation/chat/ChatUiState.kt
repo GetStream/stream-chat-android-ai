@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.presentation
+package io.getstream.chat.android.ai.compose.sample.presentation.chat
 
 /**
  * Represents the UI state for a chat conversation.
@@ -26,7 +26,7 @@ package io.getstream.chat.android.ai.compose.presentation
  * @param inputText The current text in the message input field
  * @param assistantState The current state of the AI assistant
  */
-public data class ChatUiState(
+data class ChatUiState(
     val isLoading: Boolean = false,
     val title: String = "New Chat",
     val actions: List<Action> = emptyList(),
@@ -37,7 +37,7 @@ public data class ChatUiState(
     /**
      * Available actions that can be performed on the chat.
      */
-    public enum class Action {
+    enum class Action {
         /** Action to start a new chat conversation. */
         NewChat,
 
@@ -52,7 +52,7 @@ public data class ChatUiState(
      * @param role The role of the message sender (Assistant, User, or Other)
      * @param content The text content of the message
      */
-    public data class Message(
+    data class Message(
         val id: String,
         val role: Role,
         val content: String,
@@ -61,22 +61,22 @@ public data class ChatUiState(
         /**
          * Represents the role of a message sender in the conversation.
          */
-        public sealed class Role {
+        sealed class Role {
             /** Message from the AI assistant. */
-            public data object Assistant : Role()
+            data object Assistant : Role()
 
             /** Message from the current user. */
-            public data object User : Role()
+            data object User : Role()
 
             /** Message from another user. */
-            public data object Other : Role()
+            data object Other : Role()
         }
     }
 
     /**
      * Represents the current state of the AI assistant.
      */
-    public enum class AssistantState {
+    enum class AssistantState {
         /** Assistant is idle and ready. */
         Idle,
 
@@ -99,7 +99,7 @@ public data class ChatUiState(
  *
  * @return true if the assistant is actively working, false otherwise
  */
-public fun ChatUiState.AssistantState.isBusy(): Boolean =
+fun ChatUiState.AssistantState.isBusy(): Boolean =
     this != ChatUiState.AssistantState.Idle && this != ChatUiState.AssistantState.Error
 
 /**
@@ -107,5 +107,5 @@ public fun ChatUiState.AssistantState.isBusy(): Boolean =
  *
  * @return The latest assistant message, or null if there are no assistant messages
  */
-public fun ChatUiState.getCurrentAssistantMessage(): ChatUiState.Message? =
+fun ChatUiState.getCurrentAssistantMessage(): ChatUiState.Message? =
     messages.firstOrNull()?.takeIf { message -> message.role == ChatUiState.Message.Role.Assistant }

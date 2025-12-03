@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.domain
+package io.getstream.chat.android.ai.compose.sample.domain
 
 import io.getstream.chat.android.models.Message
 
