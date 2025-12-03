@@ -279,8 +279,18 @@ private fun ConditionalAnimatedContent(
 
 @Preview(showBackground = true)
 @Composable
-private fun SpeechToTextButtonPreview() {
+private fun SpeechToTextButtonIdlePreview() {
     SpeechToTextButton(
+        onTextRecognized = {},
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SpeechToTextButtonRecordingPreview() {
+    val state = rememberSpeechToTextButtonState().apply { isRecordingState = true }
+    SpeechToTextButton(
+        state = state,
         onTextRecognized = {},
     )
 }
