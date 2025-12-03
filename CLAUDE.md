@@ -11,7 +11,6 @@ A lightweight, framework-agnostic UI component library providing AI-focused Comp
 
 **Key Components (All in SDK):**
 - `StreamingText`: Progressively reveals text word-by-word (ChatGPT-like streaming animation)
-- `RichText`: Renders Markdown with code blocks and Chart.js diagrams
 - `AITypingIndicator`: Animated typing states for AI thinking/processing
 - `ChartJsDiagram`: WebView-based Chart.js rendering for AI-generated charts
 
@@ -123,10 +122,11 @@ The `stream-chat-android-ai-compose` module is a **lightweight, framework-agnost
 stream-chat-android-ai-compose/
 └── src/main/kotlin/io/getstream/chat/android/ai/compose/
     └── ui/component/
-        ├── StreamingText.kt      # Word-by-word streaming animation
-        ├── RichText.kt           # Markdown renderer with Chart.js support
-        ├── AITypingIndicator.kt  # Animated AI state indicators
-        └── ChartJsDiagram.kt     # WebView-based Chart.js renderer
+        ├── StreamingText.kt          # Word-by-word streaming animation
+        ├── AITypingIndicator.kt      # Animated AI state indicators
+        └── internal/
+            ├── RichText.kt           # Markdown renderer with Chart.js support
+            └── ChartJsDiagram.kt     # WebView-based Chart.js renderer
 ```
 
 **Dependencies (SDK):**
@@ -189,19 +189,6 @@ StreamingText(
     text = "Your AI response text here",
     animate = true,  // Enable streaming animation
     chunkDelayMs = 30  // Delay between words
-) { displayedText ->
-    Text(displayedText)
-}
-
-// RichText: Render markdown with code blocks
-RichText(
-    text = """
-        # Hello
-        ```kotlin
-        fun example() = "code"
-        ```
-    """,
-    modifier = Modifier.fillMaxWidth()
 )
 
 // AITypingIndicator: Show AI thinking state
@@ -284,7 +271,7 @@ if (text.startsWith(previousText)) {
 1. Try to load `chart.umd.min.js` from assets (offline)
 2. Fallback to CDN: `https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js`
 
-**Chart Detection in RichText:**
+**Chart Detection in StreamingText's Renderer:**
 ```kotlin
 if (language?.lowercase() == "chartjs" && codeContent != null) {
     ChartJsDiagram(chartJsJson = codeContent)
@@ -368,10 +355,8 @@ fun ChatScreen(state: YourChatState) {
                 // Use SDK streaming component
                 StreamingText(
                     text = message.content,
-                    animate = message.isGenerating
-                ) { displayedText ->
-                    RichText(text = displayedText)
-                }
+                    animate = message.isGenerating,
+                )
             } else {
                 // Your user message UI
                 Text(message.content)

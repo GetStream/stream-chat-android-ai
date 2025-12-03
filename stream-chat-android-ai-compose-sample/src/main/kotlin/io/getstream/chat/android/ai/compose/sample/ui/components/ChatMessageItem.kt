@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState
-import io.getstream.chat.android.ai.compose.ui.component.RichText
 import io.getstream.chat.android.ai.compose.ui.component.StreamingText
 import io.getstream.chat.android.compose.state.messages.attachments.AttachmentState
 import io.getstream.chat.android.compose.ui.attachments.content.MediaAttachmentContent
@@ -64,11 +63,7 @@ public fun ChatMessageItem(
                     StreamingText(
                         text = message.content,
                         animate = message.isGenerating,
-                    ) { displayedText ->
-                        RichText(
-                            text = displayedText,
-                        )
-                    }
+                    )
                 }
 
                 ChatUiState.Message.Role.User -> {
@@ -88,8 +83,9 @@ public fun ChatMessageItem(
                                     )
                                 }
                             }
-                            RichText(
+                            StreamingText(
                                 text = message.content,
+                                animate = false,
                             )
                         }
                     }
@@ -97,8 +93,9 @@ public fun ChatMessageItem(
 
                 ChatUiState.Message.Role.Other -> {
                     MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
-                        RichText(
+                        StreamingText(
                             text = message.content,
+                            animate = false,
                         )
                     }
                     Spacer(modifier = Modifier.weight(.2f))
