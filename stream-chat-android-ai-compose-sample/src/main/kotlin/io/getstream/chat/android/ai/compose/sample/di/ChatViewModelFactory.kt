@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider
 import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiRepository
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatViewModel
 import io.getstream.chat.android.client.ChatClient
+import io.getstream.chat.android.compose.ui.util.StorageHelperWrapper
 
 /**
  * Factory for creating ChatViewModel with dependencies.
@@ -29,11 +30,13 @@ import io.getstream.chat.android.client.ChatClient
  * @param chatClient The Stream Chat client instance. Defaults to [ChatClient.instance] if not provided.
  * @param conversationId The optional channel ID (CID) for an existing conversation.
  * If null, a new conversation will be created when the first message is sent.
+ * @param storageHelper Helper for storage-related operations (reading attachment file from URI).
  */
 class ChatViewModelFactory(
     private val chatAiRepository: ChatAiRepository,
     private val chatClient: ChatClient = ChatClient.instance(),
     private val conversationId: String?,
+    private val storageHelper: StorageHelperWrapper,
 ) : ViewModelProvider.Factory {
 
     /**
@@ -52,6 +55,7 @@ class ChatViewModelFactory(
             chatClient = chatClient,
             chatAiRepository = chatAiRepository,
             conversationId = conversationId,
+            storageHelper = storageHelper,
         ) as T
     }
 }

@@ -16,6 +16,9 @@
 
 package io.getstream.chat.android.ai.compose.sample.presentation.chat
 
+import android.net.Uri
+import io.getstream.chat.android.models.Attachment
+
 /**
  * Represents the UI state for a chat conversation.
  *
@@ -24,6 +27,7 @@ package io.getstream.chat.android.ai.compose.sample.presentation.chat
  * @param actions Available actions for the chat (e.g., NewChat, DeleteChat)
  * @param messages List of messages in the conversation, ordered from newest to oldest
  * @param inputText The current text in the message input field
+ * @param attachments List of URIs representing attachments added to the message
  * @param assistantState The current state of the AI assistant
  */
 data class ChatUiState(
@@ -32,6 +36,7 @@ data class ChatUiState(
     val actions: List<Action> = emptyList(),
     val messages: List<Message> = emptyList(),
     val inputText: String = "",
+    val attachments: List<Uri> = emptyList(),
     val assistantState: AssistantState = AssistantState.Idle,
 ) {
     /**
@@ -51,11 +56,14 @@ data class ChatUiState(
      * @param id Unique identifier for the message
      * @param role The role of the message sender (Assistant, User, or Other)
      * @param content The text content of the message
+     * @param attachments List of attachments associated with the message
+     * @param isGenerating Indicates if the message is currently being generated
      */
     data class Message(
         val id: String,
         val role: Role,
         val content: String,
+        val attachments: List<Attachment>,
         val isGenerating: Boolean,
     ) {
         /**
