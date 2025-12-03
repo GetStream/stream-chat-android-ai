@@ -218,7 +218,7 @@ private fun RemoveButton(
             .clickable { onRemove() },
     ) {
         Icon(
-            painter = painterResource(R.drawable.ic_remove),
+            painter = painterResource(R.drawable.stream_ai_compose_ic_cancel),
             tint = Color.LightGray,
             contentDescription = "Remove attachment",
         )
