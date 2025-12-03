@@ -54,7 +54,7 @@ import io.getstream.chat.android.ai.compose.sample.ui.components.ChatComposer
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatTopBar
-import io.getstream.chat.android.ai.compose.ui.component.LoadingIndicator
+import io.getstream.chat.android.ai.compose.ui.component.AITypingIndicator
 import kotlinx.coroutines.delay
 
 @Composable
@@ -241,7 +241,7 @@ private fun AssistantLoadingIndicator(
     }
     if (text != null) {
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
-            LoadingIndicator(
+            AITypingIndicator(
                 modifier = modifier,
                 label = { Text(text = text) },
             )

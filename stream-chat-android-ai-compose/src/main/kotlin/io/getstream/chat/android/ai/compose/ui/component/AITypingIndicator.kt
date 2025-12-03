@@ -40,7 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 /**
- * A loading indicator composable that displays an optional label and an animated indicator.
+ * A typing indicator composable that displays an optional label and an animated indicator.
  *
  * By default, displays three animated dots that sequentially highlight in a smooth, overlapping
  * animation. The indicator uses [LocalContentColor] to match the current theme's content color.
@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.dp
  *   animated dots with sequential highlighting.
  */
 @Composable
-public fun LoadingIndicator(
+public fun AITypingIndicator(
     modifier: Modifier = Modifier,
     label: @Composable () -> Unit = {},
     indicator: @Composable () -> Unit = { AnimatedDots() },
@@ -169,6 +169,6 @@ private const val SMOOTHSTEP_FACTOR_2 = 2f
 
 @Preview(showBackground = true)
 @Composable
-private fun LoadingIndicatorPreview() {
-    LoadingIndicator(label = { Text("Thinking") })
+private fun AITypingIndicatorPreview() {
+    AITypingIndicator(label = { Text("Thinking") })
 }

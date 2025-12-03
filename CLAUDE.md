@@ -12,7 +12,7 @@ A lightweight, framework-agnostic UI component library providing AI-focused Comp
 **Key Components (All in SDK):**
 - `StreamingText`: Progressively reveals text word-by-word (ChatGPT-like streaming animation)
 - `RichText`: Renders Markdown with code blocks and Chart.js diagrams
-- `LoadingIndicator`: Animated loading states for AI thinking/processing
+- `AITypingIndicator`: Animated typing states for AI thinking/processing
 - `ChartJsDiagram`: WebView-based Chart.js rendering for AI-generated charts
 
 **Sample Module (`stream-chat-android-ai-compose-sample`):**
@@ -125,7 +125,7 @@ stream-chat-android-ai-compose/
     └── ui/component/
         ├── StreamingText.kt      # Word-by-word streaming animation
         ├── RichText.kt           # Markdown renderer with Chart.js support
-        ├── LoadingIndicator.kt   # Animated AI state indicators
+        ├── AITypingIndicator.kt  # Animated AI state indicators
         └── ChartJsDiagram.kt     # WebView-based Chart.js renderer
 ```
 
@@ -204,8 +204,8 @@ RichText(
     modifier = Modifier.fillMaxWidth()
 )
 
-// LoadingIndicator: Show AI thinking state
-LoadingIndicator(
+// AITypingIndicator: Show AI thinking state
+AITypingIndicator(
     label = { Text("AI is thinking...") }
 )
 
@@ -379,7 +379,7 @@ fun ChatScreen(state: YourChatState) {
         }
 
         if (state.isAiTyping) {
-            item { LoadingIndicator() }
+            item { AITypingIndicator() }
         }
     }
 }
