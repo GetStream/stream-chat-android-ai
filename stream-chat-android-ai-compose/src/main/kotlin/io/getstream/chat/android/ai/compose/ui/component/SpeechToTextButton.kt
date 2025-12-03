@@ -45,6 +45,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import io.getstream.chat.android.ai.compose.R
+import io.getstream.chat.android.ai.compose.ui.component.internal.WaveformIndicator
+import io.getstream.chat.android.ai.compose.ui.component.internal.rememberSpeechRecognizerHelper
 
 /**
  * State holder for [SpeechToTextButton] that tracks the recording status.
@@ -104,7 +106,7 @@ public fun rememberSpeechToTextButtonState(): SpeechToTextButtonState =
  * @param cancelButton Composable for the cancel button. Defaults to a cancel icon that appears
  *   when recording.
  * @param waveformIndicator Composable for the waveform visualization. Defaults to a
- *   [WaveformIndicator] that shows audio levels during recording.
+ *   [io.getstream.chat.android.ai.compose.ui.component.internal.WaveformIndicator] that shows audio levels during recording.
  * @param seeTextButton Composable for the "See text" button. Defaults to a text button that
  *   appears when recording.
  *
