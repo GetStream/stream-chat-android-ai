@@ -18,6 +18,7 @@
 
 package io.getstream.chat.android.ai.compose.ui.component
 
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -63,6 +64,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.ui.component.internal.ChatAiIcons
 import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
@@ -363,3 +365,58 @@ private fun TextField(
         },
     )
 }
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerEmptyPreview() {
+    MaterialTheme {
+        ChatComposer(
+            text = "",
+            attachments = emptyList(),
+            onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerFilledPreview() {
+    MaterialTheme {
+        ChatComposer(
+            text = "What is Stream Chat?",
+            attachments = emptyList(),
+            onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerStreamingPreview() {
+    MaterialTheme {
+        ChatComposer(
+            text = "",
+            attachments = emptyList(),
+            onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = true,
+        )
+    }
+}
+
