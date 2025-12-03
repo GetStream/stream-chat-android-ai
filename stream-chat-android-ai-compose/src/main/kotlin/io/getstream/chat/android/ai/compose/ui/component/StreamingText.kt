@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import io.getstream.chat.android.ai.compose.ui.component.internal.RichText
 import kotlinx.coroutines.delay
 
 /**
@@ -47,7 +48,9 @@ public fun StreamingText(
     text: String,
     animate: Boolean = true,
     chunkDelayMs: Long = 30,
-    content: @Composable (displayedText: String) -> Unit,
+    content: @Composable (displayedText: String) -> Unit = { displayedText ->
+        RichText(text = displayedText)
+    },
 ) {
     // Track the displayed text for animation
     var displayedText by remember { mutableStateOf("") }
