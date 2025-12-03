@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.sample.ui.utils
+package io.getstream.chat.android.ai.compose.ui.component
 
 import android.content.Context
 import android.content.Intent
@@ -26,20 +26,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import io.getstream.log.taggedLogger
+import androidx.compose.ui.platform.LocalInspectionMode
+import io.getstream.chat.android.ai.compose.util.simpleLogger
 import java.util.Locale
 
 /**
- * Helper class to manage speech recognition using Android's SpeechRecognizer API.
- * Recording stops only when manually cancelled, not on timeout.
+ * Interface for speech recognition helper.
+ * Manages speech recognition using Android's SpeechRecognizer API.
  */
-public class SpeechRecognizerHelper(
+internal interface SpeechRecognizerHelper {
+    fun startListening(): Boolean
+    fun stopListening()
+    fun cancel()
+    fun release()
+    fun isListening(): Boolean
+}
+
+/**
+ * Default implementation of SpeechRecognizerHelper.
+ */
+private class DefaultSpeechRecognizerHelper(
     context: Context,
     private val onResult: (String) -> Unit,
     private val onError: (String) -> Unit,
     private val onRmsChanged: ((Float) -> Unit)? = null,
-) {
-    private val logger by taggedLogger("SpeechRecognizerHelper")
+) : SpeechRecognizerHelper {
+    private val logger = simpleLogger("SpeechRecognizerHelper")
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var lastPartialResult: String? = null
@@ -53,7 +65,7 @@ public class SpeechRecognizerHelper(
         }
     }
 
-    public fun startListening(): Boolean {
+    override fun startListening(): Boolean {
         if (isListening) return false
 
         val recognizer = speechRecognizer ?: run {
@@ -73,25 +85,25 @@ public class SpeechRecognizerHelper(
         }
     }
 
-    public fun stopListening() {
+    override fun stopListening() {
         if (!isListening) return
         speechRecognizer?.stopListening()
         isListening = false
     }
 
-    public fun cancel() {
+    override fun cancel() {
         speechRecognizer?.cancel()
         isListening = false
     }
 
-    public fun release() {
+    override fun release() {
         speechRecognizer?.cancel()
         speechRecognizer?.destroy()
         speechRecognizer = null
         isListening = false
     }
 
-    public fun isListening(): Boolean = isListening
+    override fun isListening(): Boolean = isListening
 
     private fun createRecognitionIntent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -192,15 +204,41 @@ public class SpeechRecognizerHelper(
     }
 }
 
+/**
+ * No-op implementation of SpeechRecognizerHelper for preview mode.
+ */
+private class NoOpSpeechRecognizerHelper : SpeechRecognizerHelper {
+    override fun startListening(): Boolean = false
+
+    override fun stopListening() {
+        // No-op
+    }
+
+    override fun cancel() {
+        // No-op
+    }
+
+    override fun release() {
+        // No-op
+    }
+
+    override fun isListening(): Boolean = false
+}
+
 @Composable
-public fun rememberSpeechRecognizerHelper(
+internal fun rememberSpeechRecognizerHelper(
     onResult: (String) -> Unit,
     onError: (String) -> Unit,
     onRmsChanged: ((Float) -> Unit)? = null,
 ): SpeechRecognizerHelper {
     val context = LocalContext.current
+    val isInPreview = LocalInspectionMode.current
     val helper = remember {
-        SpeechRecognizerHelper(context, onResult, onError, onRmsChanged)
+        if (isInPreview) {
+            NoOpSpeechRecognizerHelper()
+        } else {
+            DefaultSpeechRecognizerHelper(context, onResult, onError, onRmsChanged)
+        }
     }
 
     DisposableEffect(Unit) {
