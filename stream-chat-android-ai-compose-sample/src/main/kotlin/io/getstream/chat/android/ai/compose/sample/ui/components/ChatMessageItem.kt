@@ -20,6 +20,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +33,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState
 import io.getstream.chat.android.ai.compose.ui.component.StreamingText
+import io.getstream.chat.android.compose.state.messages.attachments.AttachmentState
+import io.getstream.chat.android.compose.ui.attachments.content.MediaAttachmentContent
+import io.getstream.chat.android.compose.ui.theme.ChatTheme
+import io.getstream.chat.android.models.Message
 
 /**
  * Displays a single chat message with proper styling based on role.
@@ -64,10 +69,25 @@ public fun ChatMessageItem(
                 ChatUiState.Message.Role.User -> {
                     Spacer(modifier = Modifier.weight(.2f))
                     MessageBubble(modifier = Modifier.weight(.8f, fill = false)) {
-                        StreamingText(
-                            text = message.content,
-                            animate = false,
-                        )
+                        Column {
+                            if (message.attachments.isNotEmpty()) {
+                                ChatTheme {
+                                    MediaAttachmentContent(
+                                        state = AttachmentState(
+                                            message = Message(
+                                                text = message.content,
+                                                attachments = message.attachments,
+                                            ),
+                                            isMine = true,
+                                        ),
+                                    )
+                                }
+                            }
+                            StreamingText(
+                                text = message.content,
+                                animate = false,
+                            )
+                        }
                     }
                 }
 

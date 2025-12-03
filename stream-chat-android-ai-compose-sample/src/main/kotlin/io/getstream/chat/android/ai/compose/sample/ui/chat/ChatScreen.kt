@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.getstream.chat.android.ai.compose.sample.ChatDependencies
@@ -55,6 +56,7 @@ import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatTopBar
 import io.getstream.chat.android.ai.compose.ui.component.AITypingIndicator
+import io.getstream.chat.android.compose.ui.util.StorageHelperWrapper
 import kotlinx.coroutines.delay
 
 @Composable
@@ -66,11 +68,13 @@ fun ChatScreen(
     onNewChatClick: () -> Unit = {},
     onChatDeleted: () -> Unit = {},
 ) {
+    val appContext = LocalContext.current.applicationContext
     val chatViewModel = viewModel<ChatViewModel>(
         key = conversationId,
         factory = ChatViewModelFactory(
             chatAiRepository = chatDependencies.chatAiRepository,
             conversationId = conversationId,
+            storageHelper = StorageHelperWrapper(appContext),
         ),
     )
 
@@ -130,6 +134,9 @@ fun ChatScreen(
             ChatComposer(
                 modifier = modifier,
                 text = state.inputText,
+                attachments = state.attachments,
+                onAttachmentsAdded = chatViewModel::onAttachmentsAdded,
+                onAttachmentRemoved = chatViewModel::onAttachmentRemoved,
                 onTextChange = chatViewModel::onInputTextChange,
                 onSendClick = chatViewModel::sendMessage,
                 onStopClick = chatViewModel::stopStreaming,

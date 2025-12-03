@@ -16,6 +16,7 @@
 
 package io.getstream.chat.android.ai.compose.sample.presentation.chat
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiRepository
@@ -27,6 +28,7 @@ import io.getstream.chat.android.client.events.AIIndicatorStopEvent
 import io.getstream.chat.android.client.events.AIIndicatorUpdatedEvent
 import io.getstream.chat.android.client.events.ChatEvent
 import io.getstream.chat.android.client.extensions.cidToTypeAndId
+import io.getstream.chat.android.compose.ui.util.StorageHelperWrapper
 import io.getstream.chat.android.models.ChannelCapabilities
 import io.getstream.chat.android.models.EventType
 import io.getstream.chat.android.models.User
@@ -63,6 +65,7 @@ import io.getstream.chat.android.models.Message as StreamMessage
 class ChatViewModel(
     private val chatClient: ChatClient,
     private val chatAiRepository: ChatAiRepository,
+    private val storageHelper: StorageHelperWrapper,
     conversationId: String?,
 ) : ViewModel() {
 
@@ -144,6 +147,24 @@ class ChatViewModel(
     }
 
     /**
+     * Adds attachments to the current composer state.
+     *
+     * @param attachments List of URIs representing the attachments to add
+     */
+    fun onAttachmentsAdded(attachments: List<Uri>) {
+        _uiState.update { state -> state.copy(attachments = state.attachments + attachments) }
+    }
+
+    /**
+     * Removes an attachment from the current composer state.
+     *
+     * @param attachment URI of the attachment to remove
+     */
+    fun onAttachmentRemoved(attachment: Uri) {
+        _uiState.update { state -> state.copy(attachments = state.attachments - attachment) }
+    }
+
+    /**
      * Sends a message via Stream Chat.
      *
      * This function:
@@ -161,6 +182,8 @@ class ChatViewModel(
         val message = StreamMessage(
             text = text,
             user = User(id = currentUserId.value),
+            // Note: This accessing data on the disk, we should defer it to a background thread
+            attachments = storageHelper.getAttachmentsFromUris(_uiState.value.attachments),
         )
 
         // Optimistically add the message to UI
@@ -168,6 +191,7 @@ class ChatViewModel(
             state.copy(
                 messages = listOfNotNull(message.toChatMessage(currentUserId.value)) + state.messages,
                 inputText = "",
+                attachments = emptyList(),
                 assistantState = ChatUiState.AssistantState.Thinking,
             )
         }
@@ -382,6 +406,7 @@ private fun StreamMessage.toChatMessage(currentUserId: String): ChatUiState.Mess
         id = id,
         role = role,
         content = text,
+        attachments = attachments,
         isGenerating = extraData["generating"] == true,
     )
 }

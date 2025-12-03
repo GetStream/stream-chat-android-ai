@@ -35,7 +35,7 @@ import androidx.compose.runtime.Composable
  * [ManagedActivityResultLauncher.launch] with a [PickVisualMediaRequest].
  */
 @Composable
-internal fun rememberPhotoPickerLauncher(onResult: (List<Uri>) -> Unit): ManagedActivityResultLauncher<PickVisualMediaRequest, List<@JvmSuppressWildcards Uri>> =
+public fun rememberPhotoPickerLauncher(onResult: (List<Uri>) -> Unit): ManagedActivityResultLauncher<PickVisualMediaRequest, List<@JvmSuppressWildcards Uri>> =
     rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         onResult(uris)
     }

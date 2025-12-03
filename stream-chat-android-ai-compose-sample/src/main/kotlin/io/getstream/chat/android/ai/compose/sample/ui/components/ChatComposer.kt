@@ -17,6 +17,9 @@
 package io.getstream.chat.android.ai.compose.sample.ui.components
 
 import android.content.res.Configuration
+import android.net.Uri
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -24,6 +27,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,8 +47,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -60,7 +66,45 @@ import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.sample.R
 import io.getstream.chat.android.ai.compose.sample.ui.theme.AppTheme
 import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
+import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
+import io.getstream.chat.android.ai.compose.ui.component.internal.rememberPhotoPickerLauncher
 import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextButtonState
+import kotlin.collections.emptyList
+
+public data class MessageData(
+    val text: String = "",
+    val attachments: List<Uri> = emptyList(),
+)
+
+@Composable
+public fun ChatComposer(
+    onSendClick: (MessageData) -> Unit,
+    onStopClick: () -> Unit,
+    isStreaming: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var state by remember { mutableStateOf(MessageData()) }
+    ChatComposer(
+        text = state.text,
+        attachments = state.attachments,
+        onTextChange = { newText ->
+            state = state.copy(text = newText)
+        },
+        onAttachmentsAdded = { newAttachments ->
+            state = state.copy(attachments = state.attachments + newAttachments)
+        },
+        onAttachmentRemoved = { attachmentToRemove ->
+            state = state.copy(attachments = state.attachments - attachmentToRemove)
+        },
+        onSendClick = {
+            onSendClick(state)
+            state = MessageData()
+        },
+        onStopClick = onStopClick,
+        isStreaming = isStreaming,
+        modifier = modifier,
+    )
+}
 
 /**
  * Chat composer with attach, voice, and send buttons.
@@ -75,22 +119,27 @@ import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextBut
  * @param onStopClick Callback when stop button is clicked (during streaming)
  * @param isStreaming Whether the AI is currently streaming a response
  * @param modifier Modifier to be applied to the composer
- * @param onAttachClick Callback when attach button is clicked
  */
 @Composable
 public fun ChatComposer(
     text: String,
+    attachments: List<Uri>,
     onTextChange: (String) -> Unit,
+    onAttachmentsAdded: (List<Uri>) -> Unit,
+    onAttachmentRemoved: (Uri) -> Unit,
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
     isStreaming: Boolean,
     modifier: Modifier = Modifier,
-    onAttachClick: () -> Unit = {},
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val handleSendClick = {
         keyboardController?.hide()
         onSendClick()
+    }
+
+    val photoPickerLauncher = rememberPhotoPickerLauncher { uris ->
+        onAttachmentsAdded(uris)
     }
 
     // Main input field content with blur gradient applied to modifier
@@ -114,7 +163,14 @@ public fun ChatComposer(
         verticalAlignment = Alignment.Bottom,
     ) {
         ChatFloatingButton(
-            onClick = onAttachClick,
+            onClick = {
+                photoPickerLauncher.launch(
+                    PickVisualMediaRequest(
+                        ActivityResultContracts.PickVisualMedia.ImageOnly,
+                        3,
+                    ),
+                )
+            },
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_add),
@@ -125,7 +181,9 @@ public fun ChatComposer(
         TextField(
             modifier = Modifier.fillMaxWidth(),
             text = text,
+            attachments = attachments.toList(),
             onTextChange = onTextChange,
+            onRemoveAttachment = onAttachmentRemoved,
             isStreaming = isStreaming,
             onSendClick = handleSendClick,
             onStopClick = onStopClick,
@@ -137,7 +195,9 @@ public fun ChatComposer(
 private fun TextField(
     modifier: Modifier,
     text: String,
+    attachments: List<Uri>,
     onTextChange: (String) -> Unit,
+    onRemoveAttachment: (Uri) -> Unit,
     isStreaming: Boolean,
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
@@ -183,59 +243,70 @@ private fun TextField(
                 shape = MaterialTheme.shapes.extraLarge,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        AnimatedContent(
-                            targetState = !speechToTextState.isRecording(),
-                        ) { visible ->
-                            if (visible) {
-                                Box(
-                                    Modifier.padding(start = 16.dp),
-                                ) {
-                                    if (text.isEmpty()) {
-                                        Text(
-                                            text = "Ask Assistant",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            style = MaterialTheme.typography.bodyLarge,
-                                        )
-                                    }
-                                    innerTextField()
-                                }
-                            }
-                        }
-                        SpeechToTextButton(
-                            state = speechToTextState,
-                            onTextRecognized = { recognizedText ->
-                                onTextChange(if (currentText.isBlank()) recognizedText else "$currentText $recognizedText")
-                            },
+                Column {
+                    val hasAttachments = attachments.isNotEmpty()
+                    if (hasAttachments) {
+                        SelectedAttachmentList(
+                            uris = attachments,
+                            onRemoveAttachment = onRemoveAttachment,
                         )
                     }
-
-                    AnimatedContent(
-                        targetState = trailingButton,
-                    ) { button ->
-                        when (button) {
-                            "stop" -> FilledIconButton(
-                                onClick = onStopClick,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_stop),
-                                    contentDescription = "Stop",
-                                )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            AnimatedContent(
+                                targetState = !speechToTextState.isRecording(),
+                            ) { visible ->
+                                if (visible) {
+                                    Box(
+                                        Modifier.padding(start = 16.dp),
+                                    ) {
+                                        if (text.isEmpty()) {
+                                            Text(
+                                                text = "Ask Assistant",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.6f,
+                                                ),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                }
                             }
+                            SpeechToTextButton(
+                                state = speechToTextState,
+                                onTextRecognized = { recognizedText ->
+                                    onTextChange(if (currentText.isBlank()) recognizedText else "$currentText $recognizedText")
+                                },
+                            )
+                        }
 
-                            "send" -> FilledIconButton(
-                                onClick = onSendClick,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_send),
-                                    contentDescription = "Send",
-                                )
+                        AnimatedContent(
+                            targetState = trailingButton,
+                        ) { button ->
+                            when (button) {
+                                "stop" -> FilledIconButton(
+                                    onClick = onStopClick,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_stop),
+                                        contentDescription = "Stop",
+                                    )
+                                }
+
+                                "send" -> FilledIconButton(
+                                    onClick = onSendClick,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_send),
+                                        contentDescription = "Send",
+                                    )
+                                }
                             }
                         }
                     }
@@ -252,7 +323,10 @@ private fun ChatComposerEmptyPreview() {
     AppTheme {
         ChatComposer(
             text = "",
+            attachments = emptyList(),
             onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
             isStreaming = false,
@@ -267,7 +341,10 @@ private fun ChatComposerFilledPreview() {
     AppTheme {
         ChatComposer(
             text = "What is Stream Chat?",
+            attachments = emptyList(),
             onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
             isStreaming = false,
@@ -282,7 +359,10 @@ private fun ChatComposerStreamingPreview() {
     AppTheme {
         ChatComposer(
             text = "",
+            attachments = emptyList(),
             onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
             isStreaming = true,

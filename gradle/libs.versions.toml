@@ -71,6 +71,7 @@ stream-chat = [
     "stream-chat-android-client",
     "stream-chat-android-state",
     "stream-chat-android-offline",
+    "stream-chat-android-compose"
 ]
 retrofit = [
     "retrofit",
