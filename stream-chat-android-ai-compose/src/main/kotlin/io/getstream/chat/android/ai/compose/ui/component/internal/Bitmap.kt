@@ -20,8 +20,8 @@ import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 
 /**
  * Decodes a bitmap from a URI, downsampling it to approximately the target size
