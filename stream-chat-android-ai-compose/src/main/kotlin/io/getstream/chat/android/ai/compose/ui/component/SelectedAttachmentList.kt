@@ -47,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.R
 import kotlinx.coroutines.Dispatchers
@@ -112,8 +113,14 @@ private fun SelectedAttachment(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.Red),
-                )
+                        .background(Color.LightGray),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.stream_ai_compose_ic_image_placeholder),
+                        contentDescription = null,
+                    )
+                }
             },
         )
         RemoveButton(
@@ -223,4 +230,10 @@ private fun RemoveButton(
             contentDescription = "Remove attachment",
         )
     }
+}
+
+@Preview
+@Composable
+private fun PreviewTest() {
+    SelectedAttachment(Uri.parse("asd")) { }
 }
