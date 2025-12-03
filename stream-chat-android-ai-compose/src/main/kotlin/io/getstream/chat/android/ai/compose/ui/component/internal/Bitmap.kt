@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.ui.component
+package io.getstream.chat.android.ai.compose.ui.component.internal
 
 import android.content.ContentResolver
 import android.graphics.Bitmap

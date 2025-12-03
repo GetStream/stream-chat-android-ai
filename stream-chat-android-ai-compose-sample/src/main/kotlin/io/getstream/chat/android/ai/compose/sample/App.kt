@@ -37,7 +37,7 @@ class App : Application() {
         super.onCreate()
 
         chatDependencies = ChatDependencies(
-            baseUrl = "http://10.0.2.2:3000", // Android emulator localhost
+            baseUrl = "http://192.168.1.85:3000/", // Android emulator localhost
             enableLogging = BuildConfig.DEBUG,
         )
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.ui.component
+package io.getstream.chat.android.ai.compose.ui.component.internal
 
 import android.net.Uri
 import androidx.activity.compose.ManagedActivityResultLauncher
