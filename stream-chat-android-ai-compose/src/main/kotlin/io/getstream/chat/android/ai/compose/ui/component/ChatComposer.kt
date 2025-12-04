@@ -311,25 +311,19 @@ private fun TextField(
                             modifier = Modifier.weight(1f),
                             contentAlignment = Alignment.CenterStart,
                         ) {
-                            AnimatedContent(
-                                targetState = !speechToTextState.isRecording(),
-                            ) { visible ->
-                                if (visible) {
-                                    Box(
-                                        Modifier.padding(start = 16.dp),
-                                    ) {
-                                        if (text.isEmpty()) {
-                                            Text(
-                                                text = "Ask Assistant",
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                    alpha = 0.6f,
-                                                ),
-                                                style = MaterialTheme.typography.bodyLarge,
-                                            )
-                                        }
-                                        innerTextField()
-                                    }
+                            Box(
+                                Modifier.padding(start = 16.dp),
+                            ) {
+                                if (text.isEmpty()) {
+                                    Text(
+                                        text = "Ask Assistant",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                            alpha = 0.6f,
+                                        ),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
                                 }
+                                innerTextField()
                             }
                         }
                         FilledIconButton(
