@@ -232,7 +232,7 @@ fun MyComposer() {
     SpeechToTextButton(
         onTextRecognized = { recognizedText ->
             // Called with partial results as user speaks
-            // Caller is responsible for accumulating text
+            // At the end this callback is invoked with the full recognized text
             text = recognizedText
         }
     )
@@ -263,7 +263,7 @@ fun MyComposer() {
     SpeechToTextButton(
         state = speechState,
         onTextRecognized = { recognizedText ->
-            // Partial results contain full recognized text, so replace (don't accumulate)
+            // Append recognized text after the text which is already in the composer
             text = if (textBeforeSpeech.value.isBlank()) {
                 recognizedText
             } else {
