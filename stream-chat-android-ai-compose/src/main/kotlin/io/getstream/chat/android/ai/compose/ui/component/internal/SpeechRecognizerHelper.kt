@@ -25,14 +25,9 @@ import android.speech.SpeechRecognizer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import io.getstream.chat.android.ai.compose.util.internal.simpleLogger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
@@ -52,7 +47,6 @@ internal interface SpeechRecognizerHelper {
  */
 private class DefaultSpeechRecognizerHelper(
     context: Context,
-    private val coroutineScope: CoroutineScope,
     private val onResult: (String) -> Unit,
     private val onError: (String) -> Unit,
     private val onRmsChanged: ((Float) -> Unit)? = null,
@@ -63,7 +57,7 @@ private class DefaultSpeechRecognizerHelper(
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var lastPartialResult: String? = null
-    private var autoStopJob: Job? = null
+    private var partialResults = mutableListOf<String>()
 
     init {
         if (SpeechRecognizer.isRecognitionAvailable(context)) {
@@ -84,6 +78,7 @@ private class DefaultSpeechRecognizerHelper(
 
         return try {
             lastPartialResult = null // Reset partial result when starting new session
+            partialResults.clear()
             recognizer.startListening(createRecognitionIntent())
             isListening = true
             true
@@ -96,23 +91,17 @@ private class DefaultSpeechRecognizerHelper(
 
     override fun stopListening() {
         if (!isListening) return
-        autoStopJob?.cancel()
-        autoStopJob = null
         speechRecognizer?.stopListening()
         isListening = false
         onRecordingStopped?.invoke()
     }
 
     override fun cancel() {
-        autoStopJob?.cancel()
-        autoStopJob = null
         speechRecognizer?.cancel()
         isListening = false
     }
 
     override fun release() {
-        autoStopJob?.cancel()
-        autoStopJob = null
         speechRecognizer?.cancel()
         speechRecognizer?.destroy()
         speechRecognizer = null
@@ -139,9 +128,6 @@ private class DefaultSpeechRecognizerHelper(
         // 2. Called when user starts speaking
         override fun onBeginningOfSpeech() {
             logger.d { "onBeginningOfSpeech: User started speaking" }
-            // Cancel auto-stop if user starts speaking again
-            autoStopJob?.cancel()
-            autoStopJob = null
         }
 
         // 3. Called repeatedly during speech - provides audio level updates
@@ -169,18 +155,16 @@ private class DefaultSpeechRecognizerHelper(
         override fun onEndOfSpeech() {
             logger.d { "onEndOfSpeech: User stopped speaking, starting 3-second auto-stop timer" }
             // Start a 3-second timer. If user doesn't start speaking again, stop recognition
-            autoStopJob?.cancel()
-            autoStopJob = coroutineScope.launch {
-                delay(AUTO_STOP_DELAY_MS)
-                logger.d { "onEndOfSpeech: Auto-stop timer expired, stopping recognition" }
-                stopListening()
+            lastPartialResult?.let {
+                partialResults.add(it)
             }
         }
 
         // 7. Called last (in normal flow) - provides final recognition results
         override fun onResults(results: Bundle?) {
-            val finalResult = extractResult(results) ?: lastPartialResult
-
+            isListening = false
+            val finalResult = partialResults.joinToString(" ")
+            onRecordingStopped?.invoke()
             if (finalResult != null) {
                 logger.d { "onResults: Processing result: $finalResult" }
                 onResult(finalResult)
@@ -227,8 +211,9 @@ private class DefaultSpeechRecognizerHelper(
             logger.d { "onEvent: eventType=$eventType, params=$params" }
         }
 
-        private fun extractResult(bundle: Bundle?): String? =
-            bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+        private fun extractResult(bundle: Bundle?): String? {
+            return bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+        }
     }
 }
 
@@ -263,14 +248,12 @@ internal fun rememberSpeechRecognizerHelper(
 ): SpeechRecognizerHelper {
     val context = LocalContext.current
     val isInPreview = LocalInspectionMode.current
-    val coroutineScope = rememberCoroutineScope()
     val helper = remember {
         if (isInPreview) {
             NoOpSpeechRecognizerHelper()
         } else {
             DefaultSpeechRecognizerHelper(
                 context,
-                coroutineScope,
                 onResult,
                 onError,
                 onRmsChanged,
@@ -287,5 +270,4 @@ internal fun rememberSpeechRecognizerHelper(
     return helper
 }
 
-private const val SILENCE_TIMEOUT_MS = 60000
-private const val AUTO_STOP_DELAY_MS = 3000L
+private const val SILENCE_TIMEOUT_MS = 3000
