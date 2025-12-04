@@ -22,29 +22,41 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import io.getstream.chat.android.ai.compose.R
-import io.getstream.chat.android.ai.compose.ui.component.internal.WaveformIndicator
 import io.getstream.chat.android.ai.compose.ui.component.internal.rememberSpeechRecognizerHelper
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 /**
  * State holder for [SpeechToTextButton] that tracks the recording status.
@@ -84,29 +96,21 @@ public fun rememberSpeechToTextButtonState(): SpeechToTextButtonState =
 /**
  * A composable button that provides speech-to-text functionality.
  *
- * This component handles microphone input, permission requests, and displays a waveform indicator
- * during recording. It provides customizable UI components for voice input, cancellation, and
- * text preview.
+ * When not recording, displays a microphone icon button.
+ * When recording, transforms into a circle with animated bars that respond to voice input.
  *
  * The component automatically handles:
  * - Audio permission requests
  * - Starting and stopping speech recognition
- * - Accumulating recognized text across multiple recognition sessions
- * - Displaying waveform visualization during recording
+ * - Streaming recognized text chunks to the callback as they're detected
+ * - Animated visualization during recording
  *
- * @param modifier Modifier to be applied to the root Column container
+ * @param modifier Modifier to be applied to the root container
  * @param state The state holder for tracking recording status. Defaults to a remembered state
  *   created with [rememberSpeechToTextButtonState].
- * @param onTextRecognized Callback invoked when text is recognized. Receives the accumulated
- *   text from all recognition sessions since the last recording start.
- * @param voiceInputButton Composable for the voice input button. Defaults to a microphone icon
- *   that fades out when recording.
- * @param cancelButton Composable for the cancel button. Defaults to a cancel icon that appears
- *   when recording.
- * @param waveformIndicator Composable for the waveform visualization. Defaults to a
- *   [io.getstream.chat.android.ai.compose.ui.component.internal.WaveformIndicator] that shows audio levels during recording.
- * @param seeTextButton Composable for the "See text" button. Defaults to a text button that
- *   appears when recording.
+ * @param onTextRecognized Callback invoked when text chunks are recognized. Called with each
+ *   partial result as speech is detected, enabling real-time text streaming. The caller is
+ *   responsible for accumulating text if needed.
  *
  * @see SpeechToTextButtonState
  * @see rememberSpeechToTextButtonState
@@ -116,26 +120,28 @@ public fun SpeechToTextButton(
     modifier: Modifier = Modifier,
     state: SpeechToTextButtonState = rememberSpeechToTextButtonState(),
     onTextRecognized: (String) -> Unit,
-    voiceInputButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultVoiceInputButton(onClick) },
-    cancelButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultCancelButton(onClick) },
-    waveformIndicator: @Composable () -> Unit = { DefaultWaveformIndicator(state) },
-    seeTextButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultSeeTextButton(onClick) },
 ) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
 
-    var accumulatedText by remember { mutableStateOf("") }
-
     val speechRecognizerHelper = rememberSpeechRecognizerHelper(
         onResult = { text ->
-            accumulatedText = if (accumulatedText.isBlank()) text else "$accumulatedText $text"
-            onTextRecognized(accumulatedText)
+            // Final result when speech ends
+            onTextRecognized(text)
         },
         onError = {
             state.isRecordingState = false
         },
         onRmsChanged = { db ->
             state.rmsdBState = db
+        },
+        onPartialResult = { text ->
+            // Stream partial results in real-time as user speaks
+            onTextRecognized(text)
+        },
+        onRecordingStopped = {
+            // Update UI state when recording stops (auto-stop or manual)
+            state.isRecordingState = false
         },
     )
 
@@ -160,103 +166,130 @@ public fun SpeechToTextButton(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    val onStartRecording = {
+    val onToggleRecording = {
         if (activity != null) {
-            if (hasPermission && !state.isRecordingState) {
-                accumulatedText = ""
-                if (speechRecognizerHelper.startListening()) {
-                    state.isRecordingState = true
-                }
-            } else if (!hasPermission) {
-                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            }
-        }
-    }
-
-    val onStopRecording = {
-        speechRecognizerHelper.stopListening()
-        state.isRecordingState = false
-    }
-
-    val onCancel = {
-        speechRecognizerHelper.cancel()
-        state.isRecordingState = false
-        accumulatedText = ""
-    }
-
-    Box(
-        modifier = modifier,
-    ) {
-        AnimatedContent(
-            targetState = state.isRecordingState,
-        ) { expanded ->
-            if (expanded) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    seeTextButton(onStopRecording)
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        cancelButton(onCancel)
-
-                        Box(
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            waveformIndicator()
-                        }
-
-                        voiceInputButton(onStartRecording)
-                    }
-                }
+            if (state.isRecordingState) {
+                // Stop recording - state will be updated via onRecordingStopped callback
+                speechRecognizerHelper.stopListening()
             } else {
-                voiceInputButton(onStartRecording)
+                // Start recording
+                if (hasPermission) {
+                    if (speechRecognizerHelper.startListening()) {
+                        state.isRecordingState = true
+                    }
+                } else {
+                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
+        }
+    }
+
+    AnimatedContent(
+        targetState = state.isRecordingState,
+        modifier = modifier,
+    ) { isRecording ->
+        if (isRecording) {
+            VoiceRecordingIndicator(
+                onClick = onToggleRecording,
+                rmsdB = state.rmsdBState,
+            )
+        } else {
+            IconButton(onClick = onToggleRecording) {
+                Icon(
+                    painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
+                    contentDescription = "Voice input",
+                )
             }
         }
     }
 }
 
+/**
+ * A circular button with animated vertical bars that respond to voice input.
+ *
+ * @param onClick Callback when the button is clicked
+ * @param rmsdB The audio level in decibels, used to drive the animation
+ * @param modifier Modifier for the button
+ */
 @Composable
-private fun DefaultVoiceInputButton(
+private fun VoiceRecordingIndicator(
     onClick: () -> Unit,
+    rmsdB: Float,
+    modifier: Modifier = Modifier,
 ) {
-    IconButton(
+    Surface(
         onClick = onClick,
+        modifier = modifier.size(48.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
     ) {
-        Icon(
-            painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
-            contentDescription = "Voice input",
-        )
+        Box(
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            VoiceRecordingBars(rmsdB = rmsdB)
+        }
     }
 }
 
+/**
+ * Draws animated vertical bars that simulate voice input visualization.
+ * The bars animate randomly with heights influenced by the audio level.
+ */
 @Composable
-private fun DefaultWaveformIndicator(state: SpeechToTextButtonState) {
-    WaveformIndicator(
-        modifier = Modifier.fillMaxWidth(),
-        rmsdB = state.rmsdBState,
-    )
-}
-
-@Composable
-private fun DefaultCancelButton(
-    onClick: () -> Unit,
+private fun VoiceRecordingBars(
+    rmsdB: Float,
+    modifier: Modifier = Modifier,
 ) {
-    IconButton(onClick = onClick) {
-        Icon(
-            painter = painterResource(R.drawable.stream_ai_compose_ic_cancel),
-            contentDescription = "Cancel voice input",
-        )
+    val color = MaterialTheme.colorScheme.onPrimary
+    val barCount = 5
+    val barAnimatables = remember {
+        List(barCount) { Animatable(0.3f) }
     }
-}
 
-@Composable
-private fun DefaultSeeTextButton(
-    onClick: () -> Unit,
-) {
-    TextButton(onClick = onClick) {
-        Text(text = "See text")
+    // Normalize rmsdB to a scale factor (0.5 to 1.5)
+    // Typical rmsdB ranges from 0 to 10
+    val audioScale = 0.5f + (rmsdB.coerceIn(0f, 10f) / 10f)
+
+    LaunchedEffect(barAnimatables) {
+        barAnimatables.forEachIndexed { index, animatable ->
+            launch {
+                // Stagger the start times
+                delay(index * 100L)
+                animatable.animateTo(
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(
+                            durationMillis = 300 + (Random.nextInt(200)),
+                            easing = LinearEasing,
+                        ),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                )
+            }
+        }
+    }
+
+    Canvas(modifier = modifier.size(24.dp)) {
+        val canvasWidth = size.width
+        val canvasHeight = size.height
+        val barWidth = canvasWidth / (barCount * 2 - 1)
+        val spacing = barWidth
+        val maxBarHeight = canvasHeight * 0.7f
+        val minBarHeight = canvasHeight * 0.2f
+
+        barAnimatables.forEachIndexed { index, animatable ->
+            val barHeight = minBarHeight + (maxBarHeight - minBarHeight) * animatable.value * audioScale
+            val x = index * (barWidth + spacing)
+            val y = (canvasHeight - barHeight) / 2
+
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight),
+                cornerRadius = CornerRadius(barWidth / 2, barWidth / 2),
+            )
+        }
     }
 }
 

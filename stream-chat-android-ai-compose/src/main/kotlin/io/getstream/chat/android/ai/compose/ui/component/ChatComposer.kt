@@ -49,10 +49,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -183,6 +183,7 @@ public fun ChatComposer(
         verticalAlignment = Alignment.Bottom,
     ) {
         OutlinedIconButton(
+            enabled = !isStreaming,
             onClick = {
                 photoPickerLauncher.launch(
                     PickVisualMediaRequest(
@@ -244,13 +245,21 @@ private fun TextField(
 
     val speechToTextState = rememberSpeechToTextButtonState()
 
+    // Remember the text that existed before starting speech recognition
+    val textBeforeSpeech = remember { mutableStateOf("") }
+
+    // Update textBeforeSpeech when recording starts/stops
+    LaunchedEffect(speechToTextState.isRecording()) {
+        if (speechToTextState.isRecording()) {
+            textBeforeSpeech.value = text
+        }
+    }
+
     val trailingButton = when {
         isStreaming -> "stop"
         text.isNotBlank() && !speechToTextState.isRecording() -> "send"
         else -> null
     }
-
-    val currentText by rememberUpdatedState(text)
 
     BasicTextField(
         modifier = modifier.defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
@@ -284,38 +293,41 @@ private fun TextField(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AnimatedContent(
+                        Box(
                             modifier = Modifier.weight(1f),
-                            targetState = !speechToTextState.isRecording(),
-                        ) { visible ->
-                            if (visible) {
-                                TextInputField(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(
-                                            start = 16.dp,
-                                            top = 12.dp,
-                                            bottom = 12.dp,
-                                        ),
-                                    showPlaceholder = text.isBlank(),
-                                    innerTextField = innerTextField,
-                                )
-                            }
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            TextInputField(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = 16.dp,
+                                        top = 12.dp,
+                                        bottom = 12.dp,
+                                    ),
+                                showPlaceholder = text.isBlank(),
+                                innerTextField = innerTextField,
+                            )
                         }
-
-                        SpeechToTextButton(
-                            state = speechToTextState,
-                            onTextRecognized = { recognizedText ->
-                                onTextChange(
-                                    if (currentText.isBlank()) {
-                                        recognizedText
-                                    } else {
-                                        "$currentText $recognizedText"
-                                    },
-                                )
+                        FilledIconButton(
+                            onClick = {
                             },
-                        )
-
+                            enabled = !isStreaming,
+                        ) {
+                            SpeechToTextButton(
+                                state = speechToTextState,
+                                onTextRecognized = { recognizedText ->
+                                    // Partial results already contain full text, so replace (don't accumulate)
+                                    onTextChange(
+                                        if (textBeforeSpeech.value.isBlank()) {
+                                            recognizedText
+                                        } else {
+                                            "${textBeforeSpeech.value} $recognizedText"
+                                        },
+                                    )
+                                },
+                            )
+                        }
                         AnimatedContent(
                             targetState = trailingButton,
                         ) { button ->

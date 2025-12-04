@@ -216,8 +216,9 @@ data class MessageData(
 
 ### SpeechToTextButton
 
-`SpeechToTextButton` provides speech-to-text functionality with waveform visualization,
-automatic permission handling, and customizable UI components.
+`SpeechToTextButton` provides speech-to-text functionality with animated waveform visualization
+and automatic permission handling. When not recording, it displays a microphone icon button.
+When recording, it transforms into a circular button with animated bars that respond to voice input.
 
 **Basic Usage:**
 
@@ -226,16 +227,19 @@ import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
 
 @Composable
 fun MyComposer() {
+    var text by remember { mutableStateOf("") }
+
     SpeechToTextButton(
         onTextRecognized = { recognizedText ->
-            // Handle recognized text
-            // Text accumulates across recognition sessions
+            // Called with partial results as user speaks
+            // Caller is responsible for accumulating text
+            text = recognizedText
         }
     )
 }
 ```
 
-**Advanced Usage with State:**
+**Advanced Usage with State Tracking:**
 
 ```kotlin
 import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
@@ -243,58 +247,49 @@ import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextBut
 
 @Composable
 fun MyComposer() {
-    val state = rememberSpeechToTextButtonState()
-    
+    val speechState = rememberSpeechToTextButtonState()
+    var text by remember { mutableStateOf("") }
+
+    // Remember the text that existed before starting speech recognition
+    val textBeforeSpeech = remember { mutableStateOf("") }
+
+    // Capture text when recording starts
+    LaunchedEffect(speechState.isRecording()) {
+        if (speechState.isRecording()) {
+            textBeforeSpeech.value = text
+        }
+    }
+
     SpeechToTextButton(
-        state = state,
+        state = speechState,
         onTextRecognized = { recognizedText ->
-            // Handle recognized text
+            // Partial results contain full recognized text, so replace (don't accumulate)
+            text = if (textBeforeSpeech.value.isBlank()) {
+                recognizedText
+            } else {
+                "${textBeforeSpeech.value} $recognizedText"
+            }
         }
     )
-    
-    // Check if recording
-    if (state.isRecording()) {
+
+    // Check if currently recording
+    if (speechState.isRecording()) {
         Text("Recording...")
     }
 }
 ```
 
-**Customization:**
-
-```kotlin
-SpeechToTextButton(
-    onTextRecognized = { /* ... */ },
-    voiceInputButton = { onClick ->
-        // Custom voice input button
-        IconButton(onClick = onClick) {
-            Icon(Icons.Default.Mic)
-        }
-    },
-    cancelButton = { onClick ->
-        // Custom cancel button
-        IconButton(onClick = onClick) {
-            Icon(Icons.Default.Close)
-        }
-    },
-    waveformIndicator = {
-        // Custom waveform visualization
-        CustomWaveform()
-    },
-    seeTextButton = { onClick ->
-        // Custom "See text" button
-        TextButton(onClick = onClick) {
-            Text("View text")
-        }
-    }
-)
-```
-
 **Features:**
-- Automatic audio permission requests
-- Waveform visualization during recording
-- Text accumulation across recognition sessions
-- Customizable UI components
+- Automatic audio permission requests (RECORD_AUDIO)
+- Animated waveform visualization during recording
+- Real-time streaming of recognized text (partial results)
+- Automatic UI transformation between idle and recording states
 - State tracking for recording status
+
+**Parameters:**
+- `modifier`: Modifier to be applied to the root container
+- `state`: Optional state holder for tracking recording status (defaults to remembered state)
+- `onTextRecognized`: Callback invoked with each partial result as speech is detected
 
 **SpeechToTextButtonState API:**
 
@@ -305,7 +300,7 @@ val isRecording: Boolean = state.isRecording()
 
 ## 🛥 What is Stream?
 
-Stream allows developers to rapidly deploy scalable feeds, chat messaging and video with an industry leading 99.99% uptime SLA guarantee.
+Stream allows developers to rapidly deploy scalable feeds, chat messaging and video with an industry leading 99.999% uptime SLA guarantee.
 
 Stream provides UI components and state handling that make it easy to build real-time chat and video calling for your app. Stream runs and maintains a global network of edge servers around the world, ensuring optimal latency and reliability regardless of where your users are located.
 
