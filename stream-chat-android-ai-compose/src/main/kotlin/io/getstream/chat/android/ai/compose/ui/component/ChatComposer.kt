@@ -311,28 +311,22 @@ private fun TextField(
                             modifier = Modifier.weight(1f),
                             contentAlignment = Alignment.CenterStart,
                         ) {
-                            Box(
-                                Modifier.padding(start = 16.dp),
-                            ) {
-                                if (text.isEmpty()) {
-                                    TextInputField(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(
-                                                start = 16.dp,
-                                                top = 12.dp,
-                                                bottom = 12.dp,
-                                            ),
-                                        showPlaceholder = text.isBlank(),
-                                        innerTextField = innerTextField,
-                                    )
-                                }
-                                innerTextField()
-                            }
+                            TextInputField(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = 16.dp,
+                                        top = 12.dp,
+                                        bottom = 12.dp,
+                                    ),
+                                showPlaceholder = text.isBlank(),
+                                innerTextField = innerTextField,
+                            )
                         }
                         FilledIconButton(
                             onClick = {
                             },
+                            enabled = !isStreaming,
                         ) {
                             SpeechToTextButton(
                                 state = speechToTextState,
