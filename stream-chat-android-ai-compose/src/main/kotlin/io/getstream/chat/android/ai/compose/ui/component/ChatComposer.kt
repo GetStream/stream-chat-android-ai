@@ -208,6 +208,7 @@ public fun ChatComposer(
             },
             colors = IconButtonDefaults.outlinedIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         ) {
@@ -285,11 +286,15 @@ private fun TextField(
             ) {
                 Column {
                     val hasAttachments = attachments.isNotEmpty()
-                    if (hasAttachments) {
-                        SelectedAttachmentList(
-                            uris = attachments,
-                            onRemoveAttachment = onRemoveAttachment,
-                        )
+                    AnimatedContent(
+                        targetState = hasAttachments,
+                    ) { visible ->
+                        if (visible) {
+                            SelectedAttachmentList(
+                                uris = attachments,
+                                onRemoveAttachment = onRemoveAttachment,
+                            )
+                        }
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
