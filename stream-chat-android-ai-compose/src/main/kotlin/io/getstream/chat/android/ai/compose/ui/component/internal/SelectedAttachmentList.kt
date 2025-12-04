@@ -59,14 +59,14 @@ import kotlinx.coroutines.withContext
  * Each attachment is shown as a thumbnail with a remove button overlay, allowing users to
  * deselect previously chosen images.
  *
- * @param uris The list of [Uri]s representing the selected image attachments to display.
+ * @param uris The Set of [Uri]s representing the selected image attachments to display.
  * @param onRemoveAttachment Callback invoked when the user taps the remove button on an attachment,
  * providing the [Uri] of the attachment to be removed.
  * @param modifier Optional [Modifier] for customizing the layout of the list.
  */
 @Composable
 internal fun SelectedAttachmentList(
-    uris: List<Uri>,
+    uris: Set<Uri>,
     onRemoveAttachment: (Uri) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -76,7 +76,7 @@ internal fun SelectedAttachmentList(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(
-            items = uris,
+            items = uris.toList(),
             key = { it.toString() },
         ) { uri ->
             SelectedAttachment(

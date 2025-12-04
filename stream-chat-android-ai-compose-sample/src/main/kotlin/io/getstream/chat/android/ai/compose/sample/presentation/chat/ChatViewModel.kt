@@ -183,7 +183,7 @@ class ChatViewModel(
             text = text,
             user = User(id = currentUserId.value),
             // Note: This accessing data on the disk, we should defer it to a background thread
-            attachments = storageHelper.getAttachmentsFromUris(_uiState.value.attachments),
+            attachments = storageHelper.getAttachmentsFromUris(_uiState.value.attachments.toList()),
         )
 
         // Optimistically add the message to UI
@@ -191,7 +191,7 @@ class ChatViewModel(
             state.copy(
                 messages = listOfNotNull(message.toChatMessage(currentUserId.value)) + state.messages,
                 inputText = "",
-                attachments = emptyList(),
+                attachments = emptySet(),
                 assistantState = ChatUiState.AssistantState.Thinking,
             )
         }
