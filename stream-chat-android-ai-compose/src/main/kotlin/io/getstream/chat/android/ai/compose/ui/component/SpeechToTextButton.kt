@@ -192,18 +192,26 @@ public fun SpeechToTextButton(
     ) {
         seeTextButton(onStopRecording)
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            cancelButton(onCancel)
+        AnimatedContent(
+            targetState = state.isRecordingState,
+        ) { expanded ->
+            if (expanded) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    cancelButton(onCancel)
 
-            Box(
-                modifier = Modifier.weight(1f),
-            ) {
-                waveformIndicator()
+                    Box(
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        waveformIndicator()
+                    }
+
+                    voiceInputButton(onStartRecording)
+                }
+            } else {
+                voiceInputButton(onStartRecording)
             }
-
-            voiceInputButton(onStartRecording)
         }
     }
 }

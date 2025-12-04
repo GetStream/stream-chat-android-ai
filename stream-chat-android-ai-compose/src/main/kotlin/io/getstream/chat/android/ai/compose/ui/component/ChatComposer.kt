@@ -299,16 +299,21 @@ private fun TextField(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.CenterStart,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             AnimatedContent(
+                                modifier = Modifier.weight(1f),
                                 targetState = !speechToTextState.isRecording(),
                             ) { visible ->
                                 if (visible) {
                                     Box(
-                                        Modifier.padding(start = 16.dp),
+                                        Modifier.padding(
+                                            start = 16.dp,
+                                            top = 12.dp,
+                                            bottom = 12.dp,
+                                        ),
                                     ) {
                                         if (text.isEmpty()) {
                                             Text(
@@ -397,6 +402,24 @@ private fun ChatComposerFilledPreview() {
         ChatComposer(
             text = "What is Stream Chat?",
             attachments = emptySet(),
+            onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerLongFilledPreview() {
+    MaterialTheme {
+        ChatComposer(
+            text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            attachments = emptyList(),
             onTextChange = {},
             onAttachmentsAdded = {},
             onAttachmentRemoved = {},
