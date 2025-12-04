@@ -128,7 +128,7 @@ public fun AiChatApp(
 
             AnimatedContent(
                 targetState = navigationKey,
-            ) {
+            ) { navigationKey ->
                 ViewModelStore(navigationKey) {
                     ChatScreen(
                         modifier = Modifier.fillMaxSize(),
