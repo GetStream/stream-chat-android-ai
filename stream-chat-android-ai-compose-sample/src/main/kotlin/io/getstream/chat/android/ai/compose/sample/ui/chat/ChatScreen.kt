@@ -134,7 +134,7 @@ fun ChatScreen(
             ChatComposer(
                 modifier = modifier,
                 text = state.inputText,
-                attachments = state.attachments.toList(),
+                attachments = state.attachments,
                 onAttachmentsAdded = chatViewModel::onAttachmentsAdded,
                 onAttachmentRemoved = chatViewModel::onAttachmentRemoved,
                 onTextChange = chatViewModel::onInputTextChange,
