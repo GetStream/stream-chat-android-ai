@@ -21,6 +21,7 @@ import android.util.Log
 /**
  * Simple logger interface API.
  */
+@Suppress("FunctionMinLength")
 internal interface SimpleLogger {
     fun d(message: () -> String)
     fun v(message: () -> String)

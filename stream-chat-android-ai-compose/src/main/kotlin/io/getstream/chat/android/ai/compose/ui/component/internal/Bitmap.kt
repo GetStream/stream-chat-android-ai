@@ -73,6 +73,7 @@ internal fun decodeSampledBitmap(
  * @param orientation The EXIF orientation value
  * @return The rotated bitmap, or the original if no rotation was needed
  */
+@Suppress("MagicNumber")
 private fun rotateBitmap(bitmap: Bitmap, orientation: Int): Bitmap {
     val matrix = Matrix()
     when (orientation) {
