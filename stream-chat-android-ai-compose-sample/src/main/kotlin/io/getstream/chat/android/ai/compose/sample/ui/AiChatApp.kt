@@ -70,6 +70,12 @@ public fun AiChatApp(
 
     var selectedConversationId by rememberSaveable { mutableStateOf<String?>(null) }
 
+    /**
+     * Revision counter for new chats. Incremented each time "New chat" is clicked.
+     * This ensures AnimatedContent detects a state change even when already on a new chat (null -> null).
+     */
+    var newChatRevision by rememberSaveable { mutableIntStateOf(0) }
+
     // Hide keyboard when drawer opens
     LaunchedEffect(drawerState.currentValue) {
         if (drawerState.isOpen) {
@@ -100,6 +106,7 @@ public fun AiChatApp(
                     selectedConversationId = selectedConversationId,
                     onNewChatClick = {
                         selectedConversationId = null
+                        newChatRevision++
                         scope.launch { drawerState.close() }
                     },
                     onConversationClick = { conversationId ->
@@ -115,21 +122,27 @@ public fun AiChatApp(
         },
     ) {
         Box {
+            // Use a combined key for AnimatedContent: conversationId for real chats, revision for new chats
+            // This ensures that clicking "New chat" when already on a new chat triggers a state change
+            val navigationKey = selectedConversationId ?: "new-chat-$newChatRevision"
+
             AnimatedContent(
-                targetState = selectedConversationId,
-            ) { conversationId ->
-                ViewModelStore(conversationId) {
+                targetState = navigationKey,
+            ) {
+                ViewModelStore(navigationKey) {
                     ChatScreen(
                         modifier = Modifier.fillMaxSize(),
-                        conversationId = conversationId,
+                        conversationId = selectedConversationId,
                         chatDependencies = chatDependencies,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onNewChatClick = {
                             selectedConversationId = null
+                            newChatRevision++
                         },
                         onChatDeleted = {
                             // Navigate back to new chat after deletion
                             selectedConversationId = null
+                            newChatRevision++
                         },
                     )
                 }
