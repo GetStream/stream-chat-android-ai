@@ -22,7 +22,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -118,10 +116,10 @@ public fun SpeechToTextButton(
     modifier: Modifier = Modifier,
     state: SpeechToTextButtonState = rememberSpeechToTextButtonState(),
     onTextRecognized: (String) -> Unit,
-    voiceInputButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultVoiceInputButton(state, onClick) },
-    cancelButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultCancelButton(state, onClick) },
+    voiceInputButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultVoiceInputButton(onClick) },
+    cancelButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultCancelButton(onClick) },
     waveformIndicator: @Composable () -> Unit = { DefaultWaveformIndicator(state) },
-    seeTextButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultSeeTextButton(state, onClick) },
+    seeTextButton: @Composable (onClick: () -> Unit) -> Unit = { onClick -> DefaultSeeTextButton(onClick) },
 ) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
@@ -186,28 +184,31 @@ public fun SpeechToTextButton(
         accumulatedText = ""
     }
 
-    Column(
+    Box(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        seeTextButton(onStopRecording)
-
         AnimatedContent(
             targetState = state.isRecordingState,
         ) { expanded ->
             if (expanded) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    cancelButton(onCancel)
+                    seeTextButton(onStopRecording)
 
-                    Box(
-                        modifier = Modifier.weight(1f),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        waveformIndicator()
-                    }
+                        cancelButton(onCancel)
 
-                    voiceInputButton(onStartRecording)
+                        Box(
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            waveformIndicator()
+                        }
+
+                        voiceInputButton(onStartRecording)
+                    }
                 }
             } else {
                 voiceInputButton(onStartRecording)
@@ -218,16 +219,10 @@ public fun SpeechToTextButton(
 
 @Composable
 private fun DefaultVoiceInputButton(
-    state: SpeechToTextButtonState,
     onClick: () -> Unit,
 ) {
-    val animatedAlpha by animateFloatAsState(
-        targetValue = if (state.isRecordingState) 0f else 1f,
-        label = "alpha",
-    )
     IconButton(
         onClick = onClick,
-        modifier = Modifier.graphicsLayer { alpha = animatedAlpha },
     ) {
         Icon(
             painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
@@ -238,50 +233,30 @@ private fun DefaultVoiceInputButton(
 
 @Composable
 private fun DefaultWaveformIndicator(state: SpeechToTextButtonState) {
-    ConditionalAnimatedContent(state.isRecordingState) {
-        WaveformIndicator(
-            modifier = Modifier.fillMaxWidth(),
-            rmsdB = state.rmsdBState,
+    WaveformIndicator(
+        modifier = Modifier.fillMaxWidth(),
+        rmsdB = state.rmsdBState,
+    )
+}
+
+@Composable
+private fun DefaultCancelButton(
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(R.drawable.stream_ai_compose_ic_cancel),
+            contentDescription = "Cancel voice input",
         )
     }
 }
 
 @Composable
-private fun DefaultCancelButton(
-    state: SpeechToTextButtonState,
-    onClick: () -> Unit,
-) {
-    ConditionalAnimatedContent(state.isRecordingState) {
-        IconButton(onClick = onClick) {
-            Icon(
-                painter = painterResource(R.drawable.stream_ai_compose_ic_cancel),
-                contentDescription = "Cancel voice input",
-            )
-        }
-    }
-}
-
-@Composable
 private fun DefaultSeeTextButton(
-    state: SpeechToTextButtonState,
     onClick: () -> Unit,
 ) {
-    ConditionalAnimatedContent(state.isRecordingState) {
-        TextButton(onClick = onClick) {
-            Text(text = "See text")
-        }
-    }
-}
-
-@Composable
-private fun ConditionalAnimatedContent(
-    condition: Boolean,
-    content: @Composable () -> Unit,
-) {
-    AnimatedContent(targetState = condition) { isVisible ->
-        if (isVisible) {
-            content()
-        }
+    TextButton(onClick = onClick) {
+        Text(text = "See text")
     }
 }
 
