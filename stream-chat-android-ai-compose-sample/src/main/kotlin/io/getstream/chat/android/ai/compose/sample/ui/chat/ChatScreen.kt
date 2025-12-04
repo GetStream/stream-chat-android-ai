@@ -17,6 +17,7 @@
 package io.getstream.chat.android.ai.compose.sample.ui.chat
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -132,7 +135,18 @@ fun ChatScreen(
         },
         bottomBar = { modifier ->
             ChatComposer(
-                modifier = modifier,
+                modifier = modifier
+                    // Blur gradient to create a visual fade effect that blends with the message list behind it
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+                                MaterialTheme.colorScheme.background,
+                            ),
+                        ),
+                    ),
                 text = state.inputText,
                 attachments = state.attachments,
                 onAttachmentsAdded = chatViewModel::onAttachmentsAdded,

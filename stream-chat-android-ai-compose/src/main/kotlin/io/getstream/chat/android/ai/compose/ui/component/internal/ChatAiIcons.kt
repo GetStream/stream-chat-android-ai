@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
  * Internal icons used by the SDK components.
  * These are simple vector icons to avoid additional dependencies.
  */
+@Suppress("MagicNumber")
 internal object ChatAiIcons {
     /**
      * Add icon (plus sign).
