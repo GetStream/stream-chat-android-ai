@@ -27,7 +27,7 @@ import io.getstream.chat.android.models.Attachment
  * @param actions Available actions for the chat (e.g., NewChat, DeleteChat)
  * @param messages List of messages in the conversation, ordered from newest to oldest
  * @param inputText The current text in the message input field
- * @param attachments List of URIs representing attachments added to the message
+ * @param attachments Set of URIs representing attachments added to the message
  * @param assistantState The current state of the AI assistant
  */
 data class ChatUiState(
@@ -36,7 +36,7 @@ data class ChatUiState(
     val actions: List<Action> = emptyList(),
     val messages: List<Message> = emptyList(),
     val inputText: String = "",
-    val attachments: List<Uri> = emptyList(),
+    val attachments: Set<Uri> = emptySet(),
     val assistantState: AssistantState = AssistantState.Idle,
 ) {
     /**
