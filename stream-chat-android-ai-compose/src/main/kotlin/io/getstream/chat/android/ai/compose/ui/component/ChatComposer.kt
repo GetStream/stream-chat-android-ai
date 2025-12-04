@@ -299,48 +299,44 @@ private fun TextField(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Row(
+                        AnimatedContent(
                             modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            AnimatedContent(
-                                modifier = Modifier.weight(1f),
-                                targetState = !speechToTextState.isRecording(),
-                            ) { visible ->
-                                if (visible) {
-                                    Box(
-                                        Modifier.padding(
+                            targetState = !speechToTextState.isRecording(),
+                        ) { visible ->
+                            if (visible) {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
                                             start = 16.dp,
                                             top = 12.dp,
                                             bottom = 12.dp,
                                         ),
-                                    ) {
-                                        if (text.isEmpty()) {
-                                            Text(
-                                                text = "Ask Assistant",
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                    alpha = 0.6f,
-                                                ),
-                                                style = MaterialTheme.typography.bodyLarge,
-                                            )
-                                        }
-                                        innerTextField()
+                                ) {
+                                    if (text.isEmpty()) {
+                                        Text(
+                                            text = "Ask Assistant",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                        )
                                     }
+                                    innerTextField()
                                 }
                             }
-                            SpeechToTextButton(
-                                state = speechToTextState,
-                                onTextRecognized = { recognizedText ->
-                                    onTextChange(
-                                        if (currentText.isBlank()) {
-                                            recognizedText
-                                        } else {
-                                            "$currentText $recognizedText"
-                                        },
-                                    )
-                                },
-                            )
                         }
+
+                        SpeechToTextButton(
+                            state = speechToTextState,
+                            onTextRecognized = { recognizedText ->
+                                onTextChange(
+                                    if (currentText.isBlank()) {
+                                        recognizedText
+                                    } else {
+                                        "$currentText $recognizedText"
+                                    },
+                                )
+                            },
+                        )
 
                         AnimatedContent(
                             targetState = trailingButton,
