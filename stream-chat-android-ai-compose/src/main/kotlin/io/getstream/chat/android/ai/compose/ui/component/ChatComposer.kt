@@ -24,7 +24,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -57,8 +56,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -177,20 +174,8 @@ public fun ChatComposer(
         onAttachmentsAdded(uris)
     }
 
-    // Main input field content with blur gradient applied to modifier
-    // The gradient creates a visual fade effect that blends with the message list behind it
     Row(
         modifier = modifier
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-                        MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
-                        MaterialTheme.colorScheme.background,
-                    ),
-                ),
-            )
             .imePadding()
             .navigationBarsPadding()
             .padding(horizontal = 8.dp, vertical = 12.dp),
