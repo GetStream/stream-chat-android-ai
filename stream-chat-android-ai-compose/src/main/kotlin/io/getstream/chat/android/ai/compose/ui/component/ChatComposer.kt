@@ -304,24 +304,17 @@ private fun TextField(
                             targetState = !speechToTextState.isRecording(),
                         ) { visible ->
                             if (visible) {
-                                Box(
-                                    Modifier
+                                TextInputField(
+                                    modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(
                                             start = 16.dp,
                                             top = 12.dp,
                                             bottom = 12.dp,
                                         ),
-                                ) {
-                                    if (text.isEmpty()) {
-                                        Text(
-                                            text = "Ask Assistant",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            style = MaterialTheme.typography.bodyLarge,
-                                        )
-                                    }
-                                    innerTextField()
-                                }
+                                    showPlaceholder = text.isBlank(),
+                                    innerTextField = innerTextField,
+                                )
                             }
                         }
 
@@ -372,6 +365,26 @@ private fun TextField(
     )
 }
 
+@Composable
+private fun TextInputField(
+    modifier: Modifier,
+    showPlaceholder: Boolean,
+    innerTextField: @Composable (() -> Unit),
+) {
+    Box(
+        modifier = modifier,
+    ) {
+        if (showPlaceholder) {
+            Text(
+                text = "Ask Assistant",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+        innerTextField()
+    }
+}
+
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
@@ -415,7 +428,7 @@ private fun ChatComposerLongFilledPreview() {
     MaterialTheme {
         ChatComposer(
             text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            attachments = emptyList(),
+            attachments = emptySet(),
             onTextChange = {},
             onAttachmentsAdded = {},
             onAttachmentRemoved = {},
