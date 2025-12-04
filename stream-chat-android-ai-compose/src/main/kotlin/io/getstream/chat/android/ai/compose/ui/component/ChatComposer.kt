@@ -198,6 +198,7 @@ public fun ChatComposer(
         verticalAlignment = Alignment.Bottom,
     ) {
         OutlinedIconButton(
+            enabled = !isStreaming,
             onClick = {
                 photoPickerLauncher.launch(
                     PickVisualMediaRequest(
