@@ -27,6 +27,7 @@ jobs:
       ref: "develop"
       bump: ${{ inputs.bump }}
       file-path: ./buildSrc/src/main/kotlin/io/getstream/chat/android/ai/Configuration.kt
+      excluded-modules: "stream-chat-android-ai-compose-sample"
       use-official-plugin: false
       # Disable explicit documentation tasks as they are already included while publishing
       documentation-tasks: tasks
