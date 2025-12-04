@@ -18,7 +18,6 @@ package io.getstream.chat.android.ai.compose.ui.component
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,7 +56,6 @@ import io.getstream.chat.android.ai.compose.R
 import io.getstream.chat.android.ai.compose.ui.component.internal.rememberSpeechRecognizerHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.log
 import kotlin.random.Random
 
 /**

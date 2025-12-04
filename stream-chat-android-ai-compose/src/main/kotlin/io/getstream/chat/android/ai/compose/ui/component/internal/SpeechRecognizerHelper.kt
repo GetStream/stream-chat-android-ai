@@ -197,8 +197,8 @@ private class DefaultSpeechRecognizerHelper(
                 SpeechRecognizer.ERROR_SERVER,
             )
 
-            isListening = false
             if (isCritical) {
+                isListening = false
                 logger.e { "onError: Critical error - $errorMessage" }
                 onError(errorMessage)
             } else {
