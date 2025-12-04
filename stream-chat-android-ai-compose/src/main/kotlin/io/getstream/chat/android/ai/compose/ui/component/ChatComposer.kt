@@ -299,43 +299,37 @@ private fun TextField(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(
+                        AnimatedContent(
                             modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            AnimatedContent(
-                                targetState = !speechToTextState.isRecording(),
-                            ) { visible ->
-                                if (visible) {
-                                    Box(
-                                        Modifier.padding(start = 16.dp),
-                                    ) {
-                                        if (text.isEmpty()) {
-                                            Text(
-                                                text = "Ask Assistant",
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                    alpha = 0.6f,
-                                                ),
-                                                style = MaterialTheme.typography.bodyLarge,
-                                            )
-                                        }
-                                        innerTextField()
-                                    }
-                                }
+                            targetState = !speechToTextState.isRecording(),
+                        ) { visible ->
+                            if (visible) {
+                                TextInputField(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            start = 16.dp,
+                                            top = 12.dp,
+                                            bottom = 12.dp,
+                                        ),
+                                    showPlaceholder = text.isBlank(),
+                                    innerTextField = innerTextField,
+                                )
                             }
-                            SpeechToTextButton(
-                                state = speechToTextState,
-                                onTextRecognized = { recognizedText ->
-                                    onTextChange(
-                                        if (currentText.isBlank()) {
-                                            recognizedText
-                                        } else {
-                                            "$currentText $recognizedText"
-                                        },
-                                    )
-                                },
-                            )
                         }
+
+                        SpeechToTextButton(
+                            state = speechToTextState,
+                            onTextRecognized = { recognizedText ->
+                                onTextChange(
+                                    if (currentText.isBlank()) {
+                                        recognizedText
+                                    } else {
+                                        "$currentText $recognizedText"
+                                    },
+                                )
+                            },
+                        )
 
                         AnimatedContent(
                             targetState = trailingButton,
@@ -371,6 +365,26 @@ private fun TextField(
     )
 }
 
+@Composable
+private fun TextInputField(
+    modifier: Modifier,
+    showPlaceholder: Boolean,
+    innerTextField: @Composable (() -> Unit),
+) {
+    Box(
+        modifier = modifier,
+    ) {
+        if (showPlaceholder) {
+            Text(
+                text = "Ask Assistant",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+        innerTextField()
+    }
+}
+
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
@@ -396,6 +410,24 @@ private fun ChatComposerFilledPreview() {
     MaterialTheme {
         ChatComposer(
             text = "What is Stream Chat?",
+            attachments = emptySet(),
+            onTextChange = {},
+            onAttachmentsAdded = {},
+            onAttachmentRemoved = {},
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerLongFilledPreview() {
+    MaterialTheme {
+        ChatComposer(
+            text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
             attachments = emptySet(),
             onTextChange = {},
             onAttachmentsAdded = {},
