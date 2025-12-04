@@ -35,8 +35,12 @@ animation, perfect for displaying AI-generated responses in real-time, similar t
 **AITypingIndicator** - a component that displays animated typing indicators with optional
 labels, able to show different states of the LLM (thinking, checking external sources, etc).
 
-**ChatViewModel & ChatUiState** - a ViewModel and state management solution that handles chat
-conversation state, message sending, AI agent management, and UI state updates.
+**ChatComposer** - a complete chat input component with text input, attachment support, voice input,
+and send/stop buttons. It manages message composition state and provides a polished UI with
+automatic keyboard handling and visual fade gradients.
+
+**SpeechToTextButton** - a composable button that provides speech-to-text functionality with
+waveform visualization, automatic permission handling, and customizable UI components.
 
 This repository also includes a sample app that demonstrates how to use these components in a
 AI chat application.
@@ -55,8 +59,9 @@ dependencies {
 }
 ```
 
-Provide the `ChatAiRepository` parameter via your DI container. The sample app obtains it by creating
-`ChatDependencies(... )`, which surfaces the repository for reuse across the UI layer.
+The library provides UI components that work independently. For state management and backend
+integration, refer to the sample app which demonstrates how to integrate these components with
+Stream Chat SDK and AI providers.
 
 ### Snapshot Releases
 
@@ -165,175 +170,137 @@ StreamingText(
 - `content`: Optional composable that receives the animated text as `displayedText`. Defaults to
   the library's markdown renderer used across the sample app.
 
-### ChatViewModel and ChatUiState
+### ChatComposer
 
-`ChatViewModel` manages chat conversation state and interactions, while `ChatUiState`
-represents the UI state.
+`ChatComposer` is a complete chat input component that provides text input, attachment support,
+voice input, and send/stop buttons.
 
-**Setup:**
+**Basic Usage (with internal state management):**
 
 ```kotlin
-import io.getstream.chat.android.ai.compose.presentation.ChatViewModel
-import io.getstream.chat.android.ai.compose.di.ChatViewModelFactory
-import androidx.lifecycle.viewmodel.compose.viewModel
+import io.getstream.chat.android.ai.compose.ui.component.ChatComposer
+import io.getstream.chat.android.ai.compose.ui.component.MessageData
 
 @Composable
-fun ChatScreen(
-    conversationId: String?,
-    chatAiRepository: ChatAiRepository,
-) {
-    val viewModel = viewModel<ChatViewModel>(
-        key = conversationId,
-        factory = ChatViewModelFactory(
-            chatAiRepository = chatAiRepository,
-            conversationId = conversationId,
-        ),
+fun ChatScreen(isStreaming: Boolean) {
+    ChatComposer(
+        onSendClick = { messageData: MessageData ->
+            // Handle message send
+            // messageData.text contains the text
+            // messageData.attachments contains Set<Uri> of selected images
+        },
+        onStopClick = {
+            // Handle stop streaming
+        },
+        isStreaming = isStreaming,
+    )
+}
+```
+
+**Features:**
+- Text input with placeholder ("Ask Assistant")
+- Image attachment support (up to 3 images via photo picker)
+- Voice input button with speech-to-text integration
+- Send button (shown when text is entered)
+- Stop button (shown during AI streaming)
+- Attachment preview with remove functionality
+
+**MessageData Structure:**
+
+```kotlin
+data class MessageData(
+    val text: String = "",
+    val attachments: Set<Uri> = emptySet(),
+)
+```
+
+### SpeechToTextButton
+
+`SpeechToTextButton` provides speech-to-text functionality with waveform visualization,
+automatic permission handling, and customizable UI components.
+
+**Basic Usage:**
+
+```kotlin
+import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
+
+@Composable
+fun MyComposer() {
+    SpeechToTextButton(
+        onTextRecognized = { recognizedText ->
+            // Handle recognized text
+            // Text accumulates across recognition sessions
+        }
+    )
+}
+```
+
+**Advanced Usage with State:**
+
+```kotlin
+import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
+import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextButtonState
+
+@Composable
+fun MyComposer() {
+    val state = rememberSpeechToTextButtonState()
+    
+    SpeechToTextButton(
+        state = state,
+        onTextRecognized = { recognizedText ->
+            // Handle recognized text
+        }
     )
     
-    val state by viewModel.uiState.collectAsState()
-    
-    // Use state in your UI
-    LazyColumn {
-        items(state.messages) { message ->
-            MessageItem(message = message)
-        }
+    // Check if recording
+    if (state.isRecording()) {
+        Text("Recording...")
     }
 }
 ```
 
-Provide the `ChatAiRepository` via your own DI container. The sample app surfaces the repository through a
-`ChatDependencies(...)` instance and passes it to `ChatViewModelFactory`.
-
-**ChatViewModel API:**
+**Customization:**
 
 ```kotlin
-// Observe UI state
-val state: StateFlow<ChatUiState> = viewModel.uiState
-
-// Update input text
-viewModel.onInputTextChange(newText)
-
-// Send a message
-viewModel.sendMessage()
-
-// Stop streaming response
-viewModel.stopStreaming()
-
-// Delete the current chat
-viewModel.deleteChannel(
-    onSuccess = { /* Handle success */ },
-    onError = { error -> /* Handle error */ }
-)
-```
-
-**ChatUiState Structure:**
-
-```kotlin
-data class ChatUiState(
-    val isLoading: Boolean = false,
-    val title: String = "New Chat",
-    val actions: List<Action> = emptyList(),
-    val messages: List<Message> = emptyList(),
-    val inputText: String = "",
-    val assistantState: AssistantState = AssistantState.Idle,
-)
-
-// Message structure
-data class Message(
-    val id: String,
-    val role: Role, // Assistant, User, or Other
-    val content: String,
-    val isGenerating: Boolean,
-)
-
-// Assistant states
-enum class AssistantState {
-    Idle,
-    Thinking,
-    CheckingSources,
-    Generating,
-    Error,
-}
-```
-
-**Helper Functions:**
-
-```kotlin
-// Check if assistant is busy
-val isBusy = state.assistantState.isBusy()
-
-// Get current assistant message
-val currentMessage = state.getCurrentAssistantMessage()
-```
-
-**Complete Example:**
-
-```kotlin
-@Composable
-fun ChatScreen(
-    conversationId: String?,
-    chatAiRepository: ChatAiRepository,
-) {
-    val viewModel = viewModel<ChatViewModel>(
-        key = conversationId,
-        factory = ChatViewModelFactory(
-            chatAiRepository = chatAiRepository,
-            conversationId = conversationId,
-        ),
-    )
-    
-    val state by viewModel.uiState.collectAsState()
-    
-    Column {
-        // Messages list
-        LazyColumn {
-            items(state.messages) { message ->
-                when (message.role) {
-                    ChatUiState.Message.Role.Assistant -> {
-                        StreamingText(
-                            text = message.content,
-                            animate = message.isGenerating,
-                        )
-                    }
-                    ChatUiState.Message.Role.User -> {
-                        StreamingText(
-                            text = message.content,
-                            animate = false,
-                        )
-                    }
-                    else -> { /* Other users */ }
-                }
-            }
+SpeechToTextButton(
+    onTextRecognized = { /* ... */ },
+    voiceInputButton = { onClick ->
+        // Custom voice input button
+        IconButton(onClick = onClick) {
+            Icon(Icons.Default.Mic)
         }
-        
-        // Loading indicator
-        if (state.assistantState.isBusy()) {
-            AITypingIndicator(
-                label = { 
-                    Text(
-                        when (state.assistantState) {
-                            ChatUiState.AssistantState.Thinking -> "Thinking"
-                            ChatUiState.AssistantState.CheckingSources -> "Checking sources"
-                            ChatUiState.AssistantState.Generating -> "Generating response"
-                            else -> ""
-                        }
-                    )
-                }
-            )
+    },
+    cancelButton = { onClick ->
+        // Custom cancel button
+        IconButton(onClick = onClick) {
+            Icon(Icons.Default.Close)
         }
-        
-        // Input field
-        TextField(
-            value = state.inputText,
-            onValueChange = viewModel::onInputTextChange,
-            trailingIcon = {
-                IconButton(onClick = viewModel::sendMessage) {
-                    Icon(Icons.Default.Send)
-                }
-            }
-        )
+    },
+    waveformIndicator = {
+        // Custom waveform visualization
+        CustomWaveform()
+    },
+    seeTextButton = { onClick ->
+        // Custom "See text" button
+        TextButton(onClick = onClick) {
+            Text("View text")
+        }
     }
-}
+)
+```
+
+**Features:**
+- Automatic audio permission requests
+- Waveform visualization during recording
+- Text accumulation across recognition sessions
+- Customizable UI components
+- State tracking for recording status
+
+**SpeechToTextButtonState API:**
+
+```kotlin
+// Check if currently recording
+val isRecording: Boolean = state.isRecording()
 ```
 
 ## 🛥 What is Stream?
