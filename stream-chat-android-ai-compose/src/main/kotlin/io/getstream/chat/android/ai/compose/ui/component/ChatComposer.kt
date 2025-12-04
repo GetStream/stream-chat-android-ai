@@ -74,11 +74,11 @@ import io.getstream.chat.android.ai.compose.ui.component.internal.rememberPhotoP
  * Data class representing a message composed by the user.
  *
  * @param text The text content of the message.
- * @param attachments The list of attachment URIs to include with the message.
+ * @param attachments The set of attachment URIs to include with the message.
  */
 public data class MessageData(
     val text: String = "",
-    val attachments: List<Uri> = emptyList(),
+    val attachments: Set<Uri> = emptySet(),
 )
 
 /**
@@ -145,7 +145,7 @@ public fun ChatComposer(
  * - Visual fade gradient background
  *
  * @param text The current text input value.
- * @param attachments The list of attachment URIs.
+ * @param attachments The set of attachment URIs.
  * @param onTextChange Callback invoked when the text changes.
  * @param onAttachmentsAdded Callback invoked when new attachments are selected.
  * @param onAttachmentRemoved Callback invoked when an attachment is removed.
@@ -158,7 +158,7 @@ public fun ChatComposer(
 @Composable
 public fun ChatComposer(
     text: String,
-    attachments: List<Uri>,
+    attachments: Set<Uri>,
     onTextChange: (String) -> Unit,
     onAttachmentsAdded: (List<Uri>) -> Unit,
     onAttachmentRemoved: (Uri) -> Unit,
@@ -221,7 +221,7 @@ public fun ChatComposer(
         TextField(
             modifier = Modifier.fillMaxWidth(),
             text = text,
-            attachments = attachments.toList(),
+            attachments = attachments,
             onTextChange = onTextChange,
             onRemoveAttachment = onAttachmentRemoved,
             isStreaming = isStreaming,
@@ -236,7 +236,7 @@ public fun ChatComposer(
 private fun TextField(
     modifier: Modifier,
     text: String,
-    attachments: List<Uri>,
+    attachments: Set<Uri>,
     onTextChange: (String) -> Unit,
     onRemoveAttachment: (Uri) -> Unit,
     isStreaming: Boolean,
@@ -378,7 +378,7 @@ private fun ChatComposerEmptyPreview() {
     MaterialTheme {
         ChatComposer(
             text = "",
-            attachments = emptyList(),
+            attachments = emptySet(),
             onTextChange = {},
             onAttachmentsAdded = {},
             onAttachmentRemoved = {},
@@ -396,7 +396,7 @@ private fun ChatComposerFilledPreview() {
     MaterialTheme {
         ChatComposer(
             text = "What is Stream Chat?",
-            attachments = emptyList(),
+            attachments = emptySet(),
             onTextChange = {},
             onAttachmentsAdded = {},
             onAttachmentRemoved = {},
@@ -414,7 +414,7 @@ private fun ChatComposerStreamingPreview() {
     MaterialTheme {
         ChatComposer(
             text = "",
-            attachments = emptyList(),
+            attachments = emptySet(),
             onTextChange = {},
             onAttachmentsAdded = {},
             onAttachmentRemoved = {},
