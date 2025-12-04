@@ -17,7 +17,7 @@ package io.getstream.chat.android.ai
 
 object Configuration {
     const val majorVersion = 0
-    const val minorVersion = 1
+    const val minorVersion = 0
     const val patchVersion = 0
     const val versionName = "$majorVersion.$minorVersion.$patchVersion"
     const val artifactGroup = "io.getstream"
