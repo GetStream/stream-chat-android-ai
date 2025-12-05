@@ -64,13 +64,12 @@ class App : Application() {
             .build()
 
         val user = User(
-            id = "andrerego",
-            name = "André Rêgo",
-            image = "https://ca.slack-edge.com/T02RM6X6B-U083JCB6ZEY-2da235988b74-512",
+            id = "stream-user",
+            name = "Stream User",
         )
 
         // https://getstream.io/chat/docs/php/token_generator/
-        val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYW5kcmVyZWdvIn0.DfzvkOT8-cnpTFzD5E3XL5P3nI8GJFo5Suxf23kvHuo"
+        val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoic3RyZWFtLXVzZXIifQ.ZG2h53Sne0kyCq5iI40ExcS0MCqDa9q-Dbc-iJ2niYU"
         chatClient.connectUser(user, token)
             .enqueue { result ->
                 if (result.isFailure) {
