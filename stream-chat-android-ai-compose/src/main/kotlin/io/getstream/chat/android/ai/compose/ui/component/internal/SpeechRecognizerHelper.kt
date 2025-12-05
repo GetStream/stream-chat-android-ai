@@ -24,9 +24,11 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
 import io.getstream.chat.android.ai.compose.util.internal.simpleLogger
 import java.util.Locale
 
@@ -35,11 +37,22 @@ import java.util.Locale
  * Manages speech recognition using Android's SpeechRecognizer API.
  */
 internal interface SpeechRecognizerHelper {
-    fun startListening(): Boolean
-    fun stopListening()
-    fun cancel()
-    fun release()
-    fun isListening(): Boolean
+    val isListening: Boolean get() = false
+    val rmsdB: Float get() = 0f
+
+    fun startListening(): Boolean = false
+
+    fun stopListening() {
+        // No-op
+    }
+
+    fun cancel() {
+        // No-op
+    }
+
+    fun release() {
+        // No-op
+    }
 }
 
 /**
@@ -48,75 +61,75 @@ internal interface SpeechRecognizerHelper {
 private class DefaultSpeechRecognizerHelper(
     context: Context,
     private val onResult: (String) -> Unit,
-    private val onError: (String) -> Unit,
-    private val onRmsChanged: ((Float) -> Unit)? = null,
     private val onPartialResult: ((String) -> Unit)? = null,
-    private val onRecordingStopped: (() -> Unit)? = null,
 ) : SpeechRecognizerHelper {
     private val logger = simpleLogger("SpeechRecognizerHelper")
     private var speechRecognizer: SpeechRecognizer? = null
-    private var isListening = false
+    private val _isListening = mutableStateOf(false)
+    override val isListening by _isListening
+    private val _rmsdB = mutableFloatStateOf(0f)
+    override val rmsdB by _rmsdB
     private var lastPartialResult: String? = null
-    private var partialResults = mutableListOf<String>()
+    private var hasFinalResult = false
 
     init {
         if (SpeechRecognizer.isRecognitionAvailable(context)) {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
             speechRecognizer?.setRecognitionListener(createRecognitionListener())
         } else {
-            onError("Speech recognition is not available on this device")
+            logger.w { "Speech recognition is not available on this device" }
         }
     }
 
+    private fun resetState() {
+        _isListening.value = false
+        _rmsdB.value = 0f
+        lastPartialResult = null
+        hasFinalResult = false
+    }
+
+    @Suppress("TooGenericExceptionCaught")
     override fun startListening(): Boolean {
-        if (isListening) return false
+        if (_isListening.value) {
+            return false
+        }
 
         val recognizer = speechRecognizer ?: run {
-            onError("Speech recognizer is not available")
+            logger.e { "Speech recognizer is not available" }
             return false
         }
 
         return try {
-            lastPartialResult = null // Reset partial result when starting new session
-            partialResults.clear()
+            resetState()
             recognizer.startListening(createRecognitionIntent())
-            isListening = true
+            _isListening.value = true
             true
         } catch (e: Exception) {
             logger.e(e) { "Failed to start listening: ${e.message}" }
-            onError("Failed to start listening: ${e.message}")
             false
         }
     }
 
     override fun stopListening() {
-        if (!isListening) return
+        if (!_isListening.value) {
+            return
+        }
         speechRecognizer?.stopListening()
-        isListening = false
-        onRecordingStopped?.invoke()
+        // Don't reset state here - onResults() will be called asynchronously
+        // and will handle the reset after processing the final result
+        _isListening.value = false
     }
 
     override fun cancel() {
         speechRecognizer?.cancel()
-        isListening = false
+        resetState()
     }
 
     override fun release() {
         speechRecognizer?.cancel()
         speechRecognizer?.destroy()
         speechRecognizer = null
-        isListening = false
-    }
-
-    override fun isListening(): Boolean = isListening
-
-    private fun createRecognitionIntent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        // Long timeout - recording stops only when manually cancelled
-        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, SILENCE_TIMEOUT_MS)
-        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, SILENCE_TIMEOUT_MS)
+        resetState()
     }
 
     private fun createRecognitionListener(): RecognitionListener = object : RecognitionListener {
@@ -132,8 +145,7 @@ private class DefaultSpeechRecognizerHelper(
 
         // 3. Called repeatedly during speech - provides audio level updates
         override fun onRmsChanged(rmsdB: Float) {
-            logger.v { "onRmsChanged: rmsdB=$rmsdB" }
-            onRmsChanged?.invoke(rmsdB)
+            _rmsdB.value = rmsdB
         }
 
         // 4. Optional - may not be called, receives audio buffer
@@ -143,64 +155,45 @@ private class DefaultSpeechRecognizerHelper(
 
         // 5. Optional - called multiple times if EXTRA_PARTIAL_RESULTS is enabled
         override fun onPartialResults(partialResults: Bundle?) {
+            if (hasFinalResult) {
+                logger.d { "onPartialResults: Ignoring late partial result (final result already processed)" }
+                return
+            }
+
             extractResult(partialResults)?.takeIf(String::isNotBlank)?.let { result ->
                 lastPartialResult = result
                 logger.d { "onPartialResults: Streaming partial result: $result" }
-                // Stream partial results immediately to provide real-time feedback
                 onPartialResult?.invoke(result)
             }
         }
 
         // 6. Called when user stops speaking
         override fun onEndOfSpeech() {
-            logger.d { "onEndOfSpeech: User stopped speaking, starting 3-second auto-stop timer" }
-            // Start a 3-second timer. If user doesn't start speaking again, stop recognition
-            lastPartialResult?.let {
-                partialResults.add(it)
-            }
+            logger.d { "onEndOfSpeech: User stopped speaking" }
         }
 
         // 7. Called last (in normal flow) - provides final recognition results
         override fun onResults(results: Bundle?) {
-            isListening = false
-            val finalResult = partialResults.joinToString(" ")
-            onRecordingStopped?.invoke()
-            if (finalResult != null) {
-                logger.d { "onResults: Processing result: $finalResult" }
-                onResult(finalResult)
-                lastPartialResult = null
-            } else {
-                logger.w { "onResults: No results available" }
-            }
+            logger.d { "onResults: Processing results: $results" }
+            hasFinalResult = true
+
+            // Use final result from bundle (most accurate), fallback to last partial result
+            val finalResult = extractResult(results)?.takeIf(String::isNotBlank)
+                ?: lastPartialResult
+                ?: ""
+
+            onResult(finalResult)
+            resetState()
         }
 
         // 8. Can be called at any time if an error occurs
         override fun onError(error: Int) {
-            val errorMessage = when (error) {
-                SpeechRecognizer.ERROR_AUDIO -> "Audio error"
-                SpeechRecognizer.ERROR_CLIENT -> "Client error"
-                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
-                SpeechRecognizer.ERROR_NETWORK -> "Network error"
-                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
-                SpeechRecognizer.ERROR_NO_MATCH -> "No match"
-                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognizer busy"
-                SpeechRecognizer.ERROR_SERVER -> "Server error"
-                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Speech timeout"
-                else -> "Unknown error: $error"
-            }
-
-            val isCritical = error in setOf(
-                SpeechRecognizer.ERROR_AUDIO,
-                SpeechRecognizer.ERROR_CLIENT,
-                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS,
-                SpeechRecognizer.ERROR_NETWORK,
-                SpeechRecognizer.ERROR_SERVER,
-            )
+            val errorMessage = getErrorMessage(error)
+            val isCritical = error in CRITICAL_ERRORS
 
             if (isCritical) {
-                isListening = false
+                resetState()
                 logger.e { "onError: Critical error - $errorMessage" }
-                onError(errorMessage)
             } else {
                 logger.d { "onError: Non-critical error - $errorMessage" }
             }
@@ -210,57 +203,22 @@ private class DefaultSpeechRecognizerHelper(
         override fun onEvent(eventType: Int, params: Bundle?) {
             logger.d { "onEvent: eventType=$eventType, params=$params" }
         }
-
-        private fun extractResult(bundle: Bundle?): String? {
-            return bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-        }
     }
-}
-
-/**
- * No-op implementation of SpeechRecognizerHelper for preview mode.
- */
-private class NoOpSpeechRecognizerHelper : SpeechRecognizerHelper {
-    override fun startListening(): Boolean = false
-
-    override fun stopListening() {
-        // No-op
-    }
-
-    override fun cancel() {
-        // No-op
-    }
-
-    override fun release() {
-        // No-op
-    }
-
-    override fun isListening(): Boolean = false
 }
 
 @Composable
 internal fun rememberSpeechRecognizerHelper(
     onResult: (String) -> Unit,
-    onError: (String) -> Unit,
-    onRmsChanged: ((Float) -> Unit)? = null,
     onPartialResult: ((String) -> Unit)? = null,
-    onRecordingStopped: (() -> Unit)? = null,
 ): SpeechRecognizerHelper {
     val context = LocalContext.current
-    val isInPreview = LocalInspectionMode.current
+
     val helper = remember {
-        if (isInPreview) {
-            NoOpSpeechRecognizerHelper()
-        } else {
-            DefaultSpeechRecognizerHelper(
-                context,
-                onResult,
-                onError,
-                onRmsChanged,
-                onPartialResult,
-                onRecordingStopped,
-            )
-        }
+        DefaultSpeechRecognizerHelper(
+            context,
+            onResult,
+            onPartialResult,
+        )
     }
 
     DisposableEffect(Unit) {
@@ -271,3 +229,35 @@ internal fun rememberSpeechRecognizerHelper(
 }
 
 private const val SILENCE_TIMEOUT_MS = 3000
+
+private val CRITICAL_ERRORS = setOf(
+    SpeechRecognizer.ERROR_AUDIO,
+    SpeechRecognizer.ERROR_CLIENT,
+    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS,
+    SpeechRecognizer.ERROR_NETWORK,
+    SpeechRecognizer.ERROR_SERVER,
+)
+
+private fun createRecognitionIntent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, SILENCE_TIMEOUT_MS)
+    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, SILENCE_TIMEOUT_MS)
+}
+
+private fun extractResult(bundle: Bundle?): String? =
+    bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+
+private fun getErrorMessage(error: Int): String = when (error) {
+    SpeechRecognizer.ERROR_AUDIO -> "Audio error"
+    SpeechRecognizer.ERROR_CLIENT -> "Client error"
+    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
+    SpeechRecognizer.ERROR_NETWORK -> "Network error"
+    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+    SpeechRecognizer.ERROR_NO_MATCH -> "No match"
+    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognizer busy"
+    SpeechRecognizer.ERROR_SERVER -> "Server error"
+    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Speech timeout"
+    else -> "Unknown error: $error"
+}

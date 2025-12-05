@@ -243,10 +243,21 @@ private fun TextField(
     }
     val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
 
-    val speechToTextState = rememberSpeechToTextButtonState()
-
     // Remember the text that existed before starting speech recognition
     val textBeforeSpeech = remember { mutableStateOf("") }
+
+    val speechToTextState = rememberSpeechToTextButtonState(
+        onTextRecognized = { recognizedText ->
+            // Partial results already contain full text, so replace (don't accumulate)
+            onTextChange(
+                if (textBeforeSpeech.value.isBlank()) {
+                    recognizedText
+                } else {
+                    "${textBeforeSpeech.value} $recognizedText"
+                },
+            )
+        },
+    )
 
     // Update textBeforeSpeech when recording starts/stops
     LaunchedEffect(speechToTextState.isRecording()) {
@@ -291,7 +302,7 @@ private fun TextField(
                         }
                     }
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Bottom,
                     ) {
                         Box(
                             modifier = Modifier.weight(1f),
@@ -309,24 +320,12 @@ private fun TextField(
                                 innerTextField = innerTextField,
                             )
                         }
-                        FilledIconButton(
-                            onClick = {
-                            },
-                            enabled = !isStreaming,
-                        ) {
-                            SpeechToTextButton(
-                                state = speechToTextState,
-                                onTextRecognized = { recognizedText ->
-                                    // Partial results already contain full text, so replace (don't accumulate)
-                                    onTextChange(
-                                        if (textBeforeSpeech.value.isBlank()) {
-                                            recognizedText
-                                        } else {
-                                            "${textBeforeSpeech.value} $recognizedText"
-                                        },
-                                    )
-                                },
-                            )
+                        AnimatedContent(
+                            targetState = !isStreaming,
+                        ) { visible ->
+                            if (visible) {
+                                SpeechToTextButton(state = speechToTextState)
+                            }
                         }
                         AnimatedContent(
                             targetState = trailingButton,
