@@ -1,3 +1,5 @@
+![Integrating Stream Chat with AI](/assets/repo_cover.png)
+
 # AI components for [Stream Android Chat SDK](https://getstream.io/tutorials/android-chat/)
 
 <p align="center">
