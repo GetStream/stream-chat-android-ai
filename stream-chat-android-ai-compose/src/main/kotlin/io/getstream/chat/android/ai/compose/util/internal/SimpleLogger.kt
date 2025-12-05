@@ -35,15 +35,11 @@ internal interface SimpleLogger {
  */
 internal class AndroidSimpleLogger(private val tag: String) : SimpleLogger {
     override fun d(message: () -> String) {
-        if (Log.isLoggable(tag, Log.DEBUG)) {
-            Log.d(tag, message())
-        }
+        Log.d(tag, message())
     }
 
     override fun v(message: () -> String) {
-        if (Log.isLoggable(tag, Log.VERBOSE)) {
-            Log.v(tag, message())
-        }
+        Log.v(tag, message())
     }
 
     override fun w(message: () -> String) {
