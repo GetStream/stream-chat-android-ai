@@ -65,6 +65,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
@@ -127,7 +128,7 @@ public fun ChatComposer(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        OutlinedIconButton(
+        AttachmentButton(
             enabled = !isStreaming,
             onClick = {
                 photoPickerLauncher.launch(
@@ -137,27 +138,13 @@ public fun ChatComposer(
                     ),
                 )
             },
-            colors = IconButtonDefaults.outlinedIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        ) {
-            Icon(
-                imageVector = ChatAiIcons.Add,
-                contentDescription = "Add context",
-            )
-        }
+        )
 
         TextField(
             modifier = Modifier.fillMaxWidth(),
             data = messageData,
-            onTextChange = { text ->
-                messageData = messageData.copy(text = text)
-            },
-            onRemoveAttachment = {
-                messageData = messageData.copy(attachments = messageData.attachments - it)
-            },
+            onTextChange = { messageData = messageData.copy(text = it) },
+            onRemoveAttachment = { messageData = messageData.copy(attachments = messageData.attachments - it) },
             isStreaming = isStreaming,
             onSendClick = handleSendClick,
             onStopClick = onStopClick,
@@ -186,20 +173,6 @@ private fun TextField(
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
 ) {
-    val colors = OutlinedTextFieldDefaults.colors()
-    val interactionSource = remember { MutableInteractionSource() }
-    // If color is not provided via the text style, use content color as a default
-    val textStyle = LocalTextStyle.current
-    val textColor = textStyle.color.takeOrElse {
-        val focused = interactionSource.collectIsFocusedAsState().value
-        when {
-            isStreaming -> colors.disabledTextColor
-            focused -> colors.focusedTextColor
-            else -> colors.unfocusedTextColor
-        }
-    }
-    val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
-
     // Remember the text that existed before starting speech recognition
     var textBeforeSpeech by remember { mutableStateOf("") }
 
@@ -235,9 +208,9 @@ private fun TextField(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
-    SnackbarHost(
-        hostState = snackbarHostState,
-    )
+    SnackbarHost(hostState = snackbarHostState)
+
+    val interactionSource = remember { MutableInteractionSource() }
 
     BasicTextField(
         modifier = modifier.defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
@@ -246,8 +219,8 @@ private fun TextField(
         enabled = !isStreaming && !speechToTextState.isRecording(),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
         keyboardActions = KeyboardActions(onSend = { onSendClick() }),
-        textStyle = mergedTextStyle,
-        cursorBrush = SolidColor(colors.cursorColor),
+        textStyle = resolveTextFieldStyle(interactionSource, disabled = isStreaming),
+        cursorBrush = SolidColor(OutlinedTextFieldDefaults.colors().cursorColor),
         interactionSource = interactionSource,
         maxLines = 6,
         minLines = 1,
@@ -257,11 +230,8 @@ private fun TextField(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Column {
-                    val hasAttachments = data.attachments.isNotEmpty()
-                    AnimatedContent(
-                        targetState = hasAttachments,
-                    ) { visible ->
-                        if (visible) {
+                    AnimatedContent(targetState = data.attachments.isNotEmpty()) { hasAttachments ->
+                        if (hasAttachments) {
                             SelectedAttachmentList(
                                 modifier = Modifier.fillMaxWidth(),
                                 uris = data.attachments,
@@ -269,9 +239,7 @@ private fun TextField(
                             )
                         }
                     }
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                    ) {
+                    Row(verticalAlignment = Alignment.Bottom) {
                         Box(
                             modifier = Modifier.weight(1f),
                             contentAlignment = Alignment.CenterStart,
@@ -279,19 +247,13 @@ private fun TextField(
                             TextInputField(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(
-                                        start = 16.dp,
-                                        top = 12.dp,
-                                        bottom = 12.dp,
-                                    ),
+                                    .padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
                                 showPlaceholder = data.text.isBlank(),
                                 innerTextField = innerTextField,
                             )
                         }
-                        AnimatedContent(
-                            targetState = !isStreaming,
-                        ) { visible ->
-                            if (visible) {
+                        AnimatedContent(targetState = !isStreaming) { showVoiceButton ->
+                            if (showVoiceButton) {
                                 SpeechToTextButton(
                                     state = speechToTextState,
                                     onPermissionDenied = {
@@ -309,30 +271,21 @@ private fun TextField(
                                 )
                             }
                         }
-                        AnimatedContent(
-                            targetState = trailingButton,
-                        ) { button ->
+                        AnimatedContent(targetState = trailingButton) { button ->
                             when (button) {
                                 "stop" -> {
-                                    FilledIconButton(
+                                    TrailingIconButton(
+                                        icon = ChatAiIcons.Stop,
+                                        contentDescription = "Stop",
                                         onClick = onStopClick,
-                                    ) {
-                                        Icon(
-                                            imageVector = ChatAiIcons.Stop,
-                                            contentDescription = "Stop",
-                                        )
-                                    }
+                                    )
                                 }
-
                                 "send" -> {
-                                    FilledIconButton(
+                                    TrailingIconButton(
+                                        icon = ChatAiIcons.Send,
+                                        contentDescription = "Send",
                                         onClick = onSendClick,
-                                    ) {
-                                        Icon(
-                                            imageVector = ChatAiIcons.Send,
-                                            contentDescription = "Send",
-                                        )
-                                    }
+                                    )
                                 }
                             }
                         }
@@ -341,6 +294,56 @@ private fun TextField(
             }
         },
     )
+}
+
+@Composable
+private fun resolveTextFieldStyle(
+    interactionSource: MutableInteractionSource,
+    disabled: Boolean,
+): TextStyle {
+    val colors = OutlinedTextFieldDefaults.colors()
+    val textStyle = LocalTextStyle.current
+    val textColor = textStyle.color.takeOrElse {
+        val focused = interactionSource.collectIsFocusedAsState().value
+        when {
+            disabled -> colors.disabledTextColor
+            focused -> colors.focusedTextColor
+            else -> colors.unfocusedTextColor
+        }
+    }
+    return textStyle.merge(TextStyle(color = textColor))
+}
+
+@Composable
+private fun AttachmentButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    OutlinedIconButton(
+        enabled = enabled,
+        onClick = onClick,
+        colors = IconButtonDefaults.outlinedIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Icon(
+            imageVector = ChatAiIcons.Add,
+            contentDescription = "Add context",
+        )
+    }
+}
+
+@Composable
+private fun TrailingIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    FilledIconButton(onClick = onClick) {
+        Icon(imageVector = icon, contentDescription = contentDescription)
+    }
 }
 
 private fun Context.openSettings() {
@@ -354,11 +357,9 @@ private fun Context.openSettings() {
 private fun TextInputField(
     modifier: Modifier,
     showPlaceholder: Boolean,
-    innerTextField: @Composable (() -> Unit),
+    innerTextField: @Composable () -> Unit,
 ) {
-    Box(
-        modifier = modifier,
-    ) {
+    Box(modifier = modifier) {
         if (showPlaceholder) {
             Text(
                 text = "Ask Assistant",
@@ -373,33 +374,7 @@ private fun TextInputField(
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ChatComposerEmptyPreview() {
-    MaterialTheme {
-        ChatComposer(
-            onSendClick = {},
-            onStopClick = {},
-            isStreaming = false,
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun ChatComposerFilledPreview() {
-    MaterialTheme {
-        ChatComposer(
-            onSendClick = {},
-            onStopClick = {},
-            isStreaming = false,
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun ChatComposerLongFilledPreview() {
+private fun ChatComposerPreview() {
     MaterialTheme {
         ChatComposer(
             onSendClick = {},
