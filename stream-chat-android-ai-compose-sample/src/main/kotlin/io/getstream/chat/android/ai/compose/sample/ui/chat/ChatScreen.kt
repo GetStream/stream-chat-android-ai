@@ -157,7 +157,7 @@ fun ChatScreen(
                     ),
                 onSendClick = chatViewModel::sendMessage,
                 onStopClick = chatViewModel::stopStreaming,
-                isStreaming = isAssistantBusy,
+                isGenerating = isAssistantBusy,
             )
         },
     ) { contentPadding ->

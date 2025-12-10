@@ -90,14 +90,14 @@ import kotlinx.coroutines.launch
  *
  * The composer includes:
  * - Text input field with placeholder
- * - Attachment button for selecting images
+ * - Add button for selecting images
  * - Voice input button with speech-to-text
  * - Send button (shown when text is not empty)
- * - Stop button (shown during AI streaming)
+ * - Stop button (shown during AI generating)
  *
  * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
  * @param onStopClick Callback invoked when the stop button is clicked (during AI streaming).
- * @param isStreaming Whether the AI is currently streaming a response.
+ * @param isGenerating Whether the AI is currently generating a response.
  * @param modifier The modifier to be applied to the composer.
  * @param messageData The initial message data to be displayed in the input field.
  */
@@ -105,7 +105,7 @@ import kotlinx.coroutines.launch
 public fun ChatComposer(
     onSendClick: (data: MessageData) -> Unit,
     onStopClick: () -> Unit,
-    isStreaming: Boolean,
+    isGenerating: Boolean,
     modifier: Modifier = Modifier,
     messageData: MessageData = MessageData(),
 ) {
@@ -137,7 +137,7 @@ public fun ChatComposer(
         SnackbarHost(hostState = snackbarHostState)
 
         AddButton(
-            enabled = !isStreaming,
+            enabled = !isGenerating,
             onClick = {
                 photoPickerLauncher.launch(
                     PickVisualMediaRequest(
@@ -154,7 +154,7 @@ public fun ChatComposer(
             data = messageData,
             onTextChange = { messageData = messageData.copy(text = it) },
             onRemoveAttachment = { messageData = messageData.copy(attachments = messageData.attachments - it) },
-            isStreaming = isStreaming,
+            isGenerating = isGenerating,
             onSendClick = handleSendClick,
             onStopClick = onStopClick,
         )
@@ -180,7 +180,7 @@ private fun TextField(
     data: MessageData,
     onTextChange: (String) -> Unit,
     onRemoveAttachment: (Uri) -> Unit,
-    isStreaming: Boolean,
+    isGenerating: Boolean,
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
 ) {
@@ -210,7 +210,7 @@ private fun TextField(
     }
 
     val trailingButton = when {
-        isStreaming -> "stop"
+        isGenerating -> "stop"
         data.text.isNotBlank() && !speechToTextState.isRecording() -> "send"
         else -> null
     }
@@ -221,10 +221,10 @@ private fun TextField(
         modifier = modifier.defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
         value = data.text,
         onValueChange = onTextChange,
-        enabled = !isStreaming && !speechToTextState.isRecording(),
+        enabled = !isGenerating && !speechToTextState.isRecording(),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
         keyboardActions = KeyboardActions(onSend = { onSendClick() }),
-        textStyle = resolveTextFieldStyle(interactionSource, disabled = isStreaming),
+        textStyle = resolveTextFieldStyle(interactionSource, disabled = isGenerating),
         cursorBrush = SolidColor(OutlinedTextFieldDefaults.colors().cursorColor),
         interactionSource = interactionSource,
         maxLines = 6,
@@ -246,7 +246,7 @@ private fun TextField(
                             innerTextField = innerTextField,
                         )
                         VoiceButton(
-                            isStreaming = isStreaming,
+                            isGenerating = isGenerating,
                             speechToTextState = speechToTextState,
                             snackbarHostState = snackbarHostState,
                         )
@@ -325,14 +325,14 @@ private fun TextInput(
 
 @Composable
 private fun VoiceButton(
-    isStreaming: Boolean,
+    isGenerating: Boolean,
     speechToTextState: SpeechToTextButtonState,
     snackbarHostState: SnackbarHostState,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    AnimatedContent(targetState = !isStreaming) { showVoiceButton ->
+    AnimatedContent(targetState = !isGenerating) { showVoiceButton ->
         if (showVoiceButton) {
             SpeechToTextButton(
                 state = speechToTextState,
@@ -425,7 +425,7 @@ private fun ChatComposerEmptyPreview() {
         ChatComposer(
             onSendClick = {},
             onStopClick = {},
-            isStreaming = false,
+            isGenerating = false,
         )
     }
 }
@@ -438,7 +438,7 @@ private fun ChatComposerFilledPreview() {
             messageData = MessageData(text = "What is Stream Chat?"),
             onSendClick = {},
             onStopClick = {},
-            isStreaming = false,
+            isGenerating = false,
         )
     }
 }
@@ -451,7 +451,7 @@ private fun ChatComposerLongFilledPreview() {
             messageData = MessageData(text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
             onSendClick = {},
             onStopClick = {},
-            isStreaming = false,
+            isGenerating = false,
         )
     }
 }
@@ -467,7 +467,7 @@ private fun ChatComposerWithAttachmentsPreview() {
             ),
             onSendClick = {},
             onStopClick = {},
-            isStreaming = false,
+            isGenerating = false,
         )
     }
 }
@@ -479,7 +479,7 @@ private fun ChatComposerStreamingPreview() {
         ChatComposer(
             onSendClick = {},
             onStopClick = {},
-            isStreaming = true,
+            isGenerating = true,
         )
     }
 }
