@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-@file:Suppress("MatchingDeclarationName")
-
 package io.getstream.chat.android.ai.compose.ui.component
 
 import android.content.Context
@@ -23,8 +21,10 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -73,65 +73,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.ui.component.internal.ChatAiIcons
 import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
-import io.getstream.chat.android.ai.compose.ui.component.internal.rememberPhotoPickerLauncher
 import kotlinx.coroutines.launch
-
-/**
- * Data class representing a message composed by the user.
- *
- * @param text The text content of the message.
- * @param attachments The set of attachment URIs to include with the message.
- */
-public data class MessageData(
-    val text: String = "",
-    val attachments: Set<Uri> = emptySet(),
-)
-
-/**
- * Chat composer with internal state management.
- *
- * This is a convenience composable that manages the message state internally.
- * For more control over the state, use the overload that accepts state parameters.
- *
- * The composer displays different action buttons based on state:
- * - Stop button when streaming
- * - Send button when text is entered
- * - Voice button when text is empty
- *
- * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
- * @param onStopClick Callback invoked when the stop button is clicked (during AI streaming).
- * @param isStreaming Whether the AI is currently streaming a response.
- * @param modifier The modifier to be applied to the composer.
- */
-@Composable
-public fun ChatComposer(
-    onSendClick: (MessageData) -> Unit,
-    onStopClick: () -> Unit,
-    isStreaming: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    var state by remember { mutableStateOf(MessageData()) }
-    ChatComposer(
-        text = state.text,
-        attachments = state.attachments,
-        onTextChange = { newText ->
-            state = state.copy(text = newText)
-        },
-        onAttachmentsAdded = { newAttachments ->
-            state = state.copy(attachments = state.attachments + newAttachments)
-        },
-        onAttachmentRemoved = { attachmentToRemove ->
-            state = state.copy(attachments = state.attachments - attachmentToRemove)
-        },
-        onSendClick = {
-            onSendClick(state)
-            state = MessageData()
-        },
-        onStopClick = onStopClick,
-        isStreaming = isStreaming,
-        modifier = modifier,
-    )
-}
 
 /**
  * Chat composer with attach, voice, and send buttons.
@@ -148,39 +90,33 @@ public fun ChatComposer(
  * - Voice input button with speech-to-text
  * - Send button (shown when text is not empty)
  * - Stop button (shown during AI streaming)
- * - Visual fade gradient background
  *
- * @param text The current text input value.
- * @param attachments The set of attachment URIs.
- * @param onTextChange Callback invoked when the text changes.
- * @param onAttachmentsAdded Callback invoked when new attachments are selected.
- * @param onAttachmentRemoved Callback invoked when an attachment is removed.
- * @param onSendClick Callback invoked when the send button is clicked.
- * @param onStopClick Callback invoked when the stop button is clicked (during streaming).
+ * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
+ * @param onStopClick Callback invoked when the stop button is clicked (during AI streaming).
  * @param isStreaming Whether the AI is currently streaming a response.
  * @param modifier The modifier to be applied to the composer.
  */
-@Suppress("LongParameterList")
 @Composable
 public fun ChatComposer(
-    text: String,
-    attachments: Set<Uri>,
-    onTextChange: (String) -> Unit,
-    onAttachmentsAdded: (List<Uri>) -> Unit,
-    onAttachmentRemoved: (Uri) -> Unit,
-    onSendClick: () -> Unit,
+    onSendClick: (data: MessageData) -> Unit,
     onStopClick: () -> Unit,
     isStreaming: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    var messageData by remember { mutableStateOf(MessageData()) }
+
     val keyboardController = LocalSoftwareKeyboardController.current
+
     val handleSendClick = {
         keyboardController?.hide()
-        onSendClick()
+        onSendClick(messageData)
+        messageData = MessageData()
     }
 
-    val photoPickerLauncher = rememberPhotoPickerLauncher { uris ->
-        onAttachmentsAdded(uris)
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = PickMultipleVisualMedia(),
+    ) { uris ->
+        messageData = messageData.copy(attachments = messageData.attachments + uris)
     }
 
     Row(
@@ -196,8 +132,8 @@ public fun ChatComposer(
             onClick = {
                 photoPickerLauncher.launch(
                     PickVisualMediaRequest(
-                        ActivityResultContracts.PickVisualMedia.ImageOnly,
-                        3,
+                        mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly,
+                        maxItems = 3,
                     ),
                 )
             },
@@ -215,10 +151,13 @@ public fun ChatComposer(
 
         TextField(
             modifier = Modifier.fillMaxWidth(),
-            text = text,
-            attachments = attachments,
-            onTextChange = onTextChange,
-            onRemoveAttachment = onAttachmentRemoved,
+            data = messageData,
+            onTextChange = { text ->
+                messageData = messageData.copy(text = text)
+            },
+            onRemoveAttachment = {
+                messageData = messageData.copy(attachments = messageData.attachments - it)
+            },
             isStreaming = isStreaming,
             onSendClick = handleSendClick,
             onStopClick = onStopClick,
@@ -226,12 +165,21 @@ public fun ChatComposer(
     }
 }
 
-@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")
+/**
+ * Data class representing a message composed by the user.
+ *
+ * @param text The text content of the message.
+ * @param attachments The set of attachment URIs to include with the message.
+ */
+public data class MessageData(
+    val text: String = "",
+    val attachments: Set<Uri> = emptySet(),
+)
+
 @Composable
 private fun TextField(
     modifier: Modifier,
-    text: String,
-    attachments: Set<Uri>,
+    data: MessageData,
     onTextChange: (String) -> Unit,
     onRemoveAttachment: (Uri) -> Unit,
     isStreaming: Boolean,
@@ -260,7 +208,7 @@ private fun TextField(
             if (textBeforeSpeech.isBlank()) {
                 recognizedText
             } else {
-                "$textBeforeSpeech $recognizedText"
+                "${textBeforeSpeech.trim()} $recognizedText"
             },
         )
     }
@@ -273,13 +221,13 @@ private fun TextField(
     // Update textBeforeSpeech when recording starts/stops
     LaunchedEffect(speechToTextState.isRecording()) {
         if (speechToTextState.isRecording()) {
-            textBeforeSpeech = text
+            textBeforeSpeech = data.text
         }
     }
 
     val trailingButton = when {
         isStreaming -> "stop"
-        text.isNotBlank() && !speechToTextState.isRecording() -> "send"
+        data.text.isNotBlank() && !speechToTextState.isRecording() -> "send"
         else -> null
     }
 
@@ -293,7 +241,7 @@ private fun TextField(
 
     BasicTextField(
         modifier = modifier.defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
-        value = text,
+        value = data.text,
         onValueChange = onTextChange,
         enabled = !isStreaming && !speechToTextState.isRecording(),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -309,13 +257,13 @@ private fun TextField(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Column {
-                    val hasAttachments = attachments.isNotEmpty()
+                    val hasAttachments = data.attachments.isNotEmpty()
                     AnimatedContent(
                         targetState = hasAttachments,
                     ) { visible ->
                         if (visible) {
                             SelectedAttachmentList(
-                                uris = attachments,
+                                uris = data.attachments,
                                 onRemoveAttachment = onRemoveAttachment,
                             )
                         }
@@ -335,7 +283,7 @@ private fun TextField(
                                         top = 12.dp,
                                         bottom = 12.dp,
                                     ),
-                                showPlaceholder = text.isBlank(),
+                                showPlaceholder = data.text.isBlank(),
                                 innerTextField = innerTextField,
                             )
                         }
@@ -427,11 +375,6 @@ private fun TextInputField(
 private fun ChatComposerEmptyPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
             isStreaming = false,
@@ -445,11 +388,6 @@ private fun ChatComposerEmptyPreview() {
 private fun ChatComposerFilledPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "What is Stream Chat?",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
             isStreaming = false,
@@ -463,11 +401,6 @@ private fun ChatComposerFilledPreview() {
 private fun ChatComposerLongFilledPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
             isStreaming = false,
@@ -481,11 +414,6 @@ private fun ChatComposerLongFilledPreview() {
 private fun ChatComposerStreamingPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
             isStreaming = true,
