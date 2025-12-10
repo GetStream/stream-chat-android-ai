@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,7 +47,7 @@ internal fun WaveformIndicator(
 ) {
     // Measure width and calculate number of bars dynamically
     val density = LocalDensity.current
-    var widthPx by remember { mutableStateOf(0) }
+    var widthPx by remember { mutableIntStateOf(0) }
 
     // Calculate how many bars can fit: N = (width + spacing) / (barWidth + spacing)
     val barCount = remember(widthPx, density) {

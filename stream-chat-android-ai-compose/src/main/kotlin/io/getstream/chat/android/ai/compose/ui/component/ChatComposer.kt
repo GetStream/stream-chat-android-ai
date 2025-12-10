@@ -263,6 +263,7 @@ private fun TextField(
                     ) { visible ->
                         if (visible) {
                             SelectedAttachmentList(
+                                modifier = Modifier.fillMaxWidth(),
                                 uris = data.attachments,
                                 onRemoveAttachment = onRemoveAttachment,
                             )

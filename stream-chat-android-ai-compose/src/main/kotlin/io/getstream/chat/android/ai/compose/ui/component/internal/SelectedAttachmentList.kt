@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import io.getstream.chat.android.ai.compose.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -77,9 +78,10 @@ internal fun SelectedAttachmentList(
     ) {
         items(
             items = uris.toList(),
-            key = { it.toString() },
+            key = Uri::toString,
         ) { uri ->
             SelectedAttachment(
+                modifier = Modifier.animateItem(),
                 uri = uri,
                 onRemove = { onRemoveAttachment(uri) },
             )
@@ -89,16 +91,16 @@ internal fun SelectedAttachmentList(
 
 /**
  * Displays a single selected attachment as a thumbnail image with a remove button overlay.
- *
- * @param uri The [Uri] of the image to display.
- * @param onRemove Callback invoked when the user taps the remove button.
  */
 @Composable
 private fun SelectedAttachment(
     uri: Uri,
-    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRemove: () -> Unit = {},
 ) {
-    AttachmentTile {
+    AttachmentTile(
+        modifier = modifier,
+    ) {
         UriImage(
             uri = uri,
             modifier = Modifier.matchParentSize(),
@@ -134,16 +136,16 @@ private fun SelectedAttachment(
 
 /**
  * A container composable that provides a rounded square tile for displaying attachment content.
- *
- * @param content The content to display inside the tile, scoped to [BoxScope] for alignment options.
  */
 @Composable
-private fun AttachmentTile(content: @Composable BoxScope.() -> Unit) {
+private fun AttachmentTile(
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
     val shape = RoundedCornerShape(16.dp)
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(100.dp)
-            .background(Color.Transparent, shape)
             .clip(shape),
     ) {
         content()
@@ -193,8 +195,14 @@ private fun UriImage(
     }
 
     when {
-        isLoading -> placeholder()
-        hasError -> error()
+        isLoading -> {
+            placeholder()
+        }
+
+        hasError -> {
+            error()
+        }
+
         bitmap != null -> {
             Image(
                 bitmap = bitmap!!.asImageBitmap(),
@@ -234,6 +242,6 @@ private fun RemoveButton(
 
 @Preview
 @Composable
-private fun PreviewTest() {
-    SelectedAttachment(Uri.parse("asd")) { }
+private fun SelectedAttachmentPreview() {
+    SelectedAttachment(uri = "".toUri())
 }
