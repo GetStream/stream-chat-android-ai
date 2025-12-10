@@ -18,7 +18,6 @@ package io.getstream.chat.android.ai.compose.ui.component
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -73,6 +72,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import io.getstream.chat.android.ai.compose.R
 import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
 import kotlinx.coroutines.launch
@@ -97,6 +97,7 @@ import kotlinx.coroutines.launch
  * @param onStopClick Callback invoked when the stop button is clicked (during AI streaming).
  * @param isStreaming Whether the AI is currently streaming a response.
  * @param modifier The modifier to be applied to the composer.
+ * @param messageData The initial message data to be displayed in the input field.
  */
 @Composable
 public fun ChatComposer(
@@ -104,8 +105,9 @@ public fun ChatComposer(
     onStopClick: () -> Unit,
     isStreaming: Boolean,
     modifier: Modifier = Modifier,
+    messageData: MessageData = MessageData(),
 ) {
-    var messageData by remember { mutableStateOf(MessageData()) }
+    var messageData by remember { mutableStateOf(messageData) }
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -281,6 +283,7 @@ private fun TextField(
                                         onClick = onStopClick,
                                     )
                                 }
+
                                 "send" -> {
                                     TrailingIconButton(
                                         icon = R.drawable.stream_ai_compose_ic_send,
@@ -376,9 +379,8 @@ private fun TextInputField(
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ChatComposerPreview() {
+private fun ChatComposerEmptyPreview() {
     MaterialTheme {
         ChatComposer(
             onSendClick = {},
@@ -389,7 +391,48 @@ private fun ChatComposerPreview() {
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ChatComposerFilledPreview() {
+    MaterialTheme {
+        ChatComposer(
+            messageData = MessageData(text = "What is Stream Chat?"),
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ChatComposerLongFilledPreview() {
+    MaterialTheme {
+        ChatComposer(
+            messageData = MessageData(text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ChatComposerFilledWithAttachmentsPreview() {
+    MaterialTheme {
+        ChatComposer(
+            messageData = MessageData(
+                text = "What is Stream Chat?",
+                attachments = setOf("1".toUri(), "2".toUri(), "3".toUri()),
+            ),
+            onSendClick = {},
+            onStopClick = {},
+            isStreaming = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 private fun ChatComposerStreamingPreview() {
     MaterialTheme {
