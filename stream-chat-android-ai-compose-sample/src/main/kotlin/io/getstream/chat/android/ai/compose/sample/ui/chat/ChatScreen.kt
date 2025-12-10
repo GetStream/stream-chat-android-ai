@@ -20,6 +20,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -115,7 +116,18 @@ fun ChatScreen(
         modifier = modifier.fillMaxSize(),
         topBar = { modifier ->
             ChatTopBar(
-                modifier = modifier,
+                modifier = modifier
+                    // Blur gradient to create a visual fade effect that blends with the message list behind it
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.background,
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
                 title = state.title,
                 onMenuClick = onMenuClick,
                 onNewChatClick = if (state.actions.contains(Action.NewChat)) {
