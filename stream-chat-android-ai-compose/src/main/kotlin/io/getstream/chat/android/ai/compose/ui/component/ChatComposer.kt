@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("TooManyFunctions")
+
 package io.getstream.chat.android.ai.compose.ui.component
 
 import android.content.Context
@@ -131,7 +133,7 @@ public fun ChatComposer(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        AttachmentButton(
+        AddButton(
             enabled = !isStreaming,
             onClick = {
                 photoPickerLauncher.launch(
@@ -166,6 +168,7 @@ public data class MessageData(
     val attachments: Set<Uri> = emptySet(),
 )
 
+@Suppress("LongParameterList")
 @Composable
 private fun TextField(
     modifier: Modifier,
@@ -207,10 +210,7 @@ private fun TextField(
         else -> null
     }
 
-    val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
-
     SnackbarHost(hostState = snackbarHostState)
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -233,66 +233,26 @@ private fun TextField(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Column {
-                    AnimatedContent(targetState = data.attachments.isNotEmpty()) { hasAttachments ->
-                        if (hasAttachments) {
-                            SelectedAttachmentList(
-                                modifier = Modifier.fillMaxWidth(),
-                                uris = data.attachments,
-                                onRemoveAttachment = onRemoveAttachment,
-                            )
-                        }
-                    }
+                    AttachmentList(
+                        attachments = data.attachments,
+                        onRemoveAttachment = onRemoveAttachment,
+                    )
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Box(
+                        TextInput(
                             modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            TextInputField(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
-                                showPlaceholder = data.text.isBlank(),
-                                innerTextField = innerTextField,
-                            )
-                        }
-                        AnimatedContent(targetState = !isStreaming) { showVoiceButton ->
-                            if (showVoiceButton) {
-                                SpeechToTextButton(
-                                    state = speechToTextState,
-                                    onPermissionDenied = {
-                                        coroutineScope.launch {
-                                            val result = snackbarHostState.showSnackbar(
-                                                message = "Microphone permission is required to record audio",
-                                                actionLabel = "Settings",
-                                                withDismissAction = true,
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                context.openSettings()
-                                            }
-                                        }
-                                    },
-                                )
-                            }
-                        }
-                        AnimatedContent(targetState = trailingButton) { button ->
-                            when (button) {
-                                "stop" -> {
-                                    TrailingIconButton(
-                                        icon = R.drawable.stream_ai_compose_ic_stop,
-                                        contentDescription = "Stop",
-                                        onClick = onStopClick,
-                                    )
-                                }
-
-                                "send" -> {
-                                    TrailingIconButton(
-                                        icon = R.drawable.stream_ai_compose_ic_send,
-                                        contentDescription = "Send",
-                                        onClick = onSendClick,
-                                    )
-                                }
-                            }
-                        }
+                            text = data.text,
+                            innerTextField = innerTextField,
+                        )
+                        VoiceButton(
+                            isStreaming = isStreaming,
+                            speechToTextState = speechToTextState,
+                            snackbarHostState = snackbarHostState,
+                        )
+                        TrailingButton(
+                            button = trailingButton,
+                            onSendClick = onSendClick,
+                            onStopClick = onStopClick,
+                        )
                     }
                 }
             }
@@ -319,7 +279,121 @@ private fun resolveTextFieldStyle(
 }
 
 @Composable
-private fun AttachmentButton(
+private fun AttachmentList(
+    attachments: Set<Uri>,
+    onRemoveAttachment: (Uri) -> Unit,
+) {
+    AnimatedContent(targetState = attachments.isNotEmpty()) { visible ->
+        if (visible) {
+            SelectedAttachmentList(
+                modifier = Modifier.fillMaxWidth(),
+                uris = attachments,
+                onRemoveAttachment = onRemoveAttachment,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TextInput(
+    modifier: Modifier,
+    text: String,
+    innerTextField: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
+        ) {
+            if (text.isBlank()) {
+                Text(
+                    text = "Ask Assistant",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            innerTextField()
+        }
+    }
+}
+
+@Composable
+private fun VoiceButton(
+    isStreaming: Boolean,
+    speechToTextState: SpeechToTextButtonState,
+    snackbarHostState: SnackbarHostState,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    AnimatedContent(targetState = !isStreaming) { showVoiceButton ->
+        if (showVoiceButton) {
+            SpeechToTextButton(
+                state = speechToTextState,
+                onPermissionDenied = {
+                    coroutineScope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = "Microphone permission is required to record audio",
+                            actionLabel = "Settings",
+                            withDismissAction = true,
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            context.openSettings()
+                        }
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrailingButton(
+    button: String?,
+    onSendClick: () -> Unit,
+    onStopClick: () -> Unit,
+) {
+    AnimatedContent(targetState = button) { button ->
+        when (button) {
+            "stop" -> {
+                TrailingIconButton(
+                    icon = R.drawable.stream_ai_compose_ic_stop,
+                    contentDescription = "Stop",
+                    onClick = onStopClick,
+                )
+            }
+
+            "send" -> {
+                TrailingIconButton(
+                    icon = R.drawable.stream_ai_compose_ic_send,
+                    contentDescription = "Send",
+                    onClick = onSendClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrailingIconButton(
+    @DrawableRes icon: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    FilledIconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = contentDescription,
+        )
+    }
+}
+
+@Composable
+private fun AddButton(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
@@ -339,43 +413,11 @@ private fun AttachmentButton(
     }
 }
 
-@Composable
-private fun TrailingIconButton(
-    @DrawableRes icon: Int,
-    contentDescription: String,
-    onClick: () -> Unit,
-) {
-    FilledIconButton(onClick = onClick) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = contentDescription,
-        )
-    }
-}
-
 private fun Context.openSettings() {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
         data = Uri.fromParts("package", packageName, null)
     }
     startActivity(intent)
-}
-
-@Composable
-private fun TextInputField(
-    modifier: Modifier,
-    showPlaceholder: Boolean,
-    innerTextField: @Composable () -> Unit,
-) {
-    Box(modifier = modifier) {
-        if (showPlaceholder) {
-            Text(
-                text = "Ask Assistant",
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-        innerTextField()
-    }
 }
 
 @Preview(showBackground = true)
@@ -418,7 +460,7 @@ private fun ChatComposerLongFilledPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun ChatComposerFilledWithAttachmentsPreview() {
+private fun ChatComposerWithAttachmentsPreview() {
     MaterialTheme {
         ChatComposer(
             messageData = MessageData(
