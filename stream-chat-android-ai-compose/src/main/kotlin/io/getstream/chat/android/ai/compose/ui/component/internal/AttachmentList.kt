@@ -55,18 +55,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Displays a horizontal scrollable list of selected image attachments with remove functionality.
+ * Displays a horizontal scrollable list of image attachments with remove functionality.
  *
- * Each attachment is shown as a thumbnail with a remove button overlay, allowing users to
- * deselect previously chosen images.
- *
- * @param uris The Set of [Uri]s representing the selected image attachments to display.
+ * @param uris The Set of [Uri]s representing the image attachments to display.
  * @param onRemoveAttachment Callback invoked when the user taps the remove button on an attachment,
  * providing the [Uri] of the attachment to be removed.
  * @param modifier Optional [Modifier] for customizing the layout of the list.
  */
 @Composable
-internal fun SelectedAttachmentList(
+internal fun AttachmentList(
     uris: Set<Uri>,
     onRemoveAttachment: (Uri) -> Unit,
     modifier: Modifier = Modifier,

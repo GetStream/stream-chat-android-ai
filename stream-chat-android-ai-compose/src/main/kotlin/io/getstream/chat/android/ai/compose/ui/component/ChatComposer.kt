@@ -76,7 +76,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import io.getstream.chat.android.ai.compose.R
-import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
+import io.getstream.chat.android.ai.compose.ui.component.internal.AttachmentList
 import kotlinx.coroutines.launch
 
 /**
@@ -287,7 +287,7 @@ private fun AttachmentList(
 ) {
     AnimatedContent(targetState = attachments.isNotEmpty()) { visible ->
         if (visible) {
-            SelectedAttachmentList(
+            AttachmentList(
                 modifier = Modifier.fillMaxWidth(),
                 uris = attachments,
                 onRemoveAttachment = onRemoveAttachment,
