@@ -20,7 +20,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -29,9 +28,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -105,18 +105,19 @@ private fun SelectedAttachment(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.LightGray),
+                        .background(MaterialTheme.colorScheme.surfaceDim),
                 )
             },
             error = {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.LightGray),
+                        .background(MaterialTheme.colorScheme.surfaceDim),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Image(
+                    Icon(
                         painter = painterResource(R.drawable.stream_ai_compose_ic_image_placeholder),
+                        tint = MaterialTheme.colorScheme.surfaceVariant,
                         contentDescription = null,
                     )
                 }
@@ -126,7 +127,7 @@ private fun SelectedAttachment(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(8.dp),
-            onRemove = onRemove,
+            onClick = onRemove,
         )
     }
 }
@@ -209,23 +210,23 @@ private fun UriImage(
  * A circular button with a remove icon, typically used as an overlay on attachments.
  *
  * @param modifier [Modifier] for positioning and sizing the button.
- * @param onRemove Callback invoked when the button is clicked.
+ * @param onClick Callback invoked when the button is clicked.
  */
 @Composable
 private fun RemoveButton(
     modifier: Modifier,
-    onRemove: () -> Unit,
+    onClick: () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .size(22.dp)
-            .background(Color.Black.copy(alpha = 0.7f), CircleShape)
-            .clip(CircleShape)
-            .clickable { onRemove() },
+    FilledIconButton(
+        modifier = modifier.size(22.dp),
+        onClick = onClick,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.inverseSurface,
+        ),
     ) {
         Icon(
             painter = painterResource(R.drawable.stream_ai_compose_ic_cancel),
-            tint = Color.LightGray,
+            tint = MaterialTheme.colorScheme.inverseOnSurface,
             contentDescription = "Remove attachment",
         )
     }
@@ -234,5 +235,5 @@ private fun RemoveButton(
 @Preview
 @Composable
 private fun SelectedAttachmentPreview() {
-    SelectedAttachment(uri = "".toUri())
+    SelectedAttachment(uri = "1".toUri())
 }
