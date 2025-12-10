@@ -35,33 +35,30 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew assembleDebug --scan
 
-  spotless:
-    name: Spotless
+  staticAnalysis:
+    name: Static Analysis
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
       - uses: GetStream/android-ci-actions/actions/setup-java@main
+
+      - uses: GetStream/android-ci-actions/actions/gradle-cache@main
+
+      - name: Run Lint
+        run: ./gradlew lint
+
       - name: Run Spotless
         run: ./gradlew spotlessCheck
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - uses: GetStream/android-ci-actions/actions/setup-java@main
-      - name: Run Lint
-        run: ./gradlew lint
+      - name: Run Detekt
+        run: ./gradlew detekt
 
   unitTest:
     name: Unit Tests
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - uses: GetStream/android-ci-actions/actions/setup-java@main
 
