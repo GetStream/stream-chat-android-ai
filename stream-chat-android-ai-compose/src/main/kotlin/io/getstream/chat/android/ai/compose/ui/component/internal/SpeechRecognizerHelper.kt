@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import io.getstream.chat.android.ai.compose.util.internal.simpleLogger
 import java.util.Locale
 
@@ -199,6 +200,7 @@ private class DefaultSpeechRecognizerHelper(
     }
 }
 
+@Suppress("DEPRECATION")
 private fun Bundle.getData(): String =
     keySet().joinToString { key -> "$key=${get(key)}" }
 
@@ -208,13 +210,18 @@ internal fun rememberSpeechRecognizerHelper(
     onFinalResult: (String) -> Unit,
 ): SpeechRecognizerHelper {
     val context = LocalContext.current
+    val isPreview = LocalInspectionMode.current
 
     val helper = remember {
-        DefaultSpeechRecognizerHelper(
-            context = context,
-            onPartialResult = onPartialResult,
-            onFinalResult = onFinalResult,
-        )
+        if (isPreview) {
+            object : SpeechRecognizerHelper {}
+        } else {
+            DefaultSpeechRecognizerHelper(
+                context = context,
+                onPartialResult = onPartialResult,
+                onFinalResult = onFinalResult,
+            )
+        }
     }
 
     DisposableEffect(Unit) {

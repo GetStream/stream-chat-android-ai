@@ -289,11 +289,7 @@ private fun VoiceRecordingBars(
 @Preview(showBackground = true)
 @Composable
 private fun SpeechToTextButtonIdlePreview() {
-    val state = remember {
-        SpeechToTextButtonState(
-            helper = object : SpeechRecognizerHelper {},
-        )
-    }
+    val state = rememberSpeechToTextButtonState { }
     SpeechToTextButton(state = state)
 }
 
