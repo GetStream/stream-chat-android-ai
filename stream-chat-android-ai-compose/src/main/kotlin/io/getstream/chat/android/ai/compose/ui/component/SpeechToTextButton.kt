@@ -114,17 +114,11 @@ public fun SpeechToTextButton(
 
     val onToggleRecording: () -> Unit = {
         when {
-            state.isRecording() -> {
-                speechRecognizerHelper.stopListening()
-            }
+            state.isRecording() -> speechRecognizerHelper.stopListening()
 
-            hasPermission -> {
-                speechRecognizerHelper.startListening()
-            }
+            hasPermission -> speechRecognizerHelper.startListening()
 
-            else -> {
-                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            }
+            else -> permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 

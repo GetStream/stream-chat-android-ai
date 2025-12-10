@@ -106,9 +106,7 @@ private fun AnimatedDot(
     val t = ((progress - startOffset + PROGRESS_FULL) % PROGRESS_FULL) * DOT_CYCLE_DURATION / DOT_ANIMATION_DURATION
 
     val alpha = when {
-        t <= PROGRESS_START || t >= PROGRESS_FULL -> {
-            DOT_MIN_ALPHA
-        }
+        t <= PROGRESS_START || t >= PROGRESS_FULL -> DOT_MIN_ALPHA
         else -> {
             val eased = smoothstep(
                 if (t <= ANIMATION_MIDPOINT) {

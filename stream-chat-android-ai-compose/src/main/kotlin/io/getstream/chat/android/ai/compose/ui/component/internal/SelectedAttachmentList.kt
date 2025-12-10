@@ -195,22 +195,16 @@ private fun UriImage(
     }
 
     when {
-        isLoading -> {
-            placeholder()
-        }
+        isLoading -> placeholder()
 
-        hasError -> {
-            error()
-        }
+        hasError -> error()
 
-        bitmap != null -> {
-            Image(
-                bitmap = bitmap!!.asImageBitmap(),
-                contentDescription = null,
-                modifier = modifier,
-                contentScale = contentScale,
-            )
-        }
+        bitmap != null -> Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = contentScale,
+        )
     }
 }
 

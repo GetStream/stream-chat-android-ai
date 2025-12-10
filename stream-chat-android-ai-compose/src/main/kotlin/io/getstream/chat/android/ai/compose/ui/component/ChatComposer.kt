@@ -361,21 +361,17 @@ private fun TrailingButton(
 ) {
     AnimatedContent(targetState = button) { button ->
         when (button) {
-            "stop" -> {
-                TrailingIconButton(
-                    icon = R.drawable.stream_ai_compose_ic_stop,
-                    contentDescription = "Stop",
-                    onClick = onStopClick,
-                )
-            }
+            "stop" -> TrailingIconButton(
+                icon = R.drawable.stream_ai_compose_ic_stop,
+                contentDescription = "Stop",
+                onClick = onStopClick,
+            )
 
-            "send" -> {
-                TrailingIconButton(
-                    icon = R.drawable.stream_ai_compose_ic_send,
-                    contentDescription = "Send",
-                    onClick = onSendClick,
-                )
-            }
+            "send" -> TrailingIconButton(
+                icon = R.drawable.stream_ai_compose_ic_send,
+                contentDescription = "Send",
+                onClick = onSendClick,
+            )
         }
     }
 }
