@@ -62,6 +62,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,7 +112,9 @@ public fun ChatComposer(
     modifier: Modifier = Modifier,
     messageData: MessageData = MessageData(),
 ) {
-    var messageData by remember { mutableStateOf(messageData) }
+    var messageData by rememberSaveable(
+        stateSaver = MessageData.Saver,
+    ) { mutableStateOf(messageData) }
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -171,7 +175,26 @@ public fun ChatComposer(
 public data class MessageData(
     val text: String = "",
     val attachments: Set<Uri> = emptySet(),
-)
+) {
+    public companion object {
+        /**
+         * [Saver] implementation for [MessageData] that converts it to a saveable format.
+         */
+        public val Saver: Saver<MessageData, List<Any>> = Saver(
+            save = { messageData ->
+                listOf(
+                    messageData.text,
+                ) + messageData.attachments.map(Uri::toString)
+            },
+            restore = { saved ->
+                val text = saved.firstOrNull() as? String ?: ""
+                val attachmentStrings = saved.drop(1).mapNotNull { it as? String }
+                val attachments = attachmentStrings.map(String::toUri).toSet()
+                MessageData(text = text, attachments = attachments)
+            },
+        )
+    }
+}
 
 @Suppress("LongParameterList")
 @Composable
