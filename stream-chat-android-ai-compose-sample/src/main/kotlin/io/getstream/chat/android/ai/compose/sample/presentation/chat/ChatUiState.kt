@@ -112,3 +112,11 @@ fun ChatUiState.AssistantState.isBusy(): Boolean =
  */
 fun ChatUiState.getCurrentAssistantMessage(): ChatUiState.Message? =
     messages.firstOrNull()?.takeIf { message -> message.role == ChatUiState.Message.Role.Assistant }
+
+/**
+ * Gets the most recent user message from the conversation.
+ *
+ * @return The latest user message, or null if there are no user messages
+ */
+fun ChatUiState.getCurrentUserMessage(): ChatUiState.Message? =
+    messages.firstOrNull()?.takeIf { message -> message.role == ChatUiState.Message.Role.User }

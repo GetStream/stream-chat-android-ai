@@ -53,6 +53,7 @@ import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState.Action
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatViewModel
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.getCurrentAssistantMessage
+import io.getstream.chat.android.ai.compose.sample.presentation.chat.getCurrentUserMessage
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.isBusy
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
@@ -89,18 +90,14 @@ fun ChatScreen(
     val assistantState = state.assistantState
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
-    var hasScrolledToBottomInitially by remember(conversationId) { mutableStateOf(false) }
 
-    // Scroll to bottom when messages are initially loaded
-    // In reverse layout, item 0 is at the bottom (where new messages appear)
-    LaunchedEffect(messages.size, hasScrolledToBottomInitially) {
-        if (messages.isNotEmpty() && !hasScrolledToBottomInitially) {
-            // Small delay to ensure layout is complete
-            delay(100)
+    // Scroll to bottom when the user sends a new message
+    LaunchedEffect(state) {
+        if (state.getCurrentUserMessage() != null) {
+            delay(100) // Small delay to ensure layout is complete
             if (listState.layoutInfo.totalItemsCount > 0) {
                 // In reverse layout, scroll to item 0 to show the bottom (newest messages)
                 listState.animateScrollToItem(0)
-                hasScrolledToBottomInitially = true
             }
         }
     }
