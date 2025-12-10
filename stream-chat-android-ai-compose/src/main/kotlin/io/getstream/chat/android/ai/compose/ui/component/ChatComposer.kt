@@ -70,6 +70,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -334,13 +335,15 @@ private fun VoiceButton(
 
     AnimatedContent(targetState = !isGenerating) { showVoiceButton ->
         if (showVoiceButton) {
+            val snackbarMessage = stringResource(R.string.stream_ai_compose_composer_mic_permission_message)
+            val actionLabel = stringResource(R.string.stream_ai_compose_composer_mic_permission_action)
             SpeechToTextButton(
                 state = speechToTextState,
                 onPermissionDenied = {
                     coroutineScope.launch {
                         val result = snackbarHostState.showSnackbar(
-                            message = "Microphone permission is required to record audio",
-                            actionLabel = "Settings",
+                            message = snackbarMessage,
+                            actionLabel = actionLabel,
                             withDismissAction = true,
                         )
                         if (result == SnackbarResult.ActionPerformed) {
@@ -363,13 +366,13 @@ private fun TrailingButton(
         when (button) {
             "stop" -> TrailingIconButton(
                 icon = R.drawable.stream_ai_compose_ic_stop,
-                contentDescription = "Stop",
+                contentDescription = stringResource(R.string.stream_ai_compose_composer_stop_button),
                 onClick = onStopClick,
             )
 
             "send" -> TrailingIconButton(
                 icon = R.drawable.stream_ai_compose_ic_send,
-                contentDescription = "Send",
+                contentDescription = stringResource(R.string.stream_ai_compose_composer_send_button),
                 onClick = onSendClick,
             )
         }

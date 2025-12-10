@@ -139,7 +139,7 @@ private fun DefaultIdleContent(onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(
             painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
-            contentDescription = stringResource(R.string.stream_ai_composer_speech_to_text_idle_button),
+            contentDescription = stringResource(R.string.stream_ai_compose_speech_to_text_idle_button),
         )
     }
 }
@@ -251,7 +251,7 @@ private fun VoiceRecordingBars(
         }
     }
 
-    val contentDescription = stringResource(R.string.stream_ai_composer_speech_to_text_recording_button)
+    val contentDescription = stringResource(R.string.stream_ai_compose_speech_to_text_recording_button)
 
     Canvas(
         modifier = modifier
