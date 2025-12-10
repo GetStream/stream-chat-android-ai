@@ -133,6 +133,9 @@ public fun ChatComposer(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
+        val snackbarHostState = remember { SnackbarHostState() }
+        SnackbarHost(hostState = snackbarHostState)
+
         AddButton(
             enabled = !isStreaming,
             onClick = {
@@ -147,6 +150,7 @@ public fun ChatComposer(
 
         TextField(
             modifier = Modifier.fillMaxWidth(),
+            snackbarHostState = snackbarHostState,
             data = messageData,
             onTextChange = { messageData = messageData.copy(text = it) },
             onRemoveAttachment = { messageData = messageData.copy(attachments = messageData.attachments - it) },
@@ -172,6 +176,7 @@ public data class MessageData(
 @Composable
 private fun TextField(
     modifier: Modifier,
+    snackbarHostState: SnackbarHostState,
     data: MessageData,
     onTextChange: (String) -> Unit,
     onRemoveAttachment: (Uri) -> Unit,
@@ -209,9 +214,6 @@ private fun TextField(
         data.text.isNotBlank() && !speechToTextState.isRecording() -> "send"
         else -> null
     }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-    SnackbarHost(hostState = snackbarHostState)
 
     val interactionSource = remember { MutableInteractionSource() }
 
