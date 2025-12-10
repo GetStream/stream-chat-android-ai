@@ -25,6 +25,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -65,14 +66,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.ui.component.internal.ChatAiIcons
+import io.getstream.chat.android.ai.compose.R
 import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
 import kotlinx.coroutines.launch
 
@@ -275,14 +276,14 @@ private fun TextField(
                             when (button) {
                                 "stop" -> {
                                     TrailingIconButton(
-                                        icon = ChatAiIcons.Stop,
+                                        icon = R.drawable.stream_ai_compose_ic_stop,
                                         contentDescription = "Stop",
                                         onClick = onStopClick,
                                     )
                                 }
                                 "send" -> {
                                     TrailingIconButton(
-                                        icon = ChatAiIcons.Send,
+                                        icon = R.drawable.stream_ai_compose_ic_send,
                                         contentDescription = "Send",
                                         onClick = onSendClick,
                                     )
@@ -329,7 +330,7 @@ private fun AttachmentButton(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Icon(
-            imageVector = ChatAiIcons.Add,
+            painter = painterResource(R.drawable.stream_ai_compose_ic_add),
             contentDescription = "Add context",
         )
     }
@@ -337,12 +338,15 @@ private fun AttachmentButton(
 
 @Composable
 private fun TrailingIconButton(
-    icon: ImageVector,
+    @DrawableRes icon: Int,
     contentDescription: String,
     onClick: () -> Unit,
 ) {
     FilledIconButton(onClick = onClick) {
-        Icon(imageVector = icon, contentDescription = contentDescription)
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = contentDescription,
+        )
     }
 }
 
