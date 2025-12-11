@@ -39,7 +39,7 @@ labels, able to show different states of the LLM (thinking, checking external so
 
 **ChatComposer** - a complete chat input component with text input, attachment support, voice input,
 and send/stop buttons. It manages message composition state and provides a polished UI with
-automatic keyboard handling and visual fade gradients.
+automatic keyboard handling.
 
 **SpeechToTextButton** - a composable button that provides speech-to-text functionality with
 waveform visualization, automatic permission handling, and customizable UI components.
