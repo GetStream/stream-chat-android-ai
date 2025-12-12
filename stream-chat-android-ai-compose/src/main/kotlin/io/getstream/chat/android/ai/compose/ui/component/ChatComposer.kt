@@ -337,7 +337,7 @@ private fun TextInput(
         ) {
             if (text.isBlank()) {
                 Text(
-                    text = "Ask Assistant",
+                    text = stringResource(R.string.stream_ai_compose_composer_input_placeholder),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
