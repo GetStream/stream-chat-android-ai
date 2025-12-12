@@ -85,13 +85,7 @@ import kotlinx.coroutines.launch
 /**
  * Chat composer with attach, voice, and send buttons.
  *
- * This composable provides full control over the message state. It displays different
- * action buttons based on state:
- * - Stop button when streaming
- * - Send button when text is entered
- * - Voice button when text is empty
- *
- * The composer includes:
+ * This composable provides full control over the message state and includes:
  * - Text input field with placeholder
  * - Add button for selecting images
  * - Voice input button with speech-to-text
@@ -99,7 +93,7 @@ import kotlinx.coroutines.launch
  * - Stop button (shown during AI generating)
  *
  * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
- * @param onStopClick Callback invoked when the stop button is clicked (during AI streaming).
+ * @param onStopClick Callback invoked when the stop button is clicked (during AI generation).
  * @param isGenerating Whether the AI is currently generating a response.
  * @param modifier The modifier to be applied to the composer.
  * @param messageData The initial message data to be displayed in the input field.
@@ -500,7 +494,7 @@ private fun ChatComposerWithAttachmentsPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun ChatComposerStreamingPreview() {
+private fun ChatComposerGeneratingPreview() {
     MaterialTheme {
         ChatComposer(
             onSendClick = {},

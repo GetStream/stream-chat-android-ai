@@ -204,7 +204,7 @@ fun ChatScreen(isStreaming: Boolean) {
 - Image attachment support (up to 3 images via photo picker)
 - Voice input button with speech-to-text integration
 - Send button (shown when text is entered)
-- Stop button (shown during AI streaming)
+- Stop button (shown during AI generation)
 - Attachment preview with remove functionality
 
 **MessageData Structure:**
