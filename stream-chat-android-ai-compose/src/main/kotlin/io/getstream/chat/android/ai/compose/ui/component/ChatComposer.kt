@@ -18,8 +18,11 @@
 
 package io.getstream.chat.android.ai.compose.ui.component
 
+import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
+import android.provider.Settings
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -46,6 +49,9 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,11 +59,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -66,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.ui.component.internal.ChatAiIcons
 import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
 import io.getstream.chat.android.ai.compose.ui.component.internal.rememberPhotoPickerLauncher
+import kotlinx.coroutines.launch
 
 /**
  * Data class representing a message composed by the user.
@@ -243,15 +252,28 @@ private fun TextField(
     }
     val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
 
-    val speechToTextState = rememberSpeechToTextButtonState()
-
     // Remember the text that existed before starting speech recognition
-    val textBeforeSpeech = remember { mutableStateOf("") }
+    var textBeforeSpeech by remember { mutableStateOf("") }
+
+    val onTextRecognized = { recognizedText: String ->
+        onTextChange(
+            if (textBeforeSpeech.isBlank()) {
+                recognizedText
+            } else {
+                "$textBeforeSpeech $recognizedText"
+            },
+        )
+    }
+
+    val speechToTextState = rememberSpeechToTextButtonState(
+        onPartialResult = onTextRecognized,
+        onFinalResult = onTextRecognized,
+    )
 
     // Update textBeforeSpeech when recording starts/stops
     LaunchedEffect(speechToTextState.isRecording()) {
         if (speechToTextState.isRecording()) {
-            textBeforeSpeech.value = text
+            textBeforeSpeech = text
         }
     }
 
@@ -260,6 +282,14 @@ private fun TextField(
         text.isNotBlank() && !speechToTextState.isRecording() -> "send"
         else -> null
     }
+
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    SnackbarHost(
+        hostState = snackbarHostState,
+    )
 
     BasicTextField(
         modifier = modifier.defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
@@ -291,7 +321,7 @@ private fun TextField(
                         }
                     }
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Bottom,
                     ) {
                         Box(
                             modifier = Modifier.weight(1f),
@@ -309,24 +339,26 @@ private fun TextField(
                                 innerTextField = innerTextField,
                             )
                         }
-                        FilledIconButton(
-                            onClick = {
-                            },
-                            enabled = !isStreaming,
-                        ) {
-                            SpeechToTextButton(
-                                state = speechToTextState,
-                                onTextRecognized = { recognizedText ->
-                                    // Partial results already contain full text, so replace (don't accumulate)
-                                    onTextChange(
-                                        if (textBeforeSpeech.value.isBlank()) {
-                                            recognizedText
-                                        } else {
-                                            "${textBeforeSpeech.value} $recognizedText"
-                                        },
-                                    )
-                                },
-                            )
+                        AnimatedContent(
+                            targetState = !isStreaming,
+                        ) { visible ->
+                            if (visible) {
+                                SpeechToTextButton(
+                                    state = speechToTextState,
+                                    onPermissionDenied = {
+                                        coroutineScope.launch {
+                                            val result = snackbarHostState.showSnackbar(
+                                                message = "Microphone permission is required to record audio",
+                                                actionLabel = "Settings",
+                                                withDismissAction = true,
+                                            )
+                                            if (result == SnackbarResult.ActionPerformed) {
+                                                context.openSettings()
+                                            }
+                                        }
+                                    },
+                                )
+                            }
                         }
                         AnimatedContent(
                             targetState = trailingButton,
@@ -360,6 +392,13 @@ private fun TextField(
             }
         },
     )
+}
+
+private fun Context.openSettings() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = Uri.fromParts("package", packageName, null)
+    }
+    startActivity(intent)
 }
 
 @Composable

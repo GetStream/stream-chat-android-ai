@@ -18,7 +18,6 @@ package io.getstream.chat.android.ai.compose.ui.component
 
 import android.Manifest
 import android.content.pm.PackageManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -28,70 +27,32 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import io.getstream.chat.android.ai.compose.R
+import io.getstream.chat.android.ai.compose.ui.component.internal.SpeechRecognizerHelper
 import io.getstream.chat.android.ai.compose.ui.component.internal.rememberSpeechRecognizerHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
-
-/**
- * State holder for [SpeechToTextButton] that tracks the recording status.
- *
- * Use [rememberSpeechToTextButtonState] to create an instance of this state.
- *
- * @see rememberSpeechToTextButtonState
- * @see SpeechToTextButton
- */
-public class SpeechToTextButtonState internal constructor() {
-    internal var isRecordingState by mutableStateOf(false)
-    internal var rmsdBState by mutableStateOf(0f)
-
-    /**
-     * Returns whether the speech-to-text button is currently recording.
-     *
-     * @return `true` if recording is in progress, `false` otherwise
-     */
-    public fun isRecording(): Boolean = isRecordingState
-}
-
-/**
- * Creates and remembers a [SpeechToTextButtonState] instance.
- *
- * The state is remembered across recompositions and can be used to track the recording status
- * of a [SpeechToTextButton].
- *
- * @return A remembered instance of [SpeechToTextButtonState]
- *
- * @see SpeechToTextButtonState
- * @see SpeechToTextButton
- */
-@Composable
-public fun rememberSpeechToTextButtonState(): SpeechToTextButtonState =
-    remember { SpeechToTextButtonState() }
 
 /**
  * A composable button that provides speech-to-text functionality.
@@ -105,57 +66,42 @@ public fun rememberSpeechToTextButtonState(): SpeechToTextButtonState =
  * - Streaming recognized text chunks to the callback as they're detected
  * - Animated visualization during recording
  *
+ * @param state The state holder for tracking recording status. Must be created with [rememberSpeechToTextButtonState].
  * @param modifier Modifier to be applied to the root container
- * @param state The state holder for tracking recording status. Defaults to a remembered state
- *   created with [rememberSpeechToTextButtonState].
- * @param onTextRecognized Callback invoked when text chunks are recognized. Called with each
- *   partial result as speech is detected, enabling real-time text streaming. The caller is
- *   responsible for accumulating text if needed.
+ * @param onPermissionDenied Callback invoked when microphone permission is denied.
+ * @param idleContent The composable content to display when not recording. Receives an onClick callback
+ *   that toggles recording.
+ * @param recordingContent The composable content to display when recording. Receives an onClick callback
+ *   that stops recording and the current audio level (rmsdB) for visualization.
  *
  * @see SpeechToTextButtonState
  * @see rememberSpeechToTextButtonState
  */
 @Composable
 public fun SpeechToTextButton(
+    state: SpeechToTextButtonState,
     modifier: Modifier = Modifier,
-    state: SpeechToTextButtonState = rememberSpeechToTextButtonState(),
-    onTextRecognized: (String) -> Unit,
+    onPermissionDenied: () -> Unit = { },
+    idleContent: @Composable (onClick: () -> Unit) -> Unit = { onClick ->
+        DefaultIdleContent(onClick)
+    },
+    recordingContent: @Composable (
+        onClick: () -> Unit,
+        rmsdB: Float,
+    ) -> Unit = { onClick, rmsdB ->
+        DefaultRecordingContent(onClick, rmsdB)
+    },
 ) {
     val context = LocalContext.current
-    val activity = context as? ComponentActivity
-
-    val speechRecognizerHelper = rememberSpeechRecognizerHelper(
-        onResult = { text ->
-            // Final result when speech ends
-            onTextRecognized(text)
-        },
-        onError = {
-            state.isRecordingState = false
-        },
-        onRmsChanged = { db ->
-            state.rmsdBState = db
-        },
-        onPartialResult = { text ->
-            // Stream partial results in real-time as user speaks
-            onTextRecognized(text)
-        },
-        onRecordingStopped = {
-            // Update UI state when recording stops (auto-stop or manual)
-            state.isRecordingState = false
-        },
-    )
+    val speechRecognizerHelper = state.helper
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
-        if (isGranted && speechRecognizerHelper.startListening()) {
-            state.isRecordingState = true
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            if (state.isRecordingState) speechRecognizerHelper.stopListening()
+        if (isGranted) {
+            speechRecognizerHelper.startListening()
+        } else {
+            onPermissionDenied()
         }
     }
 
@@ -166,69 +112,110 @@ public fun SpeechToTextButton(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    val onToggleRecording = {
-        if (activity != null) {
-            if (state.isRecordingState) {
-                // Stop recording - state will be updated via onRecordingStopped callback
+    val onToggleRecording: () -> Unit = {
+        when {
+            state.isRecording() -> {
                 speechRecognizerHelper.stopListening()
-            } else {
-                // Start recording
-                if (hasPermission) {
-                    if (speechRecognizerHelper.startListening()) {
-                        state.isRecordingState = true
-                    }
-                } else {
-                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
+            }
+
+            hasPermission -> {
+                speechRecognizerHelper.startListening()
+            }
+
+            else -> {
+                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
     }
 
     AnimatedContent(
-        targetState = state.isRecordingState,
+        targetState = state.isRecording(),
         modifier = modifier,
     ) { isRecording ->
         if (isRecording) {
-            VoiceRecordingIndicator(
-                onClick = onToggleRecording,
-                rmsdB = state.rmsdBState,
-            )
+            recordingContent(onToggleRecording, state.rmsdB)
         } else {
-            IconButton(onClick = onToggleRecording) {
-                Icon(
-                    painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
-                    contentDescription = "Voice input",
-                )
-            }
+            idleContent(onToggleRecording)
         }
     }
 }
 
-/**
- * A circular button with animated vertical bars that respond to voice input.
- *
- * @param onClick Callback when the button is clicked
- * @param rmsdB The audio level in decibels, used to drive the animation
- * @param modifier Modifier for the button
- */
 @Composable
-private fun VoiceRecordingIndicator(
+private fun DefaultIdleContent(onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
+            contentDescription = stringResource(R.string.stream_ai_composer_speech_to_text_idle_button),
+        )
+    }
+}
+
+@Composable
+private fun DefaultRecordingContent(
     onClick: () -> Unit,
     rmsdB: Float,
-    modifier: Modifier = Modifier,
 ) {
-    Surface(
+    IconButton(
         onClick = onClick,
-        modifier = modifier.size(48.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
+        colors = IconButtonDefaults.iconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+        ),
     ) {
-        Box(
-            contentAlignment = androidx.compose.ui.Alignment.Center,
-        ) {
-            VoiceRecordingBars(rmsdB = rmsdB)
-        }
+        VoiceRecordingBars(rmsdB = rmsdB)
+    }
+}
+
+/**
+ * State holder for [SpeechToTextButton] that tracks the recording status.
+ *
+ * Use [rememberSpeechToTextButtonState] to create an instance of this state.
+ *
+ * @see rememberSpeechToTextButtonState
+ * @see SpeechToTextButton
+ */
+public class SpeechToTextButtonState internal constructor(
+    internal val helper: SpeechRecognizerHelper,
+) {
+    /**
+     * Returns the current audio level in decibels.
+     *
+     * @return The RMS audio level in decibels (typically 0-10)
+     */
+    internal val rmsdB: Float get() = helper.rmsdB
+
+    /**
+     * Returns whether the speech-to-text button is currently recording.
+     *
+     * @return `true` if recording is in progress, `false` otherwise
+     */
+    public fun isRecording(): Boolean = helper.isListening
+}
+
+/**
+ * Creates and remembers a [SpeechToTextButtonState] instance.
+ *
+ * The state is remembered across recompositions and can be used to track the recording status
+ * of a [SpeechToTextButton].
+ *
+ * @param onPartialResult Callback invoked when text chunks are recognized.
+ * Called with each partial result as speech is detected, enabling real-time text streaming.
+ * @param onFinalResult Callback invoked when the final result is available.
+ * @return A remembered instance of [SpeechToTextButtonState]
+ *
+ * @see SpeechToTextButtonState
+ * @see SpeechToTextButton
+ */
+@Composable
+public fun rememberSpeechToTextButtonState(
+    onPartialResult: ((String) -> Unit)? = null,
+    onFinalResult: (String) -> Unit,
+): SpeechToTextButtonState {
+    val helper = rememberSpeechRecognizerHelper(
+        onPartialResult = onPartialResult,
+        onFinalResult = onFinalResult,
+    )
+    return remember(helper) {
+        SpeechToTextButtonState(helper)
     }
 }
 
@@ -270,7 +257,13 @@ private fun VoiceRecordingBars(
         }
     }
 
-    Canvas(modifier = modifier.size(24.dp)) {
+    val contentDescription = stringResource(R.string.stream_ai_composer_speech_to_text_recording_button)
+
+    Canvas(
+        modifier = modifier
+            .semantics { this.contentDescription = contentDescription }
+            .size(24.dp),
+    ) {
         val canvasWidth = size.width
         val canvasHeight = size.height
         val barWidth = canvasWidth / (barCount * 2 - 1)
@@ -296,17 +289,24 @@ private fun VoiceRecordingBars(
 @Preview(showBackground = true)
 @Composable
 private fun SpeechToTextButtonIdlePreview() {
-    SpeechToTextButton(
-        onTextRecognized = {},
-    )
+    val state = remember {
+        SpeechToTextButtonState(
+            helper = object : SpeechRecognizerHelper {},
+        )
+    }
+    SpeechToTextButton(state = state)
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SpeechToTextButtonRecordingPreview() {
-    val state = rememberSpeechToTextButtonState().apply { isRecordingState = true }
-    SpeechToTextButton(
-        state = state,
-        onTextRecognized = {},
-    )
+    val state = remember {
+        SpeechToTextButtonState(
+            helper = object : SpeechRecognizerHelper {
+                override val isListening = true
+                override val rmsdB = 5f
+            },
+        )
+    }
+    SpeechToTextButton(state = state)
 }

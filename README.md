@@ -219,24 +219,55 @@ data class MessageData(
 ### SpeechToTextButton
 
 `SpeechToTextButton` provides speech-to-text functionality with animated waveform visualization
-and automatic permission handling. When not recording, it displays a microphone icon button.
-When recording, it transforms into a circular button with animated bars that respond to voice input.
+and automatic permission handling. Clicking the button toggles recording on and off. When not recording,
+it displays a microphone icon button. When recording, it transforms into a circular button with animated
+bars that respond to voice input levels.
 
 **Basic Usage:**
 
 ```kotlin
 import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
+import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextButtonState
 
 @Composable
 fun MyComposer() {
     var text by remember { mutableStateOf("") }
 
-    SpeechToTextButton(
-        onTextRecognized = { recognizedText ->
-            // Called with partial results as user speaks
-            // At the end this callback is invoked with the full recognized text
+    val speechState = rememberSpeechToTextButtonState(
+        onFinalResult = { recognizedText ->
+            // Called with the final result when recording stops
             text = recognizedText
         }
+    )
+
+    SpeechToTextButton(
+        state = speechState
+    )
+}
+```
+
+**Usage with Real-time Streaming:**
+
+```kotlin
+@Composable
+fun MyComposer() {
+    var text by remember { mutableStateOf("") }
+
+    val speechState = rememberSpeechToTextButtonState(
+        onPartialResult = { partialText ->
+            // Called with partial results as user speaks (real-time streaming)
+            // This updates continuously as speech is detected
+            text = partialText
+        },
+        onFinalResult = { finalText ->
+            // Called with the final result when recording stops
+            // This is the complete, finalized transcription
+            text = finalText
+        }
+    )
+
+    SpeechToTextButton(
+        state = speechState
     )
 }
 ```
@@ -249,29 +280,39 @@ import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextBut
 
 @Composable
 fun MyComposer() {
-    val speechState = rememberSpeechToTextButtonState()
     var text by remember { mutableStateOf("") }
 
     // Remember the text that existed before starting speech recognition
-    val textBeforeSpeech = remember { mutableStateOf("") }
+    var textBeforeSpeech by remember { mutableStateOf("") }
+
+    val speechState = rememberSpeechToTextButtonState(
+        onPartialResult = { partialText ->
+            // Update with partial results in real-time
+            text = if (textBeforeSpeech.isBlank()) {
+                partialText
+            } else {
+                "$textBeforeSpeech $partialText"
+            }
+        },
+        onFinalResult = { finalText ->
+            // Append final recognized text after the text which is already in the composer
+            text = if (textBeforeSpeech.isBlank()) {
+                finalText
+            } else {
+                "$textBeforeSpeech $finalText"
+            }
+        }
+    )
 
     // Capture text when recording starts
     LaunchedEffect(speechState.isRecording()) {
         if (speechState.isRecording()) {
-            textBeforeSpeech.value = text
+            textBeforeSpeech = text
         }
     }
 
     SpeechToTextButton(
-        state = speechState,
-        onTextRecognized = { recognizedText ->
-            // Append recognized text after the text which is already in the composer
-            text = if (textBeforeSpeech.value.isBlank()) {
-                recognizedText
-            } else {
-                "${textBeforeSpeech.value} $recognizedText"
-            }
-        }
+        state = speechState
     )
 
     // Check if currently recording
@@ -281,17 +322,61 @@ fun MyComposer() {
 }
 ```
 
+**Customization:**
+
+```kotlin
+val speechState = rememberSpeechToTextButtonState(
+    onPartialResult = { partialText ->
+        // Handle partial results (optional)
+    },
+    onFinalResult = { finalText ->
+        // Handle final result
+    }
+)
+
+SpeechToTextButton(
+    state = speechState,
+    idleContent = { onClick ->
+        // Custom content when not recording
+        IconButton(onClick = onClick) {
+            Icon(Icons.Default.Mic, "Voice input")
+        }
+    },
+    recordingContent = { onClick, rmsdB ->
+        // Custom content when recording
+        // rmsdB is the current audio level (0-10) for visualization
+        IconButton(onClick = onClick) {
+            // Your custom recording visualization
+        }
+    }
+)
+```
+
 **Features:**
+- Click to toggle recording on/off
 - Automatic audio permission requests (RECORD_AUDIO)
-- Animated waveform visualization during recording
-- Real-time streaming of recognized text (partial results)
+- Animated waveform visualization during recording that responds to audio levels
+- Real-time streaming of recognized text (partial results as speech is detected)
+- Final result callback when recording stops
 - Automatic UI transformation between idle and recording states
 - State tracking for recording status
 
 **Parameters:**
 - `modifier`: Modifier to be applied to the root container
-- `state`: Optional state holder for tracking recording status (defaults to remembered state)
-- `onTextRecognized`: Callback invoked with each partial result as speech is detected
+- `state`: Optional state holder for tracking recording status and receiving recognized text.
+  Defaults to a remembered state with an empty callback. To receive text, create a state using
+  `rememberSpeechToTextButtonState` with your callbacks and pass it here.
+- `idleContent`: The composable content to display when not recording. Receives an onClick callback
+  that toggles recording. Defaults to a microphone icon button.
+- `recordingContent`: The composable content to display when recording. Receives an onClick callback
+  that stops recording and the current audio level (rmsdB) for visualization. Defaults to animated bars.
+
+**rememberSpeechToTextButtonState Parameters:**
+- `onPartialResult`: Optional callback invoked when text chunks are recognized during recording.
+  Called with each partial result as speech is detected, enabling real-time text streaming.
+  Use this to update your UI in real-time as the user speaks.
+- `onFinalResult`: Required callback invoked when the final result is available after recording stops.
+  Called with the complete, finalized transcription. This is the definitive result of the speech recognition.
 
 **SpeechToTextButtonState API:**
 
