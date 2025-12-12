@@ -1,5 +1,5 @@
 build:
-  maxIssues: 10
+  maxIssues: 0
   excludeCorrectable: false
   weights:
     complexity: 3
@@ -87,6 +87,7 @@ comments:
     searchInInnerObject: true
     searchInInnerInterface: true
     searchInProtectedClass: true
+    ignoreDefaultCompanionObject: true
   UndocumentedPublicFunction:
     active: true
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
@@ -333,7 +334,7 @@ naming:
     forbiddenName: []
   FunctionMaxLength:
     active: true
-    maximumFunctionNameLength: 35
+    maximumFunctionNameLength: 40
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
   FunctionMinLength:
     active: true
@@ -518,12 +519,12 @@ style:
     active: true
   BracesOnIfStatements:
     active: true
-    singleLine: 'always'
+    singleLine: 'never'
     multiLine: 'always'
   BracesOnWhenStatements:
     active: true
     singleLine: 'never'
-    multiLine: 'always'
+    multiLine: 'necessary'
   CanBeNonNullable:
     active: true
   CascadingCallWrapping:
@@ -626,7 +627,7 @@ style:
       - '1'
       - '2'
     ignoreHashCodeFunction: true
-    ignorePropertyDeclaration: false
+    ignorePropertyDeclaration: true
     ignoreLocalVariableDeclaration: false
     ignoreConstantDeclaration: true
     ignoreCompanionObjectPropertyDeclaration: true
