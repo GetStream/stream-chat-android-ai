@@ -106,9 +106,9 @@ public fun ChatComposer(
     modifier: Modifier = Modifier,
     messageData: MessageData = MessageData(),
 ) {
-    var messageData by rememberSaveable(
-        stateSaver = MessageData.Saver,
-    ) { mutableStateOf(messageData) }
+    var messageData by rememberSaveable(stateSaver = MessageData.Saver) {
+        mutableStateOf(messageData)
+    }
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -174,7 +174,7 @@ public data class MessageData(
         /**
          * [Saver] implementation for [MessageData] that converts it to a saveable format.
          */
-        public val Saver: Saver<MessageData, List<Any>> = Saver(
+        internal val Saver: Saver<MessageData, List<Any>> = Saver(
             save = { messageData ->
                 listOf(
                     messageData.text,
