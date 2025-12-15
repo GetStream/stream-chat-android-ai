@@ -70,7 +70,7 @@ internal interface SpeechRecognizerHelper {
  * Default implementation of SpeechRecognizerHelper, extending from ViewModel so that it can survive configuration changes.
  */
 @SuppressLint("StaticFieldLeak") // We are using the application context
-private class DefaultSpeechRecognizerHelper(
+private class SpeechRecognizerHelperViewModel(
     private val context: Context,
 ) : SpeechRecognizerHelper, ViewModel() {
     private val logger = simpleLogger("SpeechRecognizerHelper")
@@ -226,10 +226,10 @@ private class DefaultSpeechRecognizerHelper(
     class Factory(private val context: Context) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(DefaultSpeechRecognizerHelper::class.java)) {
+            require(modelClass.isAssignableFrom(SpeechRecognizerHelperViewModel::class.java)) {
                 "Unknown ViewModel class: ${modelClass.name}"
             }
-            return DefaultSpeechRecognizerHelper(context = context.applicationContext) as T
+            return SpeechRecognizerHelperViewModel(context = context.applicationContext) as T
         }
     }
 }
@@ -251,12 +251,12 @@ internal fun rememberSpeechRecognizerHelper(
         remember { object : SpeechRecognizerHelper {} }
     } else {
         viewModel(
-            modelClass = DefaultSpeechRecognizerHelper::class.java,
+            modelClass = SpeechRecognizerHelperViewModel::class.java,
             viewModelStoreOwner = activity?.getViewModelStoreOwner() // Prioritize activity scope which supports configuration changes
                 ?: checkNotNull(LocalViewModelStoreOwner.current) { // Fallback to the default store
                     "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
                 },
-            factory = DefaultSpeechRecognizerHelper.Factory(context),
+            factory = SpeechRecognizerHelperViewModel.Factory(context),
         ).apply {
             setCallbacks(
                 onPartialResult = onPartialResult,
