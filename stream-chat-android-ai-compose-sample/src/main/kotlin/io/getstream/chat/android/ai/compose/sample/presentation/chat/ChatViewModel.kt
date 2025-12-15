@@ -16,11 +16,11 @@
 
 package io.getstream.chat.android.ai.compose.sample.presentation.chat
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiRepository
 import io.getstream.chat.android.ai.compose.sample.domain.isFromAi
+import io.getstream.chat.android.ai.compose.ui.component.MessageData
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.channel.subscribeFor
 import io.getstream.chat.android.client.events.AIIndicatorClearEvent
@@ -140,41 +140,16 @@ class ChatViewModel(
     }
 
     /**
-     * Updates the input text state when the user types in the input field.
-     */
-    fun onInputTextChange(text: String) {
-        _uiState.update { state -> state.copy(inputText = text) }
-    }
-
-    /**
-     * Adds attachments to the current composer state.
-     *
-     * @param attachments List of URIs representing the attachments to add
-     */
-    fun onAttachmentsAdded(attachments: List<Uri>) {
-        _uiState.update { state -> state.copy(attachments = state.attachments + attachments) }
-    }
-
-    /**
-     * Removes an attachment from the current composer state.
-     *
-     * @param attachment URI of the attachment to remove
-     */
-    fun onAttachmentRemoved(attachment: Uri) {
-        _uiState.update { state -> state.copy(attachments = state.attachments - attachment) }
-    }
-
-    /**
      * Sends a message via Stream Chat.
      *
      * This function:
-     * - Validates that the input text is not empty and the assistant is not busy
-     * - Optimistically updates the UI by adding the message, clearing the input, and setting assistant state to Thinking
+     * - Validates that the data not empty and the assistant is not busy
+     * - Optimistically updates the UI by adding the message and setting assistant state to Thinking
      * - If no channel exists (cid is null), creates a new channel first and queues the message to be sent after the AI agent starts
      * - If a channel exists, sends the message immediately
      */
-    fun sendMessage() {
-        val text = _uiState.value.inputText.trim()
+    fun sendMessage(data: MessageData) {
+        val text = data.text.trim()
         if (text.isEmpty() || _uiState.value.assistantState.isBusy()) {
             return
         }
@@ -182,16 +157,14 @@ class ChatViewModel(
         val message = StreamMessage(
             text = text,
             user = User(id = currentUserId.value),
-            // Note: This accessing data on the disk, we should defer it to a background thread
-            attachments = storageHelper.getAttachmentsFromUris(_uiState.value.attachments.toList()),
+            // TODO: This accessing data on the disk, we should defer it to a background thread
+            attachments = storageHelper.getAttachmentsFromUris(data.attachments.toList()),
         )
 
         // Optimistically add the message to UI
         _uiState.update { state ->
             state.copy(
                 messages = listOfNotNull(message.toChatMessage(currentUserId.value)) + state.messages,
-                inputText = "",
-                attachments = emptySet(),
                 assistantState = ChatUiState.AssistantState.Thinking,
             )
         }

@@ -114,17 +114,11 @@ public fun SpeechToTextButton(
 
     val onToggleRecording: () -> Unit = {
         when {
-            state.isRecording() -> {
-                speechRecognizerHelper.stopListening()
-            }
+            state.isRecording() -> speechRecognizerHelper.stopListening()
 
-            hasPermission -> {
-                speechRecognizerHelper.startListening()
-            }
+            hasPermission -> speechRecognizerHelper.startListening()
 
-            else -> {
-                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            }
+            else -> permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
@@ -145,7 +139,7 @@ private fun DefaultIdleContent(onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(
             painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
-            contentDescription = stringResource(R.string.stream_ai_composer_speech_to_text_idle_button),
+            contentDescription = stringResource(R.string.stream_ai_compose_speech_to_text_idle_button),
         )
     }
 }
@@ -257,7 +251,7 @@ private fun VoiceRecordingBars(
         }
     }
 
-    val contentDescription = stringResource(R.string.stream_ai_composer_speech_to_text_recording_button)
+    val contentDescription = stringResource(R.string.stream_ai_compose_speech_to_text_recording_button)
 
     Canvas(
         modifier = modifier
@@ -289,11 +283,7 @@ private fun VoiceRecordingBars(
 @Preview(showBackground = true)
 @Composable
 private fun SpeechToTextButtonIdlePreview() {
-    val state = remember {
-        SpeechToTextButtonState(
-            helper = object : SpeechRecognizerHelper {},
-        )
-    }
+    val state = rememberSpeechToTextButtonState { }
     SpeechToTextButton(state = state)
 }
 

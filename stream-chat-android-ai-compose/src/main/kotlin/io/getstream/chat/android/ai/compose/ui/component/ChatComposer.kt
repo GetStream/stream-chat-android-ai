@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-@file:Suppress("MatchingDeclarationName")
+@file:Suppress("TooManyFunctions")
 
 package io.getstream.chat.android.ai.compose.ui.component
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -60,6 +62,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,120 +71,57 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.getstream.chat.android.ai.compose.ui.component.internal.ChatAiIcons
-import io.getstream.chat.android.ai.compose.ui.component.internal.SelectedAttachmentList
-import io.getstream.chat.android.ai.compose.ui.component.internal.rememberPhotoPickerLauncher
+import androidx.core.net.toUri
+import io.getstream.chat.android.ai.compose.R
+import io.getstream.chat.android.ai.compose.ui.component.internal.AttachmentList
 import kotlinx.coroutines.launch
-
-/**
- * Data class representing a message composed by the user.
- *
- * @param text The text content of the message.
- * @param attachments The set of attachment URIs to include with the message.
- */
-public data class MessageData(
-    val text: String = "",
-    val attachments: Set<Uri> = emptySet(),
-)
-
-/**
- * Chat composer with internal state management.
- *
- * This is a convenience composable that manages the message state internally.
- * For more control over the state, use the overload that accepts state parameters.
- *
- * The composer displays different action buttons based on state:
- * - Stop button when streaming
- * - Send button when text is entered
- * - Voice button when text is empty
- *
- * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
- * @param onStopClick Callback invoked when the stop button is clicked (during AI streaming).
- * @param isStreaming Whether the AI is currently streaming a response.
- * @param modifier The modifier to be applied to the composer.
- */
-@Composable
-public fun ChatComposer(
-    onSendClick: (MessageData) -> Unit,
-    onStopClick: () -> Unit,
-    isStreaming: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    var state by remember { mutableStateOf(MessageData()) }
-    ChatComposer(
-        text = state.text,
-        attachments = state.attachments,
-        onTextChange = { newText ->
-            state = state.copy(text = newText)
-        },
-        onAttachmentsAdded = { newAttachments ->
-            state = state.copy(attachments = state.attachments + newAttachments)
-        },
-        onAttachmentRemoved = { attachmentToRemove ->
-            state = state.copy(attachments = state.attachments - attachmentToRemove)
-        },
-        onSendClick = {
-            onSendClick(state)
-            state = MessageData()
-        },
-        onStopClick = onStopClick,
-        isStreaming = isStreaming,
-        modifier = modifier,
-    )
-}
 
 /**
  * Chat composer with attach, voice, and send buttons.
  *
- * This composable provides full control over the message state. It displays different
- * action buttons based on state:
- * - Stop button when streaming
- * - Send button when text is entered
- * - Voice button when text is empty
- *
- * The composer includes:
+ * This composable provides full control over the message state and includes:
  * - Text input field with placeholder
- * - Attachment button for selecting images
+ * - Add button for selecting images
  * - Voice input button with speech-to-text
  * - Send button (shown when text is not empty)
- * - Stop button (shown during AI streaming)
- * - Visual fade gradient background
+ * - Stop button (shown during AI generating)
  *
- * @param text The current text input value.
- * @param attachments The set of attachment URIs.
- * @param onTextChange Callback invoked when the text changes.
- * @param onAttachmentsAdded Callback invoked when new attachments are selected.
- * @param onAttachmentRemoved Callback invoked when an attachment is removed.
- * @param onSendClick Callback invoked when the send button is clicked.
- * @param onStopClick Callback invoked when the stop button is clicked (during streaming).
- * @param isStreaming Whether the AI is currently streaming a response.
+ * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
+ * @param onStopClick Callback invoked when the stop button is clicked (during AI generation).
+ * @param isGenerating Whether the AI is currently generating a response.
  * @param modifier The modifier to be applied to the composer.
+ * @param messageData The initial message data to be displayed in the input field.
  */
-@Suppress("LongParameterList")
 @Composable
 public fun ChatComposer(
-    text: String,
-    attachments: Set<Uri>,
-    onTextChange: (String) -> Unit,
-    onAttachmentsAdded: (List<Uri>) -> Unit,
-    onAttachmentRemoved: (Uri) -> Unit,
-    onSendClick: () -> Unit,
+    onSendClick: (data: MessageData) -> Unit,
     onStopClick: () -> Unit,
-    isStreaming: Boolean,
+    isGenerating: Boolean,
     modifier: Modifier = Modifier,
+    messageData: MessageData = MessageData(),
 ) {
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val handleSendClick = {
-        keyboardController?.hide()
-        onSendClick()
+    var messageData by rememberSaveable(stateSaver = MessageData.Saver) {
+        mutableStateOf(messageData)
     }
 
-    val photoPickerLauncher = rememberPhotoPickerLauncher { uris ->
-        onAttachmentsAdded(uris)
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val handleSendClick = {
+        keyboardController?.hide()
+        onSendClick(messageData)
+        messageData = MessageData()
+    }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = PickMultipleVisualMedia(),
+    ) { uris ->
+        messageData = messageData.copy(attachments = messageData.attachments + uris)
     }
 
     Row(
@@ -191,67 +132,76 @@ public fun ChatComposer(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        OutlinedIconButton(
-            enabled = !isStreaming,
+        val snackbarHostState = remember { SnackbarHostState() }
+        SnackbarHost(hostState = snackbarHostState)
+
+        AddButton(
+            enabled = !isGenerating,
             onClick = {
                 photoPickerLauncher.launch(
                     PickVisualMediaRequest(
-                        ActivityResultContracts.PickVisualMedia.ImageOnly,
-                        3,
+                        mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly,
+                        maxItems = 3,
                     ),
                 )
             },
-            colors = IconButtonDefaults.outlinedIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        ) {
-            Icon(
-                imageVector = ChatAiIcons.Add,
-                contentDescription = "Add context",
-            )
-        }
+        )
 
         TextField(
             modifier = Modifier.fillMaxWidth(),
-            text = text,
-            attachments = attachments,
-            onTextChange = onTextChange,
-            onRemoveAttachment = onAttachmentRemoved,
-            isStreaming = isStreaming,
+            snackbarHostState = snackbarHostState,
+            data = messageData,
+            onTextChange = { messageData = messageData.copy(text = it) },
+            onRemoveAttachment = { messageData = messageData.copy(attachments = messageData.attachments - it) },
+            isGenerating = isGenerating,
             onSendClick = handleSendClick,
             onStopClick = onStopClick,
         )
     }
 }
 
-@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")
+/**
+ * Data class representing a message composed by the user.
+ *
+ * @param text The text content of the message.
+ * @param attachments The set of attachment URIs to include with the message.
+ */
+public data class MessageData(
+    val text: String = "",
+    val attachments: Set<Uri> = emptySet(),
+) {
+    public companion object {
+        /**
+         * [Saver] implementation for [MessageData] that converts it to a saveable format.
+         */
+        internal val Saver: Saver<MessageData, List<Any>> = Saver(
+            save = { messageData ->
+                listOf(
+                    messageData.text,
+                ) + messageData.attachments.map(Uri::toString)
+            },
+            restore = { saved ->
+                val text = saved.firstOrNull() as? String ?: ""
+                val attachmentStrings = saved.drop(1).mapNotNull { it as? String }
+                val attachments = attachmentStrings.map(String::toUri).toSet()
+                MessageData(text = text, attachments = attachments)
+            },
+        )
+    }
+}
+
+@Suppress("LongParameterList")
 @Composable
 private fun TextField(
     modifier: Modifier,
-    text: String,
-    attachments: Set<Uri>,
+    snackbarHostState: SnackbarHostState,
+    data: MessageData,
     onTextChange: (String) -> Unit,
     onRemoveAttachment: (Uri) -> Unit,
-    isStreaming: Boolean,
+    isGenerating: Boolean,
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
 ) {
-    val colors = OutlinedTextFieldDefaults.colors()
-    val interactionSource = remember { MutableInteractionSource() }
-    // If color is not provided via the text style, use content color as a default
-    val textStyle = LocalTextStyle.current
-    val textColor = textStyle.color.takeOrElse {
-        val focused = interactionSource.collectIsFocusedAsState().value
-        when {
-            isStreaming -> colors.disabledTextColor
-            focused -> colors.focusedTextColor
-            else -> colors.unfocusedTextColor
-        }
-    }
-    val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
-
     // Remember the text that existed before starting speech recognition
     var textBeforeSpeech by remember { mutableStateOf("") }
 
@@ -260,7 +210,7 @@ private fun TextField(
             if (textBeforeSpeech.isBlank()) {
                 recognizedText
             } else {
-                "$textBeforeSpeech $recognizedText"
+                "${textBeforeSpeech.trim()} $recognizedText"
             },
         )
     }
@@ -273,33 +223,27 @@ private fun TextField(
     // Update textBeforeSpeech when recording starts/stops
     LaunchedEffect(speechToTextState.isRecording()) {
         if (speechToTextState.isRecording()) {
-            textBeforeSpeech = text
+            textBeforeSpeech = data.text
         }
     }
 
     val trailingButton = when {
-        isStreaming -> "stop"
-        text.isNotBlank() && !speechToTextState.isRecording() -> "send"
+        isGenerating -> "stop"
+        data.text.isNotBlank() && !speechToTextState.isRecording() -> "send"
         else -> null
     }
 
-    val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
-
-    SnackbarHost(
-        hostState = snackbarHostState,
-    )
+    val interactionSource = remember { MutableInteractionSource() }
 
     BasicTextField(
         modifier = modifier.defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
-        value = text,
+        value = data.text,
         onValueChange = onTextChange,
-        enabled = !isStreaming && !speechToTextState.isRecording(),
+        enabled = !isGenerating && !speechToTextState.isRecording(),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
         keyboardActions = KeyboardActions(onSend = { onSendClick() }),
-        textStyle = mergedTextStyle,
-        cursorBrush = SolidColor(colors.cursorColor),
+        textStyle = resolveTextFieldStyle(interactionSource, disabled = isGenerating),
+        cursorBrush = SolidColor(OutlinedTextFieldDefaults.colors().cursorColor),
         interactionSource = interactionSource,
         maxLines = 6,
         minLines = 1,
@@ -309,89 +253,182 @@ private fun TextField(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Column {
-                    val hasAttachments = attachments.isNotEmpty()
-                    AnimatedContent(
-                        targetState = hasAttachments,
-                    ) { visible ->
-                        if (visible) {
-                            SelectedAttachmentList(
-                                uris = attachments,
-                                onRemoveAttachment = onRemoveAttachment,
-                            )
-                        }
-                    }
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                    ) {
-                        Box(
+                    AttachmentList(
+                        attachments = data.attachments,
+                        onRemoveAttachment = onRemoveAttachment,
+                    )
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        TextInput(
                             modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            TextInputField(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        start = 16.dp,
-                                        top = 12.dp,
-                                        bottom = 12.dp,
-                                    ),
-                                showPlaceholder = text.isBlank(),
-                                innerTextField = innerTextField,
-                            )
-                        }
-                        AnimatedContent(
-                            targetState = !isStreaming,
-                        ) { visible ->
-                            if (visible) {
-                                SpeechToTextButton(
-                                    state = speechToTextState,
-                                    onPermissionDenied = {
-                                        coroutineScope.launch {
-                                            val result = snackbarHostState.showSnackbar(
-                                                message = "Microphone permission is required to record audio",
-                                                actionLabel = "Settings",
-                                                withDismissAction = true,
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                context.openSettings()
-                                            }
-                                        }
-                                    },
-                                )
-                            }
-                        }
-                        AnimatedContent(
-                            targetState = trailingButton,
-                        ) { button ->
-                            when (button) {
-                                "stop" -> {
-                                    FilledIconButton(
-                                        onClick = onStopClick,
-                                    ) {
-                                        Icon(
-                                            imageVector = ChatAiIcons.Stop,
-                                            contentDescription = "Stop",
-                                        )
-                                    }
-                                }
-
-                                "send" -> {
-                                    FilledIconButton(
-                                        onClick = onSendClick,
-                                    ) {
-                                        Icon(
-                                            imageVector = ChatAiIcons.Send,
-                                            contentDescription = "Send",
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                            text = data.text,
+                            innerTextField = innerTextField,
+                        )
+                        VoiceButton(
+                            isGenerating = isGenerating,
+                            speechToTextState = speechToTextState,
+                            snackbarHostState = snackbarHostState,
+                        )
+                        TrailingButton(
+                            button = trailingButton,
+                            onSendClick = onSendClick,
+                            onStopClick = onStopClick,
+                        )
                     }
                 }
             }
         },
     )
+}
+
+@Composable
+private fun resolveTextFieldStyle(
+    interactionSource: MutableInteractionSource,
+    disabled: Boolean,
+): TextStyle {
+    val colors = OutlinedTextFieldDefaults.colors()
+    val textStyle = LocalTextStyle.current
+    val textColor = textStyle.color.takeOrElse {
+        val focused = interactionSource.collectIsFocusedAsState().value
+        when {
+            disabled -> colors.disabledTextColor
+            focused -> colors.focusedTextColor
+            else -> colors.unfocusedTextColor
+        }
+    }
+    return textStyle.merge(TextStyle(color = textColor))
+}
+
+@Composable
+private fun AttachmentList(
+    attachments: Set<Uri>,
+    onRemoveAttachment: (Uri) -> Unit,
+) {
+    AnimatedContent(targetState = attachments.isNotEmpty()) { visible ->
+        if (visible) {
+            AttachmentList(
+                modifier = Modifier.fillMaxWidth(),
+                uris = attachments,
+                onRemoveAttachment = onRemoveAttachment,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TextInput(
+    modifier: Modifier,
+    text: String,
+    innerTextField: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
+        ) {
+            if (text.isBlank()) {
+                Text(
+                    text = stringResource(R.string.stream_ai_compose_composer_input_placeholder),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            innerTextField()
+        }
+    }
+}
+
+@Composable
+private fun VoiceButton(
+    isGenerating: Boolean,
+    speechToTextState: SpeechToTextButtonState,
+    snackbarHostState: SnackbarHostState,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    AnimatedContent(targetState = !isGenerating) { showVoiceButton ->
+        if (showVoiceButton) {
+            val snackbarMessage = stringResource(R.string.stream_ai_compose_composer_mic_permission_message)
+            val actionLabel = stringResource(R.string.stream_ai_compose_composer_mic_permission_action)
+            SpeechToTextButton(
+                state = speechToTextState,
+                onPermissionDenied = {
+                    coroutineScope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = snackbarMessage,
+                            actionLabel = actionLabel,
+                            withDismissAction = true,
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            context.openSettings()
+                        }
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrailingButton(
+    button: String?,
+    onSendClick: () -> Unit,
+    onStopClick: () -> Unit,
+) {
+    AnimatedContent(targetState = button) { button ->
+        when (button) {
+            "stop" -> TrailingIconButton(
+                icon = R.drawable.stream_ai_compose_ic_stop,
+                contentDescription = stringResource(R.string.stream_ai_compose_composer_stop_button),
+                onClick = onStopClick,
+            )
+
+            "send" -> TrailingIconButton(
+                icon = R.drawable.stream_ai_compose_ic_send,
+                contentDescription = stringResource(R.string.stream_ai_compose_composer_send_button),
+                onClick = onSendClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrailingIconButton(
+    @DrawableRes icon: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    FilledIconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = contentDescription,
+        )
+    }
+}
+
+@Composable
+private fun AddButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    OutlinedIconButton(
+        enabled = enabled,
+        onClick = onClick,
+        colors = IconButtonDefaults.outlinedIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.stream_ai_compose_ic_add),
+            contentDescription = "Add context",
+        )
+    }
 }
 
 private fun Context.openSettings() {
@@ -401,94 +438,68 @@ private fun Context.openSettings() {
     startActivity(intent)
 }
 
-@Composable
-private fun TextInputField(
-    modifier: Modifier,
-    showPlaceholder: Boolean,
-    innerTextField: @Composable (() -> Unit),
-) {
-    Box(
-        modifier = modifier,
-    ) {
-        if (showPlaceholder) {
-            Text(
-                text = "Ask Assistant",
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-        innerTextField()
-    }
-}
-
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ChatComposerEmptyPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
             onSendClick = {},
             onStopClick = {},
-            isStreaming = false,
+            isGenerating = false,
         )
     }
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ChatComposerFilledPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "What is Stream Chat?",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
+            messageData = MessageData(text = "What is Stream Chat?"),
             onSendClick = {},
             onStopClick = {},
-            isStreaming = false,
+            isGenerating = false,
         )
     }
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ChatComposerLongFilledPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
+            messageData = MessageData(text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
             onSendClick = {},
             onStopClick = {},
-            isStreaming = false,
+            isGenerating = false,
         )
     }
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ChatComposerStreamingPreview() {
+private fun ChatComposerWithAttachmentsPreview() {
     MaterialTheme {
         ChatComposer(
-            text = "",
-            attachments = emptySet(),
-            onTextChange = {},
-            onAttachmentsAdded = {},
-            onAttachmentRemoved = {},
+            messageData = MessageData(
+                text = "What is Stream Chat?",
+                attachments = setOf("1".toUri(), "2".toUri(), "3".toUri()),
+            ),
             onSendClick = {},
             onStopClick = {},
-            isStreaming = true,
+            isGenerating = false,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ChatComposerGeneratingPreview() {
+    MaterialTheme {
+        ChatComposer(
+            onSendClick = {},
+            onStopClick = {},
+            isGenerating = true,
         )
     }
 }

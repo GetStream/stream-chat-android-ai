@@ -20,7 +20,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -29,9 +28,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -49,23 +49,21 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import io.getstream.chat.android.ai.compose.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Displays a horizontal scrollable list of selected image attachments with remove functionality.
+ * Displays a horizontal scrollable list of image attachments with remove functionality.
  *
- * Each attachment is shown as a thumbnail with a remove button overlay, allowing users to
- * deselect previously chosen images.
- *
- * @param uris The Set of [Uri]s representing the selected image attachments to display.
+ * @param uris The Set of [Uri]s representing the image attachments to display.
  * @param onRemoveAttachment Callback invoked when the user taps the remove button on an attachment,
  * providing the [Uri] of the attachment to be removed.
  * @param modifier Optional [Modifier] for customizing the layout of the list.
  */
 @Composable
-internal fun SelectedAttachmentList(
+internal fun AttachmentList(
     uris: Set<Uri>,
     onRemoveAttachment: (Uri) -> Unit,
     modifier: Modifier = Modifier,
@@ -77,9 +75,10 @@ internal fun SelectedAttachmentList(
     ) {
         items(
             items = uris.toList(),
-            key = { it.toString() },
+            key = Uri::toString,
         ) { uri ->
             SelectedAttachment(
+                modifier = Modifier.animateItem(),
                 uri = uri,
                 onRemove = { onRemoveAttachment(uri) },
             )
@@ -89,16 +88,16 @@ internal fun SelectedAttachmentList(
 
 /**
  * Displays a single selected attachment as a thumbnail image with a remove button overlay.
- *
- * @param uri The [Uri] of the image to display.
- * @param onRemove Callback invoked when the user taps the remove button.
  */
 @Composable
 private fun SelectedAttachment(
     uri: Uri,
-    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRemove: () -> Unit = {},
 ) {
-    AttachmentTile {
+    AttachmentTile(
+        modifier = modifier,
+    ) {
         UriImage(
             uri = uri,
             modifier = Modifier.matchParentSize(),
@@ -106,18 +105,19 @@ private fun SelectedAttachment(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.LightGray),
+                        .background(MaterialTheme.colorScheme.surfaceDim),
                 )
             },
             error = {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.LightGray),
+                        .background(MaterialTheme.colorScheme.surfaceDim),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Image(
+                    Icon(
                         painter = painterResource(R.drawable.stream_ai_compose_ic_image_placeholder),
+                        tint = MaterialTheme.colorScheme.surfaceVariant,
                         contentDescription = null,
                     )
                 }
@@ -127,23 +127,23 @@ private fun SelectedAttachment(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(8.dp),
-            onRemove = onRemove,
+            onClick = onRemove,
         )
     }
 }
 
 /**
  * A container composable that provides a rounded square tile for displaying attachment content.
- *
- * @param content The content to display inside the tile, scoped to [BoxScope] for alignment options.
  */
 @Composable
-private fun AttachmentTile(content: @Composable BoxScope.() -> Unit) {
+private fun AttachmentTile(
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
     val shape = RoundedCornerShape(16.dp)
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(100.dp)
-            .background(Color.Transparent, shape)
             .clip(shape),
     ) {
         content()
@@ -194,15 +194,15 @@ private fun UriImage(
 
     when {
         isLoading -> placeholder()
+
         hasError -> error()
-        bitmap != null -> {
-            Image(
-                bitmap = bitmap!!.asImageBitmap(),
-                contentDescription = null,
-                modifier = modifier,
-                contentScale = contentScale,
-            )
-        }
+
+        bitmap != null -> Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = contentScale,
+        )
     }
 }
 
@@ -210,23 +210,23 @@ private fun UriImage(
  * A circular button with a remove icon, typically used as an overlay on attachments.
  *
  * @param modifier [Modifier] for positioning and sizing the button.
- * @param onRemove Callback invoked when the button is clicked.
+ * @param onClick Callback invoked when the button is clicked.
  */
 @Composable
 private fun RemoveButton(
     modifier: Modifier,
-    onRemove: () -> Unit,
+    onClick: () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .size(22.dp)
-            .background(Color.Black.copy(alpha = 0.7f), CircleShape)
-            .clip(CircleShape)
-            .clickable { onRemove() },
+    FilledIconButton(
+        modifier = modifier.size(22.dp),
+        onClick = onClick,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.inverseSurface,
+        ),
     ) {
         Icon(
             painter = painterResource(R.drawable.stream_ai_compose_ic_cancel),
-            tint = Color.LightGray,
+            tint = MaterialTheme.colorScheme.inverseOnSurface,
             contentDescription = "Remove attachment",
         )
     }
@@ -234,6 +234,6 @@ private fun RemoveButton(
 
 @Preview
 @Composable
-private fun PreviewTest() {
-    SelectedAttachment(Uri.parse("asd")) { }
+private fun SelectedAttachmentPreview() {
+    SelectedAttachment(uri = "1".toUri())
 }

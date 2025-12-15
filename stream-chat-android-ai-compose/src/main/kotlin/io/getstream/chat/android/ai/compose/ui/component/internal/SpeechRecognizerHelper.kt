@@ -16,12 +16,16 @@
 
 package io.getstream.chat.android.ai.compose.ui.component.internal
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +33,13 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import io.getstream.chat.android.ai.compose.util.internal.simpleLogger
 import java.util.Locale
 
@@ -56,14 +67,16 @@ internal interface SpeechRecognizerHelper {
 }
 
 /**
- * Default implementation of SpeechRecognizerHelper.
+ * Default implementation of SpeechRecognizerHelper, extending from ViewModel so that it can survive configuration changes.
  */
-private class DefaultSpeechRecognizerHelper(
-    context: Context,
-    private val onPartialResult: ((String) -> Unit)? = null,
-    private val onFinalResult: (String) -> Unit,
-) : SpeechRecognizerHelper {
+@SuppressLint("StaticFieldLeak") // We are using the application context
+private class SpeechRecognizerHelperViewModel(
+    private val context: Context,
+) : SpeechRecognizerHelper, ViewModel() {
     private val logger = simpleLogger("SpeechRecognizerHelper")
+
+    private var onPartialResult: ((String) -> Unit)? = null
+    private var onFinalResult: ((String) -> Unit)? = null
 
     private var speechRecognizer: SpeechRecognizer? = null
 
@@ -75,13 +88,12 @@ private class DefaultSpeechRecognizerHelper(
 
     private var speechResults = mutableListOf<String>()
 
-    init {
-        if (SpeechRecognizer.isRecognitionAvailable(context)) {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
-            speechRecognizer?.setRecognitionListener(createRecognitionListener())
-        } else {
-            logger.w { "Speech recognition is not available on this device" }
-        }
+    fun setCallbacks(
+        onPartialResult: ((String) -> Unit)?,
+        onFinalResult: ((String) -> Unit)?,
+    ) {
+        this.onPartialResult = onPartialResult
+        this.onFinalResult = onFinalResult
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -90,14 +102,14 @@ private class DefaultSpeechRecognizerHelper(
             return false
         }
 
-        val recognizer = speechRecognizer ?: run {
-            logger.e { "Speech recognizer is not available" }
+        speechRecognizer = speechRecognizer ?: createRecognizer() ?: run {
+            logger.w { "Speech recognition is not available on this device" }
             return false
         }
 
         return try {
             resetState()
-            recognizer.startListening(createRecognitionIntent())
+            speechRecognizer?.startListening(createRecognitionIntent())
             _isListening.value = true
             true
         } catch (e: Exception) {
@@ -127,6 +139,19 @@ private class DefaultSpeechRecognizerHelper(
         speechRecognizer = null
         resetState()
     }
+
+    override fun onCleared() {
+        release()
+    }
+
+    private fun createRecognizer(): SpeechRecognizer? =
+        if (SpeechRecognizer.isRecognitionAvailable(context)) {
+            SpeechRecognizer.createSpeechRecognizer(context).apply {
+                setRecognitionListener(createRecognitionListener())
+            }
+        } else {
+            null
+        }
 
     private fun createRecognitionListener(): RecognitionListener = object : RecognitionListener {
         // 1. Called first - recognizer is ready to listen
@@ -173,7 +198,7 @@ private class DefaultSpeechRecognizerHelper(
         override fun onResults(results: Bundle?) {
             logger.d { "onResults: ${results?.getData()}" }
 
-            onFinalResult(speechResults.joinToString())
+            onFinalResult?.invoke(speechResults.joinToString())
 
             resetState()
         }
@@ -197,8 +222,19 @@ private class DefaultSpeechRecognizerHelper(
         _rmsdB.floatValue = 0f
         speechResults.clear()
     }
+
+    class Factory(private val context: Context) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            require(modelClass.isAssignableFrom(SpeechRecognizerHelperViewModel::class.java)) {
+                "Unknown ViewModel class: ${modelClass.name}"
+            }
+            return SpeechRecognizerHelperViewModel(context = context.applicationContext) as T
+        }
+    }
 }
 
+@Suppress("DEPRECATION")
 private fun Bundle.getData(): String =
     keySet().joinToString { key -> "$key=${get(key)}" }
 
@@ -207,22 +243,46 @@ internal fun rememberSpeechRecognizerHelper(
     onPartialResult: ((String) -> Unit)? = null,
     onFinalResult: (String) -> Unit,
 ): SpeechRecognizerHelper {
+    val isPreview = LocalInspectionMode.current
+    val activity = LocalActivity.current
     val context = LocalContext.current
 
-    val helper = remember {
-        DefaultSpeechRecognizerHelper(
-            context = context,
-            onPartialResult = onPartialResult,
-            onFinalResult = onFinalResult,
-        )
+    val helper = if (isPreview) {
+        remember { object : SpeechRecognizerHelper {} }
+    } else {
+        viewModel(
+            modelClass = SpeechRecognizerHelperViewModel::class.java,
+            viewModelStoreOwner = activity?.getViewModelStoreOwner() // Prioritize activity scope which supports configuration changes
+                ?: checkNotNull(LocalViewModelStoreOwner.current) { // Fallback to the default store
+                    "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
+                },
+            factory = SpeechRecognizerHelperViewModel.Factory(context),
+        ).apply {
+            setCallbacks(
+                onPartialResult = onPartialResult,
+                onFinalResult = onFinalResult,
+            )
+        }
     }
 
     DisposableEffect(Unit) {
-        onDispose { helper.release() }
+        onDispose {
+            // Keep the recognizer across configuration changes; release on navigation/real disposal
+            if (activity?.isChangingConfigurations != true) {
+                helper.release()
+            }
+        }
     }
 
     return helper
 }
+
+private fun Activity.getViewModelStoreOwner(): ViewModelStoreOwner? =
+    (this as? ComponentActivity)?.let {
+        object : ViewModelStoreOwner {
+            override val viewModelStore: ViewModelStore = it.viewModelStore
+        }
+    }
 
 private const val SILENCE_TIMEOUT_MS = 3000
 

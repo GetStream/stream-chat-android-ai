@@ -37,7 +37,7 @@ internal fun ViewModelStore(
     val viewModelStore = remember { ViewModelStore() }
     val viewModelStoreOwner = remember(viewModelStore) {
         object : ViewModelStoreOwner {
-            override val viewModelStore: ViewModelStore get() = viewModelStore
+            override val viewModelStore: ViewModelStore = viewModelStore
         }
     }
 

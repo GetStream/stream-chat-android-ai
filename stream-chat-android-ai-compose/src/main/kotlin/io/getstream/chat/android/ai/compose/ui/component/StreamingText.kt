@@ -133,10 +133,8 @@ private suspend fun handleAnimatedState(
             onPreviousTextUpdate(text)
             animateNewContent(displayedText, text, chunkDelayMs, onTextUpdate)
         }
-        else -> {
-            // Text hasn't changed
-            onPreviousTextUpdate(text)
-        }
+        // Text hasn't changed
+        else -> onPreviousTextUpdate(text)
     }
 }
 
