@@ -10,7 +10,7 @@
     <img alt="API-23" src="https://img.shields.io/badge/API-23%2B-brightgreen.svg?style=flat"/>
   </a>
   <a href="https://github.com/GetStream/stream-chat-android-ai/releases">
-    <img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai" />
+    <img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai?color=lightblue" />
   </a>
   <a href="https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/">
     <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot&color=lightblue" />
