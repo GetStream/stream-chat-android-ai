@@ -13,7 +13,7 @@
     <img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai" />
   </a>
   <a href="https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/">
-    <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot" />
+    <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot&color=lightblue" />
   </a>
 </p>
 
@@ -184,7 +184,7 @@ import io.getstream.chat.android.ai.compose.ui.component.ChatComposer
 import io.getstream.chat.android.ai.compose.ui.component.MessageData
 
 @Composable
-fun ChatScreen(isStreaming: Boolean) {
+fun ChatScreen(isGenerating: Boolean) {
     ChatComposer(
         onSendClick = { messageData: MessageData ->
             // Handle message send
@@ -194,7 +194,7 @@ fun ChatScreen(isStreaming: Boolean) {
         onStopClick = {
             // Handle stop streaming
         },
-        isStreaming = isStreaming,
+        isGenerating = isGenerating,
     )
 }
 ```
