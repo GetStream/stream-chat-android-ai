@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to any AI coding assistant (Claude Code, Codex, Cursor, Aider, etc.) when working with code in this repository.
 
 ## Project Overview
 
@@ -12,7 +12,8 @@ A lightweight, framework-agnostic UI component library providing AI-focused Comp
 **Key Components (All in SDK):**
 - `StreamingText`: Progressively reveals text word-by-word (ChatGPT-like streaming animation)
 - `AITypingIndicator`: Animated typing states for AI thinking/processing
-- `ChartJsDiagram`: WebView-based Chart.js rendering for AI-generated charts
+- `ChatComposer`: Full input composer with text, attachments, voice, and send/stop buttons
+- `SpeechToTextButton`: Voice-input button with waveform visualization and permission handling
 
 **Sample Module (`stream-chat-android-ai-compose-sample`):**
 Complete reference implementation showing how to integrate the UI components with Stream Chat, including:
@@ -121,18 +122,25 @@ The `stream-chat-android-ai-compose` module is a **lightweight, framework-agnost
 ```
 stream-chat-android-ai-compose/
 └── src/main/kotlin/io/getstream/chat/android/ai/compose/
-    └── ui/component/
-        ├── StreamingText.kt          # Word-by-word streaming animation
-        ├── AITypingIndicator.kt      # Animated AI state indicators
-        └── internal/
-            ├── RichText.kt           # Markdown renderer with Chart.js support
-            └── ChartJsDiagram.kt     # WebView-based Chart.js renderer
+    ├── ui/component/
+    │   ├── StreamingText.kt          # Word-by-word streaming animation
+    │   ├── AITypingIndicator.kt      # Animated AI state indicators
+    │   ├── ChatComposer.kt           # Full input composer
+    │   ├── SpeechToTextButton.kt     # Voice-input button
+    │   └── internal/
+    │       ├── RichText.kt           # Markdown renderer with Chart.js support
+    │       ├── ChartJsDiagram.kt     # WebView-based Chart.js renderer
+    │       ├── AttachmentList.kt     # Composer attachment preview strip
+    │       ├── Bitmap.kt             # URI → Bitmap helper
+    │       └── SpeechRecognizerHelper.kt
+    └── util/internal/
+        └── SimpleLogger.kt
 ```
 
 **Dependencies (SDK):**
 - Compose BOM (androidx.compose:compose-bom)
 - Compose UI libraries (ui, ui-graphics, ui-tooling-preview, material3)
-- Markdown Renderer (multiplatform-markdown-renderer)
+- Markdown Renderer (multiplatform-markdown-renderer, -m3, -code)
 
 **Design Principles:**
 1. **Framework Agnostic**: No assumptions about chat system, state management, or networking
@@ -149,30 +157,36 @@ The `stream-chat-android-ai-compose-sample` module demonstrates a **complete int
 ```
 stream-chat-android-ai-compose-sample/
 └── src/main/kotlin/io/getstream/chat/android/ai/compose/sample/
-    ├── ChatDependencies.kt          # Dependency holder
     ├── App.kt                       # Application class
-    ├── presentation/
-    │   ├── chat/                    # Chat screen ViewModels
-    │   │   ├── ChatViewModel.kt     # Conversation state management
-    │   │   └── ChatUiState.kt       # UI state data classes
-    │   └── conversations/           # Conversation list
+    ├── ChatDependencies.kt          # Dependency holder
+    ├── MainActivity.kt              # Hosts Compose root
+    ├── data/
+    │   ├── api/                     # Retrofit interface + Moshi models
+    │   │   ├── ChatAiApi.kt
+    │   │   └── Models.kt
+    │   └── repository/
+    │       ├── ChatAiRepository.kt
+    │       └── ChatAiService.kt
+    ├── di/
+    │   ├── ChatViewModelFactory.kt
+    │   ├── ConversationListViewModelFactory.kt
+    │   └── NetworkModule.kt         # Retrofit/OkHttp/Moshi setup
     ├── domain/
     │   └── StreamMessageExt.kt      # AI message detection logic
-    ├── data/
-    │   ├── api/
-    │   │   └── ChatAiApi.kt         # Retrofit API interface
-    │   └── repository/
-    │       ├── ChatAiRepository.kt   # Repository interface
-    │       └── ChatAiService.kt      # Repository implementation
-    ├── di/
-    │   ├── ChatViewModelFactory.kt  # ViewModel factory
-    │   └── NetworkModule.kt         # Retrofit/OkHttp/Moshi setup
-    └── ui/                          # Full UI implementation
+    ├── presentation/
+    │   ├── chat/                    # {ChatViewModel, ChatUiState}
+    │   └── conversations/           # {ConversationListViewModel, ConversationListState}
+    └── ui/
+        ├── AiChatApp.kt             # App-level Compose entry
+        ├── chat/ChatScreen.kt
+        ├── components/              # ChatScaffold, ChatTopBar, ChatDrawer,
+        │                            # ChatMessageItem, ChartDiagram, etc.
+        └── theme/                   # {Color, Theme, Typography}
 ```
 
 **Dependencies (Sample):**
 - SDK module (`projects.streamChatAndroidAiCompose`)
-- Stream Chat Android SDK (client, state, offline)
+- Stream Chat Android SDK (client, compose) — v7 consolidated the former `state` and `offline` artifacts into `client`
 - Retrofit + OkHttp + Moshi (networking)
 - Coroutines (async operations)
 - Lifecycle ViewModels (state management)
@@ -196,7 +210,7 @@ AITypingIndicator(
     label = { Text("AI is thinking...") }
 )
 
-// ChartJsDiagram: Render Chart.js charts
+// ChartJsDiagram: Render Chart.js charts (internal component, used by RichText)
 ChartJsDiagram(
     chartJsJson = """{"type":"line","data":{...}}"""
 )
@@ -204,34 +218,28 @@ ChartJsDiagram(
 
 ### 2. Sample Implementation: Stream Chat Integration
 
-The sample app shows one way to integrate with Stream Chat:
+The sample app shows one way to integrate with Stream Chat.
 
-**Initialization** (`App.kt`):
+**Initialization** (`App.kt`) — in Stream Chat Android v7, state and offline plugins are wired internally by `ChatClient`; there is no `.withPlugins(...)` call:
 ```kotlin
-lateinit var chatDependencies: ChatDependencies
-    private set
+chatDependencies = ChatDependencies(
+    baseUrl = "http://10.0.2.2:3000",
+    enableLogging = BuildConfig.DEBUG,
+)
 
-override fun onCreate() {
-    // 1. Initialize backend API client
-    chatDependencies = ChatDependencies(
-        baseUrl = "http://10.0.2.2:3000",
-        enableLogging = BuildConfig.DEBUG,
-    )
+val chatClient = ChatClient.Builder(apiKey, applicationContext)
+    .logLevel(logLevel)
+    .build()
 
-    // 2. Initialize Stream Chat
-    val chatClient = ChatClient.Builder(apiKey, context)
-        .withPlugins(offlinePlugin, statePlugin)
-        .build()
-
-    chatClient.connectUser(user, token).enqueue()
-}
+chatClient.connectUser(user, token).enqueue()
 ```
 
 **ViewModel Integration** (`ChatViewModel.kt`):
-- Watches Stream Chat channel state for messages
-- Subscribes to AI-specific events (AIIndicatorUpdatedEvent, etc.)
+- Watches Stream Chat channel state via `chatClient.watchChannelAsState(...)` (package `io.getstream.chat.android.client.api.state` in v7 — moved from `...state.extensions`)
+- Subscribes to AI-specific events (`AIIndicatorUpdatedEvent`, `AIIndicatorClearEvent`, `AIIndicatorStopEvent`)
 - Maps Stream messages to UI state
-- Handles AI agent lifecycle (start/stop)
+- Handles AI agent lifecycle (start/stop via the custom backend)
+- Builds lightweight attachments via `AttachmentStorageHelper.toAttachments(...)`, then defers file resolution to `resolveAttachmentFiles(...)` right before sending. **Requires `@OptIn(InternalStreamChatApi::class)`** — keep the opt-in scoped to this class.
 
 **AI Message Detection** (`StreamMessageExt.kt`):
 ```kotlin
@@ -271,7 +279,7 @@ if (text.startsWith(previousText)) {
 1. Try to load `chart.umd.min.js` from assets (offline)
 2. Fallback to CDN: `https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js`
 
-**Chart Detection in StreamingText's Renderer:**
+**Chart Detection in the Markdown renderer:**
 ```kotlin
 if (language?.lowercase() == "chartjs" && codeContent != null) {
     ChartJsDiagram(chartJsJson = codeContent)
@@ -284,20 +292,13 @@ if (language?.lowercase() == "chartjs" && codeContent != null) {
 
 **Location**: `buildSrc/src/main/kotlin/io/getstream/chat/android/ai/Configuration.kt`
 
-```kotlin
-object Configuration {
-    const val majorVersion = 0
-    const val minorVersion = 1
-    const val patchVersion = 0
-    const val versionName = "$majorVersion.$minorVersion.$patchVersion"
-    const val artifactGroup = "io.getstream"
-}
-```
+This is the single source of truth for the **published artifact version**. It exposes `majorVersion`, `minorVersion`, `patchVersion`, `versionName`, and `artifactGroup` constants. Read that file when you need the current version — do not copy values into other files.
 
 **Snapshot Versioning:**
 ```bash
-# Normal: "0.1.0"
-# Snapshot: "0.1.0-20250103140530-SNAPSHOT" (UTC timestamp)
+# Normal:   "<versionName>"
+# Snapshot: "<versionName>-<UTC-timestamp>-SNAPSHOT"
+SNAPSHOT=true ./gradlew publish
 ```
 
 ### Build Configuration
@@ -313,15 +314,14 @@ compilerOptions {
 }
 ```
 
-**Key Dependencies:**
-- **SDK**: Compose BOM: 2025.11.00, Markdown Renderer: 0.38.1
-- **Sample**: Stream Chat Android: 7.0.0, Retrofit: 2.11.0, Moshi: 1.15.1, OkHttp: 4.12.0
+**Dependency Versions:**
+All dependency versions live in `gradle/libs.versions.toml`. Always read from there — never hard-code a version in build scripts or in this file.
 
 ## Adding New UI Components to SDK
 
 When adding new components to the SDK module:
 
-1. **Place in `ui/component/` package**
+1. **Place in `ui/component/` package** (or `ui/component/internal/` if consumers shouldn't reach it)
 2. **Use explicit API mode:**
    ```kotlin
    @Composable
@@ -330,8 +330,8 @@ When adding new components to the SDK module:
        modifier: Modifier = Modifier,
    ): Unit { ... }
    ```
-3. **Keep stateless** - accept state as parameters
-4. **Add comprehensive KDoc**
+3. **Keep stateless** — accept state as parameters
+4. **Add comprehensive KDoc** — every `@param` on public functions (contract: behavior, threading, nullability)
 5. **No external dependencies** beyond Compose and Markdown
 6. **Test in sample app** for real-world usage
 
@@ -376,9 +376,8 @@ fun ChatScreen(state: YourChatState) {
 
 **Jobs:**
 1. **Compile** (`assembleDebug --scan`)
-2. **Spotless** (`spotlessCheck`)
-3. **Lint** (`lint`)
-4. **Unit Tests** (`testDebugUnitTest --stacktrace`)
+2. **Static Analysis** — runs `lint`, `spotlessCheck`, and `detekt` as steps within a single job
+3. **Unit Tests** (`testDebugUnitTest --stacktrace`)
 
 **Triggered On:**
 - Push to `develop` or `main`
@@ -388,13 +387,13 @@ fun ChatScreen(state: YourChatState) {
 **Artifacts:**
 - Unit test results uploaded on failure
 
-**Concurrency**: Cancels in-progress runs for same ref
+**Concurrency**: Cancels in-progress runs for the same ref.
 
 ## Publishing & Release
 
 ### Maven Central Publishing
 
-**Plugin**: `com.vanniktech.maven.publish` (0.35.0)
+**Plugin**: `com.vanniktech.maven.publish` (version ref `mavenPublish` in `libs.versions.toml`)
 
 **Coordinates:**
 - Group: `io.getstream`
@@ -451,11 +450,7 @@ stream-chat-android-ai-compose/src/test/kotlin/
 stream-chat-android-ai-compose-sample/src/test/kotlin/
 ```
 
-**Test Dependencies:**
-```kotlin
-testImplementation("junit:junit:4.13.2")
-testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-```
+Test dependencies (`junit`, `kotlinx-coroutines-test`) are declared in `gradle/libs.versions.toml`.
 
 ## Code Quality Standards
 
@@ -500,23 +495,24 @@ testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 - [ ] Stream CLA signed (external contributors)
 
 ### Branch Strategy
-- **Main Branch**: `develop` (not `main`)
+- **Release Branch**: `main`
+- **Default Integration Branch**: `develop` — PRs target this
 - **Feature Branches**: `feature/description` or `fix/description`
 - **Release Branches**: Created from `develop`
 
 ### PR Best Practices
-1. Keep PRs focused on single concern
-2. Add appropriate label from release.yaml categories
-3. Update README if adding public API to SDK
+1. Keep PRs focused on a single concern
+2. Add the appropriate label from the release.yaml categories
+3. Update README if adding public API to the SDK
 4. Run `./gradlew build detekt spotlessCheck` before pushing
-5. Test in sample app when modifying SDK components
-6. Maintain backward compatibility for SDK module
+5. Test in the sample app when modifying SDK components
+6. Maintain backward compatibility for the SDK module
 
 ## Common Development Tasks
 
 ### Adding a New SDK Component
 
-1. Create composable in SDK's `ui/component/` package
+1. Create composable in the SDK's `ui/component/` package
 2. Use **explicit API mode**:
    ```kotlin
    @Composable
@@ -535,19 +531,19 @@ testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 **Important**: Sample code is a reference, not part of the SDK API
 - Free to use any state management approach
 - Can modify ViewModels, networking, DI as needed
-- Changes don't affect SDK module
+- Changes don't affect the SDK module
 - Consider if patterns should be documented for other integrators
 
 ### Testing SDK Independently
 
-To verify SDK works standalone:
+To verify the SDK works standalone:
 
 ```bash
 # 1. Publish to Maven Local
 ./gradlew :stream-chat-android-ai-compose:publishToMavenLocal
 
-# 2. Create test project and add dependency
-implementation("io.getstream:stream-chat-android-ai-compose:0.1.0")
+# 2. Create a test project and add the dependency (use the current Configuration.versionName)
+implementation("io.getstream:stream-chat-android-ai-compose:<versionName>")
 
 # 3. Use components without any Stream Chat dependencies
 ```
@@ -557,8 +553,8 @@ implementation("io.getstream:stream-chat-android-ai-compose:0.1.0")
 ### Common Issues
 
 **SDK won't compile - missing dependencies:**
-- Ensure you haven't added Stream Chat or other external dependencies to SDK
-- SDK should only depend on Compose and Markdown renderer
+- Ensure you haven't added Stream Chat or other external dependencies to the SDK
+- The SDK should only depend on Compose and the Markdown renderer
 
 **Sample won't compile - unresolved references:**
 - Verify all imports are updated after refactoring
@@ -566,8 +562,8 @@ implementation("io.getstream:stream-chat-android-ai-compose:0.1.0")
 - Check that moved files have correct package declarations
 
 **Components not rendering correctly:**
-- Verify parent composable provides necessary constraints
-- Check Modifier parameters are being applied
+- Verify the parent composable provides necessary constraints
+- Check that `Modifier` parameters are applied
 - Test with different Compose preview configurations
 
 ### Debug Logging (Sample App Only)
