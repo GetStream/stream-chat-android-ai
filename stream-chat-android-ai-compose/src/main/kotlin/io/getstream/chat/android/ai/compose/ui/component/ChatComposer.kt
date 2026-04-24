@@ -31,15 +31,17 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -129,7 +131,6 @@ public fun ChatComposer(
             .imePadding()
             .navigationBarsPadding()
             .padding(horizontal = 8.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
         val snackbarHostState = remember { SnackbarHostState() }
@@ -146,6 +147,8 @@ public fun ChatComposer(
                 )
             },
         )
+
+        Spacer(modifier = Modifier.size(8.dp))
 
         TextField(
             modifier = Modifier.fillMaxWidth(),
@@ -249,7 +252,7 @@ private fun TextField(
         minLines = 1,
         decorationBox = { innerTextField ->
             Surface(
-                shape = MaterialTheme.shapes.extraLarge,
+                shape = RoundedCornerShape(22.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Column {
