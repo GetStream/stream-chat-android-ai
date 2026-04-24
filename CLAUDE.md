@@ -315,7 +315,7 @@ compilerOptions {
 
 **Key Dependencies:**
 - **SDK**: Compose BOM: 2025.11.00, Markdown Renderer: 0.38.1
-- **Sample**: Stream Chat Android: 6.27.0, Retrofit: 2.11.0, Moshi: 1.15.1, OkHttp: 4.12.0
+- **Sample**: Stream Chat Android: 7.0.0, Retrofit: 2.11.0, Moshi: 1.15.1, OkHttp: 4.12.0
 
 ## Adding New UI Components to SDK
 
