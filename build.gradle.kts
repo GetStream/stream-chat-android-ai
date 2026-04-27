@@ -1,5 +1,3 @@
-import io.getstream.chat.android.ai.Configuration
-
 plugins {
     alias(libs.plugins.stream.project)
     alias(libs.plugins.stream.android.application) apply false
@@ -9,10 +7,6 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.arturbosch.detekt) apply true
-}
-
-allprojects {
-    version = Configuration.versionName
 }
 
 streamProject {
