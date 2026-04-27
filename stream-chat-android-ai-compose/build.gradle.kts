@@ -1,4 +1,3 @@
-import io.getstream.chat.android.ai.Configuration
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -6,7 +5,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.arturbosch.detekt)
-    alias(libs.plugins.maven.publish)
 }
 
 android {
@@ -61,12 +59,4 @@ dependencies {
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-}
-
-mavenPublishing {
-    coordinates(
-        groupId = Configuration.artifactGroup,
-        artifactId = "stream-chat-android-ai-compose",
-        version = rootProject.version.toString(),
-    )
 }
