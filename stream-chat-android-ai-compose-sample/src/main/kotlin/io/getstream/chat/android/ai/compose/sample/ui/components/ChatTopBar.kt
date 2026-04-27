@@ -54,7 +54,8 @@ public fun ChatTopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding(),
+            .statusBarsPadding()
+            .padding(horizontal = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         ChatFloatingButton(

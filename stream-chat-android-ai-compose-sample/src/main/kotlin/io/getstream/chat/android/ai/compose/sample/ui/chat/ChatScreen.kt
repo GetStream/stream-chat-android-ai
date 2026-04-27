@@ -60,7 +60,6 @@ import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatTopBar
 import io.getstream.chat.android.ai.compose.ui.component.AITypingIndicator
 import io.getstream.chat.android.ai.compose.ui.component.ChatComposer
-import io.getstream.chat.android.compose.ui.util.StorageHelperWrapper
 import kotlinx.coroutines.delay
 
 @Composable
@@ -77,8 +76,8 @@ fun ChatScreen(
         key = conversationId,
         factory = ChatViewModelFactory(
             chatAiRepository = chatDependencies.chatAiRepository,
+            appContext = appContext,
             conversationId = conversationId,
-            storageHelper = StorageHelperWrapper(appContext),
         ),
     )
 
