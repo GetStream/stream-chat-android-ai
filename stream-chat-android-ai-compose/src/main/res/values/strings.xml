@@ -22,4 +22,5 @@
     <string name="stream_ai_compose_composer_input_placeholder">Ask Assistant</string>
     <string name="stream_ai_compose_composer_stop_button">Stop</string>
     <string name="stream_ai_compose_composer_send_button">Send</string>
+    <string name="stream_ai_compose_composer_add_attachments_button">Add context</string>
 </resources>
