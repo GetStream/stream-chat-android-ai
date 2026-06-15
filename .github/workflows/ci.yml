@@ -64,12 +64,14 @@ jobs:
 
       - uses: GetStream/android-ci-actions/actions/gradle-cache@main
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+      - name: Run unit tests and verify snapshots
+        run: ./gradlew verifyPaparazziDebug --stacktrace
 
       - name: Unit tests results
         uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: unit-tests-results
-          path: ./**/build/reports/tests/**
+          path: |
+            ./**/build/reports/tests/**
+            ./**/build/paparazzi/**

@@ -441,15 +441,62 @@ private fun Context.openSettings() {
     startActivity(intent)
 }
 
+@Composable
+internal fun ChatComposerEmpty() {
+    ChatComposer(
+        onSendClick = {},
+        onStopClick = {},
+        isGenerating = false,
+    )
+}
+
+@Composable
+internal fun ChatComposerFilled() {
+    ChatComposer(
+        messageData = MessageData(text = "What is Stream Chat?"),
+        onSendClick = {},
+        onStopClick = {},
+        isGenerating = false,
+    )
+}
+
+@Composable
+internal fun ChatComposerLongFilled() {
+    ChatComposer(
+        messageData = MessageData(text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
+        onSendClick = {},
+        onStopClick = {},
+        isGenerating = false,
+    )
+}
+
+@Composable
+internal fun ChatComposerWithAttachments() {
+    ChatComposer(
+        messageData = MessageData(
+            text = "What is Stream Chat?",
+            attachments = setOf("1".toUri(), "2".toUri(), "3".toUri()),
+        ),
+        onSendClick = {},
+        onStopClick = {},
+        isGenerating = false,
+    )
+}
+
+@Composable
+internal fun ChatComposerGenerating() {
+    ChatComposer(
+        onSendClick = {},
+        onStopClick = {},
+        isGenerating = true,
+    )
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun ChatComposerEmptyPreview() {
     MaterialTheme {
-        ChatComposer(
-            onSendClick = {},
-            onStopClick = {},
-            isGenerating = false,
-        )
+        ChatComposerEmpty()
     }
 }
 
@@ -457,12 +504,7 @@ private fun ChatComposerEmptyPreview() {
 @Composable
 private fun ChatComposerFilledPreview() {
     MaterialTheme {
-        ChatComposer(
-            messageData = MessageData(text = "What is Stream Chat?"),
-            onSendClick = {},
-            onStopClick = {},
-            isGenerating = false,
-        )
+        ChatComposerFilled()
     }
 }
 
@@ -470,12 +512,7 @@ private fun ChatComposerFilledPreview() {
 @Composable
 private fun ChatComposerLongFilledPreview() {
     MaterialTheme {
-        ChatComposer(
-            messageData = MessageData(text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
-            onSendClick = {},
-            onStopClick = {},
-            isGenerating = false,
-        )
+        ChatComposerLongFilled()
     }
 }
 
@@ -483,15 +520,7 @@ private fun ChatComposerLongFilledPreview() {
 @Composable
 private fun ChatComposerWithAttachmentsPreview() {
     MaterialTheme {
-        ChatComposer(
-            messageData = MessageData(
-                text = "What is Stream Chat?",
-                attachments = setOf("1".toUri(), "2".toUri(), "3".toUri()),
-            ),
-            onSendClick = {},
-            onStopClick = {},
-            isGenerating = false,
-        )
+        ChatComposerWithAttachments()
     }
 }
 
@@ -499,10 +528,6 @@ private fun ChatComposerWithAttachmentsPreview() {
 @Composable
 private fun ChatComposerGeneratingPreview() {
     MaterialTheme {
-        ChatComposer(
-            onSendClick = {},
-            onStopClick = {},
-            isGenerating = true,
-        )
+        ChatComposerGenerating()
     }
 }
