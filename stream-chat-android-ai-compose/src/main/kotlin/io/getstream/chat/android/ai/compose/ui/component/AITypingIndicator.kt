@@ -165,8 +165,13 @@ private const val ANIMATION_DOUBLE = 2f
 private const val SMOOTHSTEP_FACTOR_1 = 3f
 private const val SMOOTHSTEP_FACTOR_2 = 2f
 
+@Composable
+internal fun AITypingIndicatorWithLabel() {
+    AITypingIndicator(label = { Text(text = "Thinking") })
+}
+
 @Preview(showBackground = true)
 @Composable
-private fun AITypingIndicatorPreview() {
-    AITypingIndicator(label = { Text("Thinking") })
+private fun AITypingIndicatorWithLabelPreview() {
+    AITypingIndicatorWithLabel()
 }

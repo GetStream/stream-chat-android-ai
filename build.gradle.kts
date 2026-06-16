@@ -11,6 +11,9 @@ plugins {
 
 streamProject {
     repositoryName.set("stream-chat-android-ai")
+    coverage {
+        includedModules.set(setOf("stream-chat-android-ai-compose"))
+    }
     publishing {
         description.set("Official AI components for Stream Android Chat SDK")
     }

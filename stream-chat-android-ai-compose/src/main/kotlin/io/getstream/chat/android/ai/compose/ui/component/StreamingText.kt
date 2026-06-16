@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.tooling.preview.Preview
 import io.getstream.chat.android.ai.compose.ui.component.internal.RichText
 import kotlinx.coroutines.delay
 
@@ -52,8 +53,9 @@ public fun StreamingText(
         RichText(text = displayedText)
     },
 ) {
-    // Track the displayed text for animation
-    var displayedText by remember { mutableStateOf("") }
+    // Track the displayed text for animation. When not animating, start with the full text so
+    // the first frame shows it immediately instead of flashing empty before the effect runs.
+    var displayedText by remember { mutableStateOf(if (animate) "" else text) }
     // Track the previous full text to detect new text vs continuation
     var previousText by remember { mutableStateOf("") }
     // Track previous animate value to detect transition from true to false
@@ -181,3 +183,17 @@ private fun splitIntoWords(text: String): List<String> {
 
 // Regex to match whitespace or non-whitespace sequences for chunking.
 private val WordSplitRegex = Regex("""(\s+|\S+)""")
+
+@Composable
+internal fun StreamingTextRendered() {
+    StreamingText(
+        text = "Hello, I am the Stream AI assistant. How can I help you today?",
+        animate = false,
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun StreamingTextPreview() {
+    StreamingTextRendered()
+}

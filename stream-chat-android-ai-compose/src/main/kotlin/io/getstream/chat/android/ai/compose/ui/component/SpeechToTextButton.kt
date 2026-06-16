@@ -280,16 +280,14 @@ private fun VoiceRecordingBars(
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-private fun SpeechToTextButtonIdlePreview() {
+internal fun SpeechToTextButtonIdle() {
     val state = rememberSpeechToTextButtonState { }
     SpeechToTextButton(state = state)
 }
 
-@Preview(showBackground = true)
 @Composable
-private fun SpeechToTextButtonRecordingPreview() {
+internal fun SpeechToTextButtonRecording() {
     val state = remember {
         SpeechToTextButtonState(
             helper = object : SpeechRecognizerHelper {
@@ -299,4 +297,16 @@ private fun SpeechToTextButtonRecordingPreview() {
         )
     }
     SpeechToTextButton(state = state)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SpeechToTextButtonIdlePreview() {
+    SpeechToTextButtonIdle()
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SpeechToTextButtonRecordingPreview() {
+    SpeechToTextButtonRecording()
 }
