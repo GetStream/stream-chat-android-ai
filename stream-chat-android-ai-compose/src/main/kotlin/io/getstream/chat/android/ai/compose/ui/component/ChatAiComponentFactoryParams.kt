@@ -17,6 +17,7 @@
 package io.getstream.chat.android.ai.compose.ui.component
 
 import android.net.Uri
+import androidx.compose.ui.Modifier
 
 /**
  * Parameters for [ChatAiComponentFactory.ComposerLeadingContent].
@@ -55,4 +56,42 @@ public data class ComposerInputContentParams(
  */
 public data class ComposerTrailingContentParams(
     val isGenerating: Boolean,
+)
+
+/**
+ * Parameters for [ChatAiComponentFactory.AITypingIndicatorLabel].
+ *
+ * @param modifier The modifier to apply to the label content.
+ */
+public data class AITypingIndicatorLabelParams(
+    val modifier: Modifier = Modifier,
+)
+
+/**
+ * Parameters for [ChatAiComponentFactory.AITypingIndicatorIndicator].
+ *
+ * @param modifier The modifier to apply to the indicator content.
+ */
+public data class AITypingIndicatorIndicatorParams(
+    val modifier: Modifier = Modifier,
+)
+
+/**
+ * Parameters for [ChatAiComponentFactory.SpeechToTextButtonIdleContent].
+ *
+ * @param onClick Called when the user taps the idle content to start recording.
+ */
+public data class SpeechToTextButtonIdleContentParams(
+    val onClick: () -> Unit,
+)
+
+/**
+ * Parameters for [ChatAiComponentFactory.SpeechToTextButtonRecordingContent].
+ *
+ * @param onClick Called when the user taps the recording content to stop recording.
+ * @param rmsdB The current audio level in decibels, for visualization.
+ */
+public data class SpeechToTextButtonRecordingContentParams(
+    val onClick: () -> Unit,
+    val rmsdB: Float,
 )

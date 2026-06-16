@@ -70,6 +70,54 @@ public interface ChatAiComponentFactory {
     @Composable
     public fun RowScope.ComposerTrailingContent(params: ComposerTrailingContentParams) {
     }
+
+    /**
+     * The label rendered before the indicator in [AITypingIndicator].
+     *
+     * Empty by default. Override to provide a label applied wherever [AITypingIndicator] is used.
+     *
+     * @param params The parameters for the label content.
+     */
+    @Suppress("EmptyFunctionBlock")
+    @Composable
+    public fun AITypingIndicatorLabel(params: AITypingIndicatorLabelParams) {
+    }
+
+    /**
+     * The animated indicator rendered in [AITypingIndicator].
+     *
+     * The default renders three animated dots.
+     *
+     * @param params The parameters for the indicator content.
+     */
+    @Composable
+    public fun AITypingIndicatorIndicator(params: AITypingIndicatorIndicatorParams) {
+        AnimatedDots(modifier = params.modifier)
+    }
+
+    /**
+     * The idle content of [SpeechToTextButton], shown when not recording.
+     *
+     * The default renders a microphone icon button.
+     *
+     * @param params The parameters for the idle content.
+     */
+    @Composable
+    public fun SpeechToTextButtonIdleContent(params: SpeechToTextButtonIdleContentParams) {
+        DefaultIdleContent(onClick = params.onClick)
+    }
+
+    /**
+     * The recording content of [SpeechToTextButton], shown while recording.
+     *
+     * The default renders animated bars that respond to the audio level.
+     *
+     * @param params The parameters for the recording content.
+     */
+    @Composable
+    public fun SpeechToTextButtonRecordingContent(params: SpeechToTextButtonRecordingContentParams) {
+        DefaultRecordingContent(onClick = params.onClick, rmsdB = params.rmsdB)
+    }
 }
 
 /**
