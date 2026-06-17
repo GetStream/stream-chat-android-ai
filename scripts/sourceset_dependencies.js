@@ -1,0 +1,1 @@
+sourceset_dependencies = '{":stream-chat-android-ai-compose/main":[],":stream-chat-android-ai-compose/release":[]}'
