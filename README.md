@@ -119,6 +119,9 @@ AITypingIndicator(
 - `label`: Optional composable label to display before the indicator (defaults to empty)
 - `indicator`: Composable indicator to display (defaults to `AnimatedDots`)
 
+> To override the label or indicator for every `AITypingIndicator` at once, see
+> [Customizing components](#-customizing-components).
+
 ### StreamingText
 
 `StreamingText` progressively reveals text content word-by-word with smooth animation, perfect
@@ -215,6 +218,9 @@ data class MessageData(
     val attachments: Set<Uri> = emptySet(),
 )
 ```
+
+> To replace the composer's parts (for example, to hide the attachment button), see
+> [Customizing components](#-customizing-components).
 
 ### SpeechToTextButton
 
@@ -352,6 +358,9 @@ SpeechToTextButton(
 )
 ```
 
+> To override the idle or recording content for every `SpeechToTextButton` at once, see
+> [Customizing components](#-customizing-components).
+
 **Features:**
 - Click to toggle recording on/off
 - Automatic audio permission requests (RECORD_AUDIO)
@@ -384,6 +393,50 @@ SpeechToTextButton(
 // Check if currently recording
 val isRecording: Boolean = state.isRecording()
 ```
+
+## 🎨 Customizing components
+
+All components resolve the parts they render through `ChatAiComponentFactory`. Each part is a slot
+with a default, so you override only the ones you need. The factory has a default value, so the
+components work with no setup; provide a custom one only to override a slot.
+
+It exposes slots for `ChatComposer`, `AITypingIndicator`, and `SpeechToTextButton`. See
+[`ChatAiComponentFactory`](stream-chat-android-ai-compose/src/main/kotlin/io/getstream/chat/android/ai/compose/ui/component/ChatAiComponentFactory.kt)
+for the full list of slots and their defaults.
+
+Provide a custom factory with `CompoundChatAiComponentFactory`. It wraps the current factory, so the
+slots you do not override keep their defaults. For example, to hide the composer's attachment button:
+
+```kotlin
+import androidx.compose.foundation.layout.RowScope
+import io.getstream.chat.android.ai.compose.ui.component.ChatAiComponentFactory
+import io.getstream.chat.android.ai.compose.ui.component.ComposerLeadingContentParams
+import io.getstream.chat.android.ai.compose.ui.component.CompoundChatAiComponentFactory
+
+@Composable
+fun ChatScreen(isGenerating: Boolean) {
+    CompoundChatAiComponentFactory(
+        factory = { current ->
+            object : ChatAiComponentFactory by current {
+                @Composable
+                override fun RowScope.ComposerLeadingContent(params: ComposerLeadingContentParams) {
+                    // Render nothing to hide the attachment button.
+                }
+            }
+        },
+    ) {
+        ChatComposer(
+            onSendClick = { /* ... */ },
+            onStopClick = { /* ... */ },
+            isGenerating = isGenerating,
+        )
+    }
+}
+```
+
+`AITypingIndicator` and `SpeechToTextButton` also accept content parameters (`label` / `indicator`,
+`idleContent` / `recordingContent`) for per-call-site customization. Those take precedence over the
+factory.
 
 ## 🛥 What is Stream?
 

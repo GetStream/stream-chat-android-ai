@@ -53,8 +53,16 @@ import androidx.compose.ui.unit.dp
 @Composable
 public fun AITypingIndicator(
     modifier: Modifier = Modifier,
-    label: @Composable () -> Unit = {},
-    indicator: @Composable () -> Unit = { AnimatedDots() },
+    label: @Composable () -> Unit = {
+        with(LocalChatAiComponentFactory.current) {
+            AITypingIndicatorLabel(AITypingIndicatorLabelParams())
+        }
+    },
+    indicator: @Composable () -> Unit = {
+        with(LocalChatAiComponentFactory.current) {
+            AITypingIndicatorIndicator(AITypingIndicatorIndicatorParams())
+        }
+    },
 ) {
     Row(
         modifier = modifier,
@@ -71,7 +79,7 @@ public fun AITypingIndicator(
  * Uses [LocalContentColor] for the dot color.
  */
 @Composable
-private fun AnimatedDots() {
+internal fun AnimatedDots(modifier: Modifier = Modifier) {
     val contentColor = LocalContentColor.current
     val infiniteTransition = rememberInfiniteTransition(label = "dots_transition")
     val progress by infiniteTransition.animateFloat(
@@ -83,6 +91,7 @@ private fun AnimatedDots() {
         ),
     )
     Row(
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

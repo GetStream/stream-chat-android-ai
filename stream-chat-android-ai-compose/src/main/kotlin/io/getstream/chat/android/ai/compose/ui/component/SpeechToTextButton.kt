@@ -83,13 +83,19 @@ public fun SpeechToTextButton(
     modifier: Modifier = Modifier,
     onPermissionDenied: () -> Unit = { },
     idleContent: @Composable (onClick: () -> Unit) -> Unit = { onClick ->
-        DefaultIdleContent(onClick)
+        with(LocalChatAiComponentFactory.current) {
+            SpeechToTextButtonIdleContent(SpeechToTextButtonIdleContentParams(onClick = onClick))
+        }
     },
     recordingContent: @Composable (
         onClick: () -> Unit,
         rmsdB: Float,
     ) -> Unit = { onClick, rmsdB ->
-        DefaultRecordingContent(onClick, rmsdB)
+        with(LocalChatAiComponentFactory.current) {
+            SpeechToTextButtonRecordingContent(
+                SpeechToTextButtonRecordingContentParams(onClick = onClick, rmsdB = rmsdB),
+            )
+        }
     },
 ) {
     val context = LocalContext.current
@@ -135,7 +141,7 @@ public fun SpeechToTextButton(
 }
 
 @Composable
-private fun DefaultIdleContent(onClick: () -> Unit) {
+internal fun DefaultIdleContent(onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(
             painter = painterResource(R.drawable.stream_ai_compose_ic_mic),
@@ -145,7 +151,7 @@ private fun DefaultIdleContent(onClick: () -> Unit) {
 }
 
 @Composable
-private fun DefaultRecordingContent(
+internal fun DefaultRecordingContent(
     onClick: () -> Unit,
     rmsdB: Float,
 ) {
