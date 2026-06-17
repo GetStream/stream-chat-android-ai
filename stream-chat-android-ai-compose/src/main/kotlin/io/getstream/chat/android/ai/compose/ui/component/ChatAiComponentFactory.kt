@@ -123,7 +123,7 @@ public interface ChatAiComponentFactory {
 /**
  * The default [ChatAiComponentFactory] used when no custom factory is provided.
  */
-internal class DefaultChatAiComponentFactory : ChatAiComponentFactory
+internal object DefaultChatAiComponentFactory : ChatAiComponentFactory
 
 /**
  * The composition local that provides the current [ChatAiComponentFactory].
@@ -131,4 +131,4 @@ internal class DefaultChatAiComponentFactory : ChatAiComponentFactory
  * Defaults to [DefaultChatAiComponentFactory] so components work without any setup.
  */
 public val LocalChatAiComponentFactory: ProvidableCompositionLocal<ChatAiComponentFactory> =
-    compositionLocalOf(defaultFactory = ::DefaultChatAiComponentFactory)
+    compositionLocalOf { DefaultChatAiComponentFactory }
