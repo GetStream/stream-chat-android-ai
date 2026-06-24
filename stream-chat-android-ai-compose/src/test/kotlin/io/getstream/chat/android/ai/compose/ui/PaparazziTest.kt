@@ -20,8 +20,11 @@ import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -40,15 +43,31 @@ internal interface PaparazziTest {
 
     val paparazzi: Paparazzi
 
-    fun snapshot(name: String? = null, composable: @Composable () -> Unit) {
+    fun snapshot(
+        name: String? = null,
+        composable: @Composable () -> Unit,
+    ) {
         paparazzi.snapshot(name) {
             CompositionLocalProvider(
                 LocalInspectionMode provides true,
                 LocalActivityResultRegistryOwner provides NoOpResultRegistryOwner,
             ) {
-                MaterialTheme {
-                    Surface {
-                        composable()
+                Column {
+                    // light theme
+                    MaterialTheme(
+                        colorScheme = lightColorScheme(),
+                    ) {
+                        Surface {
+                            composable()
+                        }
+                    }
+                    // dark theme
+                    MaterialTheme(
+                        colorScheme = darkColorScheme(),
+                    ) {
+                        Surface {
+                            composable()
+                        }
                     }
                 }
             }
