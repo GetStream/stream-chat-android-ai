@@ -45,7 +45,7 @@ internal interface PaparazziTest {
 
     fun snapshot(
         name: String? = null,
-        composable: @Composable () -> Unit
+        composable: @Composable () -> Unit,
     ) {
         paparazzi.snapshot(name) {
             CompositionLocalProvider(
@@ -55,15 +55,15 @@ internal interface PaparazziTest {
                 Column {
                     // light theme
                     MaterialTheme(
-                        colorScheme = lightColorScheme()
+                        colorScheme = lightColorScheme(),
                     ) {
                         Surface {
                             composable()
                         }
                     }
-                    //dark theme
+                    // dark theme
                     MaterialTheme(
-                        colorScheme = darkColorScheme()
+                        colorScheme = darkColorScheme(),
                     ) {
                         Surface {
                             composable()
