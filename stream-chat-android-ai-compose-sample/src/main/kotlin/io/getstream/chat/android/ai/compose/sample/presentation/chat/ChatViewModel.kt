@@ -401,7 +401,10 @@ private fun StreamMessage.toChatMessage(currentUserId: String): ChatUiState.Mess
 
 private fun String.toAssistantState() = when (this) {
     "AI_STATE_THINKING" -> ChatUiState.AssistantState.Thinking
-    "AI_STATE_CHECKING_SOURCES" -> ChatUiState.AssistantState.CheckingSources
+    // The "consulting tools / sources" state has two spellings in the wild: the reference
+    // agents send AI_STATE_EXTERNAL_SOURCES, while the backend constant and some SDKs use
+    // AI_STATE_CHECKING_SOURCES. ai_state is an unvalidated String, so accept both.
+    "AI_STATE_EXTERNAL_SOURCES", "AI_STATE_CHECKING_SOURCES" -> ChatUiState.AssistantState.CheckingSources
     "AI_STATE_GENERATING" -> ChatUiState.AssistantState.Generating
     "AI_STATE_ERROR" -> ChatUiState.AssistantState.Error
     else -> ChatUiState.AssistantState.Idle
