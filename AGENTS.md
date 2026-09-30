@@ -244,7 +244,7 @@ chatClient.connectUser(user, token).enqueue()
 **AI Message Detection** (`StreamMessageExt.kt`):
 ```kotlin
 fun Message.isFromAi(): Boolean =
-    extraData["ai_generated"] == true || user.id.startsWith("ai_bot-")
+    extraData["ai_generated"] == true || user.id.startsWith("ai-bot-")
 ```
 
 **Backend API** (`ChatAiApi.kt`):
