@@ -512,6 +512,34 @@ runner.run(parts) { call, result -> backend.sendToolResult(message, call, result
 Put `AIClientIdentity.installId(context)` in the custom data of the person's message (`client_id`)
 so the agent can address the calls it makes while answering to this install.
 
+#### Tool approvals
+
+Some calls wait for the person before they run, such as sharing their location. The agent's backend
+says so on the call's step: status `awaiting_approval`, addressed to the person (and the install, for
+a client tool), with an `approval` carrying the question. It holds the call until it gets the
+answer, then updates the step: allowed, a client tool's call moves on to `awaiting_client`, so
+`AIClientToolRunner` runs it as before; declined, it is cancelled (`isDeclined`) and never runs.
+
+Pass an `AIToolApprover` to ask: the question shows under the call, only to that person, on that
+install, and only while the call waits. Buttons are disabled while the answer is sent, and a failed
+send can be answered again.
+
+```kotlin
+val approver = AIToolApprover(userId = user.id, clientId = AIClientIdentity.installId(context)) { call, allowed ->
+    backend.answerToolApproval(message, call, allowed)
+}
+
+AIMessageParts(parts = parts, approver = approver)
+```
+
+`AIToolApprovalCard` is the default design (`AIToolApprovalDefaults.colors()`), or ask in your own:
+
+```kotlin
+AIToolApprovalPrompt(call = call, approver = approver) { approval, state, decide ->
+    MyApprovalCard(approval.title, busy = state.isSending, onAllow = { decide(true) }, onDecline = { decide(false) })
+}
+```
+
 ## 🎨 Customizing components
 
 All components resolve the parts they render through `ChatAiComponentFactory`. Each part is a slot
