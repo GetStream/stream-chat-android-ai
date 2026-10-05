@@ -219,6 +219,33 @@ data class MessageData(
 )
 ```
 
+**Owning the message (state hoisting):**
+
+To put text in the composer from elsewhere (a suggestion, a restored draft), keep what was written
+when a send is refused, or move the cursor into the field, own the message and pass a
+`FocusRequester`:
+
+```kotlin
+var message by rememberSaveable(stateSaver = MessageData.Saver) { mutableStateOf(MessageData()) }
+val focusRequester = remember { FocusRequester() }
+
+ChatComposer(
+    messageData = message,
+    onMessageDataChange = { message = it },
+    onSendClick = { sent -> if (!send(sent)) message = sent },
+    onStopClick = { stop() },
+    isGenerating = isGenerating,
+    focusRequester = focusRequester,
+)
+
+// Later, for example when a suggestion is tapped:
+message = message.copy(text = "Build me a short presentation about ")
+focusRequester.requestFocus()
+```
+
+After a send, the composer reports an empty message through `onMessageDataChange`; set it back to
+keep the text. A custom `ComposerInputContent` receives the focus requester in its params.
+
 > To replace the composer's parts (for example, to hide the attachment button), see
 > [Customizing components](#-customizing-components).
 

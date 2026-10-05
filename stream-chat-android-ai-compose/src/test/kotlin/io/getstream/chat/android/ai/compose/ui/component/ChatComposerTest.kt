@@ -67,6 +67,13 @@ internal class ChatComposerTest : PaparazziTest {
     }
 
     @Test
+    fun `state hoisted`() {
+        snapshot {
+            ChatComposerHoisted()
+        }
+    }
+
+    @Test
     fun generating() {
         snapshot {
             ChatComposerGenerating()

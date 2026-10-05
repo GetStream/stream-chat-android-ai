@@ -52,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.res.painterResource
@@ -124,7 +125,8 @@ internal fun DefaultComposerInputContent(
         BasicTextField(
             modifier = Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
+                .defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current)
+                .then(params.focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
             value = params.messageData.text,
             onValueChange = params.onTextChange,
             enabled = !params.isGenerating && !speechToTextState.isRecording(),
