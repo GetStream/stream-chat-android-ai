@@ -60,12 +60,16 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.bundles.androidx.compose)
     implementation(libs.bundles.markdown.renderer)
+    implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)
     testImplementation(libs.androidx.test.junit)
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
+    // The JVM implementation of org.json, which android.jar only stubs in unit tests.
+    testImplementation(libs.org.json)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
