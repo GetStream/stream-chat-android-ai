@@ -595,6 +595,43 @@ AIToolApprovalPrompt(call = call, approver = approver) { approval, state, decide
 }
 ```
 
+### Answering on the device
+
+When your agent can't take a message, because the person is offline or the agent reached its usage
+limit, a model on the device can answer instead. `AILocalModel` is the interface, and
+`AIOnDeviceModel`, in a separate artifact so the components keep their small set of dependencies,
+is Gemini Nano through ML Kit's GenAI Prompt API:
+
+```kotlin
+dependencies {
+    implementation("io.getstream:stream-chat-android-ai-ondevice:$version")
+}
+```
+
+```kotlin
+val model = AIOnDeviceModel(context)
+
+when (model.status()) {
+    AIOnDeviceModel.Status.Available -> {
+        val turns = listOf(
+            AIConversationTurn.user("What's a good name for a cat?"),
+            AIConversationTurn.assistant("How about Miso?"),
+            AIConversationTurn.user("Something longer"),
+        )
+        model.reply(instructions = "Answer briefly. You have no tools.", turns = turns)
+            .collect { answerSoFar -> show(answerSoFar) }
+    }
+    AIOnDeviceModel.Status.Downloadable -> model.download().collect { progress -> /* … */ }
+    else -> { /* This device can't answer; keep the retry. */ }
+}
+```
+
+Each emission is the whole answer so far, and cancelling the collection stops the model. The
+conversation never leaves the device. Gemini Nano runs on devices whose AICore offers it (recent
+flagship phones, Android 8.0 or later for the artifact), not on emulators, and its context holds a
+few thousand tokens: `AIConversationTurn.fitting` keeps the newest turns that fit, always keeping the
+question, and the model writes at most `AIOnDeviceModel.MODEL_MAXIMUM_RESPONSE_TOKENS` per answer.
+
 ## 🎨 Customizing components
 
 All components resolve the parts they render through `ChatAiComponentFactory`. Each part is a slot
