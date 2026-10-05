@@ -423,6 +423,90 @@ SpeechToTextButton(
 val isRecording: Boolean = state.isRecording()
 ```
 
+### Reasoning and reply steps
+
+Agents that think out loud and call tools can write each step as a custom attachment on the reply
+(`ai_reasoning`, `ai_tool_call`), in order, with the answer in the message text. The SDK reads them
+into `AIMessagePart`s and shows them before the answer.
+
+```kotlin
+import io.getstream.chat.android.ai.compose.parts.AIMessagePart
+import io.getstream.chat.android.ai.compose.ui.component.AIMessageParts
+
+val parts = AIMessagePart.parts(message.attachments.map { it.type.orEmpty() to it.extraData })
+
+Column {
+    AIMessageParts(parts = parts)
+    StreamingText(text = message.text, animate = isGenerating)
+}
+```
+
+The kinds of step, and their statuses, are open sets: a step from a newer agent never breaks
+decoding. Read the ones you know through `part.reasoning` and `part.toolCall`, read kinds of your
+own from `part.payload`, and `AIMessagePartItem` shows a neutral placeholder for anything else. To
+show some steps your own way, pass content:
+
+```kotlin
+AIMessageParts(parts = parts) { part ->
+    val reasoning = part.reasoning
+    if (reasoning != null) {
+        StreamingReasoning(part = reasoning, text = liveReasoning[reasoning.id])
+    } else {
+        AIMessagePartItem(part = part)
+    }
+}
+```
+
+#### StreamingReasoning
+
+`StreamingReasoning` shows a model's reasoning. While the model thinks, it is open under a
+"Thinking… 7s" header: a panel that grows with the thoughts up to `maxExpandedHeight` (260 dp),
+then keeps the newest in view, revealing new text smoothly as it arrives. When the model is done it
+folds into "Thought for 12s" and the summary, unless the reader opened or closed it, and tapping the
+header opens it again. Only the paragraph still being written is laid out again as it grows.
+
+```kotlin
+StreamingReasoning(
+    text = reasoning,
+    isThinking = answer.isEmpty(),
+    durationSeconds = 12.0,
+    summary = "Needs the user's location first",
+)
+```
+
+An answer that appears as the reasoning folds can wait `StreamingReasoningDefaults.FoldDurationMillis`,
+so the two don't move against each other; `StreamingReasoningDefaults.foldAnimationSpec()` matches
+the fold.
+
+#### Tool calls and client tools
+
+`AIToolCall` shows one call: what it is doing (`display_title`), its outcome and its duration. Some
+tools run on the person's device (`executor: client`): the agent addresses the call to one person
+and one install and waits (`awaiting_client`). `AIClientToolRunner` runs each such call once and
+sends the result to your backend; a result that couldn't be sent is offered again on a later update,
+without running the tool again.
+
+```kotlin
+class LocationTool : AIClientTool {
+    override val name = "get_location"
+    override suspend fun run(call: AIToolCallPart): AIClientToolResult =
+        AIClientToolResult.completed("""{"city":"Amsterdam"}""", summary = "Shared approximate location")
+}
+
+val runner = AIClientToolRunner(
+    userId = user.id,
+    clientId = AIClientIdentity.installId(context),
+    tools = listOf(LocationTool()),
+    scope = viewModelScope,
+)
+
+// For every update of an AI reply:
+runner.run(parts) { call, result -> backend.sendToolResult(message, call, result) }
+```
+
+Put `AIClientIdentity.installId(context)` in the custom data of the person's message (`client_id`)
+so the agent can address the calls it makes while answering to this install.
+
 ## 🎨 Customizing components
 
 All components resolve the parts they render through `ChatAiComponentFactory`. Each part is a slot
