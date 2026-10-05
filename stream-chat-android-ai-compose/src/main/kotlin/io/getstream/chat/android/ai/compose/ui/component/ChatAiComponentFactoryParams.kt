@@ -50,6 +50,23 @@ public data class ComposerInputContentParams(
 )
 
 /**
+ * Parameters for [ChatAiComponentFactory.ComposerInputTrailingContent].
+ *
+ * @param text The text currently in the input field.
+ * @param isGenerating Whether the AI is currently generating a response.
+ * @param speechToTextState The composer's speech-to-text state. The default content passes it to
+ * [SpeechToTextButton], whose transcript the composer writes into the field.
+ * @param onPermissionDenied Called when the microphone permission is denied. The composer shows a
+ * message that links to the app's settings.
+ */
+public data class ComposerInputTrailingContentParams(
+    val text: String,
+    val isGenerating: Boolean,
+    val speechToTextState: SpeechToTextButtonState,
+    val onPermissionDenied: () -> Unit,
+)
+
+/**
  * Parameters for [ChatAiComponentFactory.ComposerTrailingContent].
  *
  * @param isGenerating Whether the AI is currently generating a response.

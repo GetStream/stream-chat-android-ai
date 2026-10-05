@@ -60,6 +60,13 @@ internal class ChatComposerTest : PaparazziTest {
     }
 
     @Test
+    fun `without dictation`() {
+        snapshot {
+            ChatComposerWithoutDictation()
+        }
+    }
+
+    @Test
     fun generating() {
         snapshot {
             ChatComposerGenerating()

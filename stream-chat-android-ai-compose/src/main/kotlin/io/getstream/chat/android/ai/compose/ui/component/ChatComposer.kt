@@ -23,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -196,6 +197,27 @@ internal fun ChatComposerWithAttachments() {
         onStopClick = {},
         isGenerating = false,
     )
+}
+
+@Composable
+internal fun ChatComposerWithoutDictation() {
+    CompoundChatAiComponentFactory(
+        factory = { current ->
+            object : ChatAiComponentFactory by current {
+                @Composable
+                override fun RowScope.ComposerInputTrailingContent(params: ComposerInputTrailingContentParams) {
+                    // Render nothing to leave dictation out.
+                }
+            }
+        },
+    ) {
+        ChatComposer(
+            messageData = MessageData(text = "Summarize this conversation"),
+            onSendClick = {},
+            onStopClick = {},
+            isGenerating = false,
+        )
+    }
 }
 
 @Composable

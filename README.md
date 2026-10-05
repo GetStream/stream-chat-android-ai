@@ -434,6 +434,31 @@ fun ChatScreen(isGenerating: Boolean) {
 }
 ```
 
+#### Replacing the dictation button
+
+Inside its input field, `ChatComposer` shows a `SpeechToTextButton` while no response is generating.
+Override `ComposerInputTrailingContent` to show something else there, or render nothing to leave
+dictation out:
+
+```kotlin
+CompoundChatAiComponentFactory(
+    factory = { current ->
+        object : ChatAiComponentFactory by current {
+            @Composable
+            override fun RowScope.ComposerInputTrailingContent(params: ComposerInputTrailingContentParams) {
+                // Render nothing to leave dictation out.
+            }
+        }
+    },
+) {
+    ChatComposer(/* ... */)
+}
+```
+
+The params carry the field's text, whether a response is generating, the composer's
+`SpeechToTextButtonState` (its transcript is written into the field) and the handler for a denied
+microphone permission, so a replacement can still dictate.
+
 `AITypingIndicator` and `SpeechToTextButton` also accept content parameters (`label` / `indicator`,
 `idleContent` / `recordingContent`) for per-call-site customization. Those take precedence over the
 factory.
