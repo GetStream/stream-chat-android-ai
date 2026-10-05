@@ -29,8 +29,16 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "stream-chat-android-ai"
 
 include(
-    ":metrics:stream-chat-android-ai-metrics",
     ":stream-chat-android-ai-compose",
-    ":stream-chat-android-ai-compose-sample",
     ":stream-chat-android-ai-ondevice",
 )
+
+// An app that builds these components from source (an included build, or a Gradle source
+// dependency on a branch) gets only the SDK modules: the sample app would otherwise show up
+// beside it as a second app to run, and the metrics module would build for nothing.
+if (gradle.parent == null) {
+    include(
+        ":metrics:stream-chat-android-ai-metrics",
+        ":stream-chat-android-ai-compose-sample",
+    )
+}
