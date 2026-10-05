@@ -62,9 +62,12 @@ internal fun RichText(
 }
 
 private val DefaultRichTextComponent: RichTextComponent = { text, modifier ->
+    // Parsed synchronously: a retained state parses each new text asynchronously, so while
+    // StreamingText reveals a reply an older, shorter parse could land after a newer one and
+    // leave the reply cut short.
     val markdownState = rememberMarkdownState(
         content = text,
-        retainState = true,
+        immediate = true,
     )
 
     Markdown(
