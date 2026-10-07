@@ -33,6 +33,7 @@ import io.getstream.chat.android.ai.compose.ui.component.internal.DefaultCompose
  * composition. When no factory is provided, components fall back to
  * [DefaultChatAiComponentFactory], so they work without any setup.
  */
+@Suppress("ComplexInterface") // One slot per customizable part; it grows with the components.
 public interface ChatAiComponentFactory {
 
     /**
@@ -117,6 +118,20 @@ public interface ChatAiComponentFactory {
     @Composable
     public fun SpeechToTextButtonRecordingContent(params: SpeechToTextButtonRecordingContentParams) {
         DefaultRecordingContent(onClick = params.onClick, rmsdB = params.rmsdB)
+    }
+
+    /**
+     * A chip rendered in [AISuggestions].
+     *
+     * The default renders a Material 3 [androidx.compose.material3.SuggestionChip] that shows the
+     * text on up to 2 lines. Apply [AISuggestionsChipParams.modifier] to keep the row's chip height
+     * and maximum width.
+     *
+     * @param params The parameters for the chip.
+     */
+    @Composable
+    public fun RowScope.AISuggestionsChip(params: AISuggestionsChipParams) {
+        DefaultAISuggestionsChip(params)
     }
 }
 

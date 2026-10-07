@@ -95,3 +95,17 @@ public data class SpeechToTextButtonRecordingContentParams(
     val onClick: () -> Unit,
     val rmsdB: Float,
 )
+
+/**
+ * Parameters for [ChatAiComponentFactory.AISuggestionsChip].
+ *
+ * @param text The suggestion text.
+ * @param onClick Called when the user taps the chip.
+ * @param modifier The modifier to apply to the chip. It gives all chips in the row the same height
+ * and limits the width to [AISuggestions]'s `itemMaxWidth`.
+ */
+public data class AISuggestionsChipParams(
+    val text: String,
+    val onClick: () -> Unit,
+    val modifier: Modifier = Modifier,
+)
