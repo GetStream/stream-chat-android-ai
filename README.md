@@ -41,6 +41,10 @@ labels, able to show different states of the LLM (thinking, checking external so
 and send/stop buttons. It manages message composition state and provides a polished UI with
 automatic keyboard handling.
 
+**AISuggestions** - a horizontally scrolling row of suggestion chips, usually shown above the
+composer on a new chat. Tapping a chip gives you its text, and you decide what to do with it, for
+example send it.
+
 **SpeechToTextButton** - a composable button that provides speech-to-text functionality with
 waveform visualization, automatic permission handling, and customizable UI components.
 
@@ -222,6 +226,40 @@ data class MessageData(
 > To replace the composer's parts (for example, to hide the attachment button), see
 > [Customizing components](#-customizing-components).
 
+### AISuggestions
+
+`AISuggestions` shows a horizontally scrolling row of chips. Each chip shows its text on up to 2
+lines, at most `itemMaxWidth` wide (160 dp by default), and all chips in the row have the same
+height. The component doesn't send anything itself:
+`onSuggestionClick` gets the chip's exact text, and you decide what to do with it.
+
+```kotlin
+import io.getstream.chat.android.ai.compose.ui.component.AISuggestions
+import io.getstream.chat.android.ai.compose.ui.component.ChatComposer
+import io.getstream.chat.android.ai.compose.ui.component.MessageData
+
+@Composable
+fun NewChatBottomBar(onSend: (MessageData) -> Unit, isGenerating: Boolean) {
+    Column {
+        AISuggestions(
+            suggestions = listOf(
+                "Help me study vocabulary for an exam",
+                "Top 5 restaurants in New York",
+            ),
+            onSuggestionClick = { text -> onSend(MessageData(text = text)) },
+        )
+        ChatComposer(
+            onSendClick = onSend,
+            onStopClick = { /* ... */ },
+            isGenerating = isGenerating,
+        )
+    }
+}
+```
+
+> To change how each chip looks, override the `AISuggestionsChip` slot. See
+> [Customizing components](#-customizing-components).
+
 ### SpeechToTextButton
 
 `SpeechToTextButton` provides speech-to-text functionality with animated waveform visualization
@@ -400,7 +438,7 @@ All components resolve the parts they render through `ChatAiComponentFactory`. E
 with a default, so you override only the ones you need. The factory has a default value, so the
 components work with no setup; provide a custom one only to override a slot.
 
-It exposes slots for `ChatComposer`, `AITypingIndicator`, and `SpeechToTextButton`. See
+It exposes slots for `ChatComposer`, `AITypingIndicator`, `SpeechToTextButton`, and `AISuggestions`. See
 [`ChatAiComponentFactory`](stream-chat-android-ai-compose/src/main/kotlin/io/getstream/chat/android/ai/compose/ui/component/ChatAiComponentFactory.kt)
 for the full list of slots and their defaults.
 

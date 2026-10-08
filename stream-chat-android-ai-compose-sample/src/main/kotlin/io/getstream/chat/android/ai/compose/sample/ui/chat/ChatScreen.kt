@@ -19,6 +19,7 @@ package io.getstream.chat.android.ai.compose.sample.ui.chat
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,8 +59,10 @@ import io.getstream.chat.android.ai.compose.sample.presentation.chat.isBusy
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatMessageItem
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatScaffold
 import io.getstream.chat.android.ai.compose.sample.ui.components.ChatTopBar
+import io.getstream.chat.android.ai.compose.ui.component.AISuggestions
 import io.getstream.chat.android.ai.compose.ui.component.AITypingIndicator
 import io.getstream.chat.android.ai.compose.ui.component.ChatComposer
+import io.getstream.chat.android.ai.compose.ui.component.MessageData
 import kotlinx.coroutines.delay
 
 @Composable
@@ -141,7 +144,7 @@ fun ChatScreen(
             )
         },
         bottomBar = { modifier ->
-            ChatComposer(
+            Column(
                 modifier = modifier
                     // Blur gradient to create a visual fade effect that blends with the message list behind it
                     .background(
@@ -154,10 +157,19 @@ fun ChatScreen(
                             ),
                         ),
                     ),
-                onSendClick = chatViewModel::sendMessage,
-                onStopClick = chatViewModel::stopStreaming,
-                isGenerating = isAssistantBusy,
-            )
+            ) {
+                if (!state.isLoading && messages.isEmpty()) {
+                    AISuggestions(
+                        suggestions = SUGGESTIONS,
+                        onSuggestionClick = { text -> chatViewModel.sendMessage(MessageData(text = text)) },
+                    )
+                }
+                ChatComposer(
+                    onSendClick = chatViewModel::sendMessage,
+                    onStopClick = chatViewModel::stopStreaming,
+                    isGenerating = isAssistantBusy,
+                )
+            }
         },
     ) { contentPadding ->
         AnimatedContent(
@@ -234,6 +246,14 @@ fun ChatScreen(
         )
     }
 }
+
+private val SUGGESTIONS = listOf(
+    "Create a painting in Renaissance-style",
+    "Create a workout plan for resistance training",
+    "Help me study vocabulary for an exam",
+    "Tell me the best stocks to invest",
+    "Top 5 restaurants in New York",
+)
 
 @Composable
 private fun AssistantErrorMessage(
