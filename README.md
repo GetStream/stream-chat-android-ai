@@ -12,8 +12,8 @@
   <a href="https://github.com/GetStream/stream-chat-android-ai/releases">
     <img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai?color=lightblue" />
   </a>
-  <a href="https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/">
-    <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot&color=lightblue" />
+  <a href="https://browse.stream-io-repo.com/snapshots/io/getstream/stream-chat-android-ai-compose/">
+    <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fsnapshots.stream-io-repo.com%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot&color=lightblue" />
   </a>
 </p>
 
@@ -53,7 +53,19 @@ to add it 😎.
 
 ## 📦 Installation
 
-Add the dependency to your `build.gradle.kts`:
+Releases are published to the Stream Maven repository. Add it to your `settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://stream-io-repo.com")
+    }
+}
+```
+
+Then add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
@@ -67,19 +79,19 @@ Stream Chat SDK and AI providers.
 
 ### Snapshot Releases
 
-To use snapshot releases, you need to add the Sonatype snapshot repository to your `settings.gradle.kts`:
+To use snapshot releases, add the Stream snapshot repository to your `settings.gradle.kts`:
 
 ```kotlin
 dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
+        maven("https://snapshots.stream-io-repo.com")
     }
 }
 ```
 
-Find the latest snapshot version in the badge above, or check the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/) for available versions.
+Find the latest snapshot version in the badge above, or check the [Stream snapshot repository](https://browse.stream-io-repo.com/snapshots/io/getstream/stream-chat-android-ai-compose/) for available versions.
 
 ## 🚀 Usage
 
