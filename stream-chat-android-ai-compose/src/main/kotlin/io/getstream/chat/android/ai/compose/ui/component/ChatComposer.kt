@@ -23,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -30,11 +31,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,12 +56,53 @@ import androidx.core.net.toUri
  * The rendered components are resolved through [LocalChatAiComponentFactory], so each part can
  * be overridden without replacing the whole composer. See [CompoundChatAiComponentFactory].
  *
+ * The composer keeps the message being written itself. To own it instead, for example to fill
+ * in text from elsewhere or restore it after a refused send, use the overload that takes
+ * `onMessageDataChange`.
+ *
+ * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
+ * @param onStopClick Callback invoked when the stop button is clicked (during AI generation).
+ * @param isGenerating Whether the AI is currently generating a response.
+ * @param modifier The modifier to be applied to the composer.
+ * @param messageData The initial message data to be displayed in the input field.
+ * @param focusRequester Attached to the text field, so you can put the cursor in it with
+ * [FocusRequester.requestFocus].
+ */
+@Suppress("LongParameterList") // Both actions, the state, the initial message and the focus requester.
+@Composable
+public fun ChatComposer(
+    onSendClick: (data: MessageData) -> Unit,
+    onStopClick: () -> Unit,
+    isGenerating: Boolean,
+    modifier: Modifier = Modifier,
+    messageData: MessageData = MessageData(),
+    focusRequester: FocusRequester? = null,
+) {
+    var state by rememberSaveable(stateSaver = MessageData.Saver) {
+        mutableStateOf(messageData)
+    }
+    ChatComposer(
+        messageData = state,
+        onMessageDataChange = { state = it },
+        onSendClick = onSendClick,
+        onStopClick = onStopClick,
+        isGenerating = isGenerating,
+        modifier = modifier,
+        focusRequester = focusRequester,
+    )
+}
+
+/**
+ * The [ChatComposer] signature without `focusRequester`, kept so apps compiled against it keep
+ * working.
+ *
  * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
  * @param onStopClick Callback invoked when the stop button is clicked (during AI generation).
  * @param isGenerating Whether the AI is currently generating a response.
  * @param modifier The modifier to be applied to the composer.
  * @param messageData The initial message data to be displayed in the input field.
  */
+@Deprecated("Kept for binary compatibility.", level = DeprecationLevel.HIDDEN)
 @Composable
 public fun ChatComposer(
     onSendClick: (data: MessageData) -> Unit,
@@ -67,22 +111,73 @@ public fun ChatComposer(
     modifier: Modifier = Modifier,
     messageData: MessageData = MessageData(),
 ) {
-    var messageData by rememberSaveable(stateSaver = MessageData.Saver) {
-        mutableStateOf(messageData)
-    }
+    ChatComposer(
+        onSendClick = onSendClick,
+        onStopClick = onStopClick,
+        isGenerating = isGenerating,
+        modifier = modifier,
+        messageData = messageData,
+        focusRequester = null,
+    )
+}
 
+/**
+ * Chat composer with attach, voice, and send buttons, whose message the caller owns.
+ *
+ * It renders exactly like the composer that keeps its own state, through the same
+ * [LocalChatAiComponentFactory] slots, but reads the message from [messageData] and reports every
+ * change through [onMessageDataChange]. Use it to put text in the composer from elsewhere (a
+ * suggestion, a restored draft) or to keep what was written when a send is refused.
+ *
+ * ```
+ * var message by rememberSaveable(stateSaver = MessageData.Saver) { mutableStateOf(MessageData()) }
+ * val focus = remember { FocusRequester() }
+ *
+ * ChatComposer(
+ *     messageData = message,
+ *     onMessageDataChange = { message = it },
+ *     onSendClick = { sent -> if (!send(sent)) message = sent },
+ *     onStopClick = { stop() },
+ *     isGenerating = isGenerating,
+ *     focusRequester = focus,
+ * )
+ * ```
+ *
+ * @param messageData The message being written.
+ * @param onMessageDataChange Called with the new message whenever it changes: as the person types
+ * or dictates, picks or removes attachments, and with an empty message once it is sent.
+ * @param onSendClick Called with the message when the person sends it. The composer reports an empty
+ * message through [onMessageDataChange] just before; set the message back, here or later, to keep it.
+ * @param onStopClick Called when the stop button is clicked (during AI generation).
+ * @param isGenerating Whether the AI is currently generating a response.
+ * @param modifier The modifier to be applied to the composer.
+ * @param focusRequester Attached to the text field, so you can put the cursor in it with
+ * [FocusRequester.requestFocus].
+ */
+@Suppress("LongParameterList") // The message, its change, both actions and the focus requester.
+@Composable
+public fun ChatComposer(
+    messageData: MessageData,
+    onMessageDataChange: (MessageData) -> Unit,
+    onSendClick: (data: MessageData) -> Unit,
+    onStopClick: () -> Unit,
+    isGenerating: Boolean,
+    modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null,
+) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val handleSendClick = {
         keyboardController?.hide()
+        // Clear before reporting, so a caller that restores the message in onSendClick keeps it.
+        onMessageDataChange(MessageData())
         onSendClick(messageData)
-        messageData = MessageData()
     }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = PickMultipleVisualMedia(),
     ) { uris ->
-        messageData = messageData.copy(attachments = messageData.attachments + uris)
+        onMessageDataChange(messageData.copy(attachments = messageData.attachments + uris))
     }
 
     val componentFactory = LocalChatAiComponentFactory.current
@@ -114,10 +209,11 @@ public fun ChatComposer(
                 ComposerInputContentParams(
                     messageData = messageData,
                     isGenerating = isGenerating,
-                    onTextChange = { messageData = messageData.copy(text = it) },
-                    onRemoveAttachment = { messageData = messageData.copy(attachments = messageData.attachments - it) },
+                    onTextChange = { onMessageDataChange(messageData.copy(text = it)) },
+                    onRemoveAttachment = { onMessageDataChange(messageData.copy(attachments = messageData.attachments - it)) },
                     onSendClick = handleSendClick,
                     onStopClick = onStopClick,
+                    focusRequester = focusRequester,
                 ),
             )
 
@@ -138,15 +234,18 @@ public data class MessageData(
 ) {
     public companion object {
         /**
-         * [Saver] implementation for [MessageData] that converts it to a saveable format.
+         * [Saver] implementation for [MessageData] that converts it to a saveable format. Use it to
+         * keep a message you own across configuration changes and process death:
+         * `rememberSaveable(stateSaver = MessageData.Saver) { mutableStateOf(MessageData()) }`.
          */
-        internal val Saver: Saver<MessageData, List<Any>> = Saver(
+        public val Saver: Saver<MessageData, Any> = Saver(
             save = { messageData ->
                 listOf(
                     messageData.text,
                 ) + messageData.attachments.map(Uri::toString)
             },
-            restore = { saved ->
+            restore = { restored ->
+                val saved = restored as List<*>
                 val text = saved.firstOrNull() as? String ?: ""
                 val attachmentStrings = saved.drop(1).mapNotNull { it as? String }
                 val attachments = attachmentStrings.map(String::toUri).toSet()
@@ -192,6 +291,39 @@ internal fun ChatComposerWithAttachments() {
             text = "What is Stream Chat?",
             attachments = setOf("1".toUri(), "2".toUri(), "3".toUri()),
         ),
+        onSendClick = {},
+        onStopClick = {},
+        isGenerating = false,
+    )
+}
+
+@Composable
+internal fun ChatComposerWithoutDictation() {
+    CompoundChatAiComponentFactory(
+        factory = { current ->
+            object : ChatAiComponentFactory by current {
+                @Composable
+                override fun RowScope.ComposerInputTrailingContent(params: ComposerInputTrailingContentParams) {
+                    // Render nothing to leave dictation out.
+                }
+            }
+        },
+    ) {
+        ChatComposer(
+            messageData = MessageData(text = "Summarize this conversation"),
+            onSendClick = {},
+            onStopClick = {},
+            isGenerating = false,
+        )
+    }
+}
+
+@Composable
+internal fun ChatComposerHoisted() {
+    var messageData by remember { mutableStateOf(MessageData(text = "Explain this chart")) }
+    ChatComposer(
+        messageData = messageData,
+        onMessageDataChange = { messageData = it },
         onSendClick = {},
         onStopClick = {},
         isGenerating = false,

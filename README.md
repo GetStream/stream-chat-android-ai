@@ -219,6 +219,35 @@ data class MessageData(
 )
 ```
 
+**Owning the message (state hoisting):**
+
+To put text in the composer from elsewhere (a suggestion, a restored draft), keep what was written
+when a send is refused, or move the cursor into the field, own the message and pass a
+`FocusRequester`:
+
+```kotlin
+var message by rememberSaveable(stateSaver = MessageData.Saver) { mutableStateOf(MessageData()) }
+val focusRequester = remember { FocusRequester() }
+
+ChatComposer(
+    messageData = message,
+    onMessageDataChange = { message = it },
+    onSendClick = { sent -> if (!send(sent)) message = sent },
+    onStopClick = { stop() },
+    isGenerating = isGenerating,
+    focusRequester = focusRequester,
+)
+
+// Later, for example when a suggestion is tapped:
+message = message.copy(text = "Build me a short presentation about ")
+focusRequester.requestFocus()
+```
+
+On send, the composer reports an empty message through `onMessageDataChange` and then calls
+`onSendClick`; set the message back, there or later, to keep the text. The cursor goes to the end of
+text set from outside. Both `ChatComposer` overloads take a `focusRequester`, and a custom
+`ComposerInputContent` receives it in its params.
+
 > To replace the composer's parts (for example, to hide the attachment button), see
 > [Customizing components](#-customizing-components).
 
@@ -433,6 +462,31 @@ fun ChatScreen(isGenerating: Boolean) {
     }
 }
 ```
+
+#### Replacing the dictation button
+
+Inside its input field, `ChatComposer` shows a `SpeechToTextButton` while no response is generating.
+Override `ComposerInputTrailingContent` to show something else there, or render nothing to leave
+dictation out:
+
+```kotlin
+CompoundChatAiComponentFactory(
+    factory = { current ->
+        object : ChatAiComponentFactory by current {
+            @Composable
+            override fun RowScope.ComposerInputTrailingContent(params: ComposerInputTrailingContentParams) {
+                // Render nothing to leave dictation out.
+            }
+        }
+    },
+) {
+    ChatComposer(/* ... */)
+}
+```
+
+The params carry the field's text, whether a response is generating, the composer's
+`SpeechToTextButtonState` (its transcript is written into the field) and the handler for a denied
+microphone permission, so a replacement can still dictate.
 
 `AITypingIndicator` and `SpeechToTextButton` also accept content parameters (`label` / `indicator`,
 `idleContent` / `recordingContent`) for per-call-site customization. Those take precedence over the
