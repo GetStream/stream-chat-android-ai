@@ -16,6 +16,7 @@
 
 package io.getstream.chat.android.ai.compose.sample.presentation.chat
 
+import io.getstream.chat.android.ai.compose.parts.AIMessagePart
 import io.getstream.chat.android.models.Attachment
 
 /**
@@ -52,6 +53,7 @@ data class ChatUiState(
      * @param role The role of the message sender (Assistant, User, or Other)
      * @param content The text content of the message
      * @param attachments List of attachments associated with the message
+     * @param parts The AI reply's steps, such as its reasoning and tool calls
      * @param isGenerating Indicates if the message is currently being generated
      */
     data class Message(
@@ -59,6 +61,7 @@ data class ChatUiState(
         val role: Role,
         val content: String,
         val attachments: List<Attachment>,
+        val parts: List<AIMessagePart>,
         val isGenerating: Boolean,
     ) {
         /**

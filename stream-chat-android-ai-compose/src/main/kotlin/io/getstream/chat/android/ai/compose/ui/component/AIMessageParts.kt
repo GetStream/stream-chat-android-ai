@@ -35,30 +35,38 @@ import io.getstream.chat.android.ai.compose.parts.AIMessagePart
  * ```
  *
  * Each step shows through [AIMessagePartItem]: reasoning, tool calls, and a neutral placeholder
- * for kinds this SDK doesn't know. To show some steps your own way, such as reasoning you stream
- * separately or a kind of your own, use the overload that takes content and fall back to
+ * for kinds this SDK doesn't know. With an [AIToolApprover], a call waiting for this person's
+ * approval shows its question under it. To show some steps your own way, such as reasoning you
+ * stream separately or a kind of your own, use the overload that takes content and fall back to
  * [AIMessagePartItem] for the rest.
  *
  * @param parts The reply's steps, from [AIMessagePart.parts].
  * @param modifier The modifier to apply to the list.
+ * @param approver Who answers calls' questions on this device, to ask them.
  * @param textStyle The style of the steps.
  * @param reasoningColors The palette of reasoning steps.
  * @param toolCallColors The palette of tool calls and of the placeholder for unknown steps.
+ * @param toolApprovalColors The palette of calls' questions.
  */
+@Suppress("LongParameterList") // One palette per kind of step.
 @Composable
 public fun AIMessageParts(
     parts: List<AIMessagePart>,
     modifier: Modifier = Modifier,
+    approver: AIToolApprover? = null,
     textStyle: TextStyle = MaterialTheme.typography.bodyMedium,
     reasoningColors: StreamingReasoningColors = StreamingReasoningDefaults.colors(),
     toolCallColors: AIToolCallColors = AIToolCallDefaults.colors(),
+    toolApprovalColors: AIToolApprovalColors = AIToolApprovalDefaults.colors(),
 ) {
     AIMessageParts(parts = parts, modifier = modifier) { part ->
         AIMessagePartItem(
             part = part,
+            approver = approver,
             textStyle = textStyle,
             reasoningColors = reasoningColors,
             toolCallColors = toolCallColors,
+            toolApprovalColors = toolApprovalColors,
         )
     }
 }
@@ -99,22 +107,27 @@ public fun AIMessageParts(
 }
 
 /**
- * One step of a reply: a round of reasoning with its preview, a tool call, or a neutral
- * placeholder for a step this SDK doesn't know.
+ * One step of a reply: a round of reasoning with its preview, a tool call (with its question, when
+ * it waits for the approver), or a neutral placeholder for a step this SDK doesn't know.
  *
  * @param part The step.
  * @param modifier The modifier to apply to the step.
+ * @param approver Who answers calls' questions on this device, to ask them.
  * @param textStyle The style of the step.
  * @param reasoningColors The palette of a reasoning step.
  * @param toolCallColors The palette of a tool call and of the placeholder for an unknown step.
+ * @param toolApprovalColors The palette of a call's question.
  */
+@Suppress("LongParameterList") // One palette per kind of step.
 @Composable
 public fun AIMessagePartItem(
     part: AIMessagePart,
     modifier: Modifier = Modifier,
+    approver: AIToolApprover? = null,
     textStyle: TextStyle = MaterialTheme.typography.bodyMedium,
     reasoningColors: StreamingReasoningColors = StreamingReasoningDefaults.colors(),
     toolCallColors: AIToolCallColors = AIToolCallDefaults.colors(),
+    toolApprovalColors: AIToolApprovalColors = AIToolApprovalDefaults.colors(),
 ) {
     val reasoning = part.reasoning
     val call = part.toolCall
@@ -125,7 +138,20 @@ public fun AIMessagePartItem(
             textStyle = textStyle,
             colors = reasoningColors,
         )
-        call != null -> AIToolCall(part = call, modifier = modifier, textStyle = textStyle, colors = toolCallColors)
+        call != null -> Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AIToolCall(part = call, textStyle = textStyle, colors = toolCallColors)
+            if (approver != null) {
+                AIToolApprovalPrompt(call = call, approver = approver) { approval, state, decide ->
+                    AIToolApprovalCard(
+                        approval = approval,
+                        state = state,
+                        decide = decide,
+                        textStyle = textStyle,
+                        colors = toolApprovalColors,
+                    )
+                }
+            }
+        }
         else -> UnsupportedPart(textStyle = textStyle, colors = toolCallColors, modifier = modifier)
     }
 }

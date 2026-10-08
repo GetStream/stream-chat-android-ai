@@ -64,7 +64,7 @@ public fun AIToolCall(
     textStyle: TextStyle = MaterialTheme.typography.bodyMedium,
     colors: AIToolCallColors = AIToolCallDefaults.colors(),
 ) {
-    val status = toolCallStatus(part.status)
+    val status = toolCallStatus(part)
     val detail = part.summary ?: status.text.takeIf { status.shownAsDetail }
     // The icon carries the status for TalkBack unless the detail already says it.
     val statusDescription = status.text.takeUnless { status.shownAsDetail && part.summary == null }
@@ -183,7 +183,16 @@ internal fun UnsupportedPart(textStyle: TextStyle, colors: AIToolCallColors, mod
 private data class ToolCallStatus(val text: String, val shownAsDetail: Boolean)
 
 @Composable
-private fun toolCallStatus(status: AIToolCallPart.Status): ToolCallStatus = when (status) {
+private fun toolCallStatus(part: AIToolCallPart): ToolCallStatus = if (part.isDeclined) {
+    ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_declined), shownAsDetail = true)
+} else {
+    statusOf(part.status)
+}
+
+@Composable
+private fun statusOf(status: AIToolCallPart.Status): ToolCallStatus = when (status) {
+    AIToolCallPart.Status.AwaitingApproval ->
+        ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_awaiting_approval), shownAsDetail = true)
     AIToolCallPart.Status.AwaitingClient ->
         ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_awaiting_client), shownAsDetail = true)
     AIToolCallPart.Status.Failed ->
@@ -199,6 +208,13 @@ private fun toolCallStatus(status: AIToolCallPart.Status): ToolCallStatus = when
 @Composable
 private fun ToolCallIcon(part: AIToolCallPart, colors: AIToolCallColors, description: String?) {
     when (part.status) {
+        AIToolCallPart.Status.AwaitingApproval -> StatusIcon(
+            R.drawable.stream_ai_compose_ic_hand,
+            colors.accent,
+            15.dp,
+            description,
+            Modifier.shimmer(true, colors.title),
+        )
         AIToolCallPart.Status.AwaitingClient -> StatusIcon(
             R.drawable.stream_ai_compose_ic_device,
             colors.accent,

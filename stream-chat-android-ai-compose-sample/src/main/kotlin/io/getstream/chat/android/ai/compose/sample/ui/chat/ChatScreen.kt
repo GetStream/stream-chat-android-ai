@@ -253,6 +253,8 @@ private fun AssistantLoadingIndicator(
     assistantMessage: ChatUiState.Message?,
     modifier: Modifier = Modifier,
 ) {
+    // A reply with steps shows its own progress.
+    if (assistantMessage?.parts.orEmpty().isNotEmpty()) return
     val text = when (assistantState) {
         ChatUiState.AssistantState.Thinking -> "Thinking"
         ChatUiState.AssistantState.CheckingSources -> "Checking sources"

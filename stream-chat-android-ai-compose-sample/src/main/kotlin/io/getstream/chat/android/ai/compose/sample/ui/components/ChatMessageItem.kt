@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.sample.presentation.chat.ChatUiState
+import io.getstream.chat.android.ai.compose.ui.component.AIMessageParts
 import io.getstream.chat.android.ai.compose.ui.component.StreamingText
 import io.getstream.chat.android.compose.state.messages.attachments.AttachmentState
 import io.getstream.chat.android.compose.ui.attachments.content.MediaAttachmentContent
@@ -60,10 +61,17 @@ public fun ChatMessageItem(
         ) {
             when (message.role) {
                 ChatUiState.Message.Role.Assistant -> {
-                    StreamingText(
-                        text = message.content,
-                        animate = message.isGenerating,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (message.parts.isNotEmpty()) {
+                            AIMessageParts(parts = message.parts)
+                        }
+                        if (message.content.isNotBlank()) {
+                            StreamingText(
+                                text = message.content,
+                                animate = message.isGenerating,
+                            )
+                        }
+                    }
                 }
 
                 ChatUiState.Message.Role.User -> {

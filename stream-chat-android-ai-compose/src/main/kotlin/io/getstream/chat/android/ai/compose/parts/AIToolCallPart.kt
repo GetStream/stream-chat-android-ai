@@ -32,6 +32,8 @@ package io.getstream.chat.android.ai.compose.parts
  * which need them to run. Every channel member can see them.
  * @param summary A short, shareable outcome, such as "Found your location".
  * @param durationMs How long the call took, in milliseconds.
+ * @param approval What the call asks the person it waits for before it runs, and how they
+ * answered, when its tool asks first.
  */
 @Suppress("LongParameterList", "DataClassContainsFunctions") // One property per field of the step.
 public data class AIToolCallPart(
@@ -45,7 +47,11 @@ public data class AIToolCallPart(
     val arguments: String? = null,
     val summary: String? = null,
     val durationMs: Int? = null,
+    val approval: AIToolApproval? = null,
 ) {
+
+    /** Whether the person declined the call, so it never ran. */
+    public val isDeclined: Boolean get() = approval?.decision == AIToolApproval.Decision.Declined
 
     /** How long the call took, in seconds. */
     public val durationSeconds: Double? get() = durationMs?.let { it / MILLIS_PER_SECOND }
@@ -60,6 +66,18 @@ public data class AIToolCallPart(
     public fun isAwaiting(userId: String, clientId: String): Boolean =
         executor == Executor.Client && status == Status.AwaitingClient &&
             targetUserId == userId && targetClientId == clientId
+
+    /**
+     * Whether this call is waiting for this person to allow it, on this device: still awaiting
+     * approval, targeted at this person, and at this install when it names one (a client tool
+     * does; a server tool's question may be answered from any of their devices).
+     *
+     * @param userId The person signed in on this device.
+     * @param clientId This install, from [AIClientIdentity.installId].
+     */
+    public fun isAwaitingApproval(userId: String, clientId: String): Boolean =
+        status == Status.AwaitingApproval && approval != null && targetUserId == userId &&
+            (targetClientId == null || targetClientId == clientId)
 
     /**
      * Where a tool call is. An open set: compare against the statuses you know, and treat the rest
@@ -78,6 +96,12 @@ public data class AIToolCallPart(
         public companion object {
             /** The agent's backend is running the call. */
             public val Running: Status = Status("running")
+
+            /**
+             * Waiting for the targeted person to allow or decline the call. Its [approval] says
+             * what to ask them.
+             */
+            public val AwaitingApproval: Status = Status("awaiting_approval")
 
             /** Waiting for the targeted device to run the tool and send its result. */
             public val AwaitingClient: Status = Status("awaiting_client")
@@ -123,6 +147,7 @@ public data class AIToolCallPart(
             arguments = fields.json("arguments"),
             summary = fields.string("summary"),
             durationMs = fields.int("duration_ms"),
+            approval = fields.nested("approval")?.let(AIToolApproval::from),
         )
     }
 }

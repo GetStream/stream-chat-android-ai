@@ -25,6 +25,7 @@ import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import com.android.ide.common.rendering.api.SessionParams.RenderingMode
 import io.getstream.chat.android.ai.compose.parts.AIMessagePart
+import io.getstream.chat.android.ai.compose.parts.AIToolApproval
 import io.getstream.chat.android.ai.compose.parts.AIToolCallPart
 import io.getstream.chat.android.ai.compose.ui.PaparazziTest
 import org.junit.Rule
@@ -53,6 +54,11 @@ internal class AIMessagePartsTest : PaparazziTest {
         snapshot {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AIToolCall(part = call(AIToolCallPart.Status.Running))
+                AIToolCall(part = call(AIToolCallPart.Status.AwaitingApproval))
+                AIToolCall(
+                    part = call(AIToolCallPart.Status.Cancelled, "Location not shared")
+                        .copy(approval = AIToolApproval(title = "Share your location?", decision = AIToolApproval.Decision.Declined)),
+                )
                 AIToolCall(part = call(AIToolCallPart.Status.AwaitingClient))
                 AIToolCall(part = call(AIToolCallPart.Status.Completed, "Shared approximate location", 1_600))
                 AIToolCall(part = call(AIToolCallPart.Status.Failed, durationMs = 400))
