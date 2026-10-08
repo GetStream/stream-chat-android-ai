@@ -23,6 +23,8 @@ import io.getstream.chat.android.ai.compose.parts.AIMessagePart
 import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiRepository
 import io.getstream.chat.android.ai.compose.sample.domain.isFromAi
 import io.getstream.chat.android.ai.compose.ui.component.MessageData
+import io.getstream.chat.android.ai.ondevice.AIConversationTurn
+import io.getstream.chat.android.ai.ondevice.AIOnDeviceModel
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.api.state.watchChannelAsState
 import io.getstream.chat.android.client.channel.subscribeFor
@@ -40,6 +42,7 @@ import io.getstream.log.taggedLogger
 import io.getstream.result.Error
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -75,6 +78,14 @@ internal class ChatViewModel(
 ) : ViewModel() {
 
     private val attachmentStorageHelper = AttachmentStorageHelper(appContext)
+
+    // Answers when the AI agent couldn't be started, such as without a connection to the backend.
+    private val onDeviceModel = AIOnDeviceModel(appContext)
+    private var agentFailed = false
+    private var onDeviceAnswer: Job? = null
+
+    // Questions answered on the device and their answers, newest first. They are not sent to Stream.
+    private val localMessages = MutableStateFlow<List<ChatUiState.Message>>(emptyList())
 
     private val logger by taggedLogger()
 
@@ -120,7 +131,8 @@ internal class ChatViewModel(
                     channelState.toChannel()
                 }
             }
-            .onEach { channel ->
+            .combine(localMessages) { channel, local -> channel to local }
+            .onEach { (channel, local) ->
                 val title = channel.name.takeIf(String::isNotBlank) ?: "New Chat"
 
                 val messages = channel.messages
@@ -139,7 +151,7 @@ internal class ChatViewModel(
                                 }
                             }
                         },
-                        messages = messages,
+                        messages = local + messages,
                     )
                 }
             }
@@ -163,6 +175,11 @@ internal class ChatViewModel(
         _uiState.update { it.copy(assistantState = ChatUiState.AssistantState.Thinking) }
 
         viewModelScope.launch {
+            if (cid.value != null && agentFailed && onDeviceModel.isAvailable()) {
+                onDeviceAnswer = launch { answerOnDevice(text) }
+                return@launch
+            }
+
             val uris = data.attachments.toList()
             val lightweightAttachments = withContext(Dispatchers.IO) {
                 val metadata = attachmentStorageHelper.resolveMetadata(uris)
@@ -223,6 +240,7 @@ internal class ChatViewModel(
             channelId = channelId,
             platform = platform,
         ).onSuccess {
+            agentFailed = false
             logger.d { "AI agent started successfully on channel: $cid" }
             // Send any pending message that was queued while starting the AI agent
             pendingMessage?.let { message ->
@@ -254,7 +272,37 @@ internal class ChatViewModel(
                 }
             }
         }.onFailure { e ->
+            agentFailed = true
             logger.e { "Failed to start AI agent: ${e.message}" }
+        }
+    }
+
+    /** Answers [question] with the model on the device. The question and answer stay on this screen. */
+    private suspend fun answerOnDevice(question: String) {
+        val turns = _uiState.value.messages.reversed().mapNotNull(ChatUiState.Message::toTurn) +
+            AIConversationTurn.user(question)
+        val answerId = UUID.randomUUID().toString()
+        localMessages.update { listOf(localMessage(ChatUiState.Message.Role.User, question)) + it }
+        _uiState.update { it.copy(assistantState = ChatUiState.AssistantState.Thinking) }
+
+        var finalState: ChatUiState.AssistantState = ChatUiState.AssistantState.Idle
+        try {
+            onDeviceModel.reply(ON_DEVICE_INSTRUCTIONS, turns).collect { answer ->
+                val message = localMessage(ChatUiState.Message.Role.Assistant, answer, answerId, isGenerating = true)
+                localMessages.update { messages -> listOf(message) + messages.filterNot { it.id == answerId } }
+                _uiState.update { it.copy(assistantState = ChatUiState.AssistantState.Generating) }
+            }
+        } catch (e: AIOnDeviceModel.Unavailable) {
+            logger.e { "The on-device model is unavailable: ${e.message}" }
+            finalState = ChatUiState.AssistantState.Error
+        } catch (e: AIOnDeviceModel.Failure) {
+            logger.e { "The on-device model failed: ${e.cause?.message}" }
+            finalState = ChatUiState.AssistantState.Error
+        } finally {
+            localMessages.update { messages ->
+                messages.map { if (it.id == answerId) it.copy(isGenerating = false) else it }
+            }
+            _uiState.update { it.copy(assistantState = finalState) }
         }
     }
 
@@ -279,6 +327,7 @@ internal class ChatViewModel(
      * This tells the AI agent to stop generating content for the current message.
      */
     fun stopStreaming() {
+        onDeviceAnswer?.cancel()
         val cid = cid.value ?: run {
             logger.d { "No channel available to stop streaming" }
             return
@@ -363,6 +412,7 @@ internal class ChatViewModel(
 
     override fun onCleared() {
         cid.value?.let(::stopAIAgent)
+        onDeviceModel.close()
     }
 
     private fun stopAIAgent(cid: String, onSuccess: () -> Unit = {}) {
@@ -403,6 +453,30 @@ private fun StreamMessage.toChatMessage(currentUserId: String): ChatUiState.Mess
         isGenerating = extraData["generating"] == true,
     )
 }
+
+private fun ChatUiState.Message.toTurn(): AIConversationTurn? = when (role) {
+    ChatUiState.Message.Role.User -> AIConversationTurn.user(content)
+    ChatUiState.Message.Role.Assistant -> AIConversationTurn.assistant(content)
+    ChatUiState.Message.Role.Other -> null
+}
+
+private fun localMessage(
+    role: ChatUiState.Message.Role,
+    content: String,
+    id: String = UUID.randomUUID().toString(),
+    isGenerating: Boolean = false,
+) = ChatUiState.Message(
+    id = id,
+    role = role,
+    content = content,
+    attachments = emptyList(),
+    parts = emptyList(),
+    isGenerating = isGenerating,
+)
+
+private const val ON_DEVICE_INSTRUCTIONS =
+    "You are a helpful assistant answering on the person's device, without a connection to the server. " +
+        "Answer briefly. You have no tools."
 
 private fun String.toAssistantState() = when (this) {
     "AI_STATE_THINKING" -> ChatUiState.AssistantState.Thinking
