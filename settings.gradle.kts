@@ -32,4 +32,5 @@ include(
     ":metrics:stream-chat-android-ai-metrics",
     ":stream-chat-android-ai-compose",
     ":stream-chat-android-ai-compose-sample",
+    ":stream-chat-android-ai-ondevice",
 )
