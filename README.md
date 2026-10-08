@@ -42,8 +42,8 @@ and send/stop buttons. It manages message composition state and provides a polis
 automatic keyboard handling.
 
 **AISuggestions** - a horizontally scrolling row of suggestion chips, usually shown above the
-composer on a new chat. Tapping a chip gives you its text, so you decide whether to send it or put
-it in the composer.
+composer on a new chat. Tapping a chip gives you its text, and you decide what to do with it, for
+example send it.
 
 **SpeechToTextButton** - a composable button that provides speech-to-text functionality with
 waveform visualization, automatic permission handling, and customizable UI components.

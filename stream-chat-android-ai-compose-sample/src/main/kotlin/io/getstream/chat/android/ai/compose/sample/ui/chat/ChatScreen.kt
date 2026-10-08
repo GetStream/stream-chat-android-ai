@@ -250,7 +250,6 @@ fun ChatScreen(
 private val SUGGESTIONS = listOf(
     "Create a painting in Renaissance-style",
     "Create a workout plan for resistance training",
-    "Find the decade that a photo is from",
     "Help me study vocabulary for an exam",
     "Tell me the best stocks to invest",
     "Top 5 restaurants in New York",

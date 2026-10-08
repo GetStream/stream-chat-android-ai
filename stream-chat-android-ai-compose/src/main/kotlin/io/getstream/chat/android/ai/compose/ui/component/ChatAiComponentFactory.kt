@@ -124,13 +124,13 @@ public interface ChatAiComponentFactory {
      * A chip rendered in [AISuggestions].
      *
      * The default renders a Material 3 [androidx.compose.material3.SuggestionChip] that shows the
-     * text on up to 2 lines. Apply [AISuggestionsChipParams.modifier] to keep the row's chip height
-     * and maximum width.
+     * text on up to 2 lines. The row gives every chip the same height (the minimum height it
+     * receives) and limits its width to [AISuggestions]'s `itemMaxWidth`.
      *
      * @param params The parameters for the chip.
      */
     @Composable
-    public fun RowScope.AISuggestionsChip(params: AISuggestionsChipParams) {
+    public fun AISuggestionsChip(params: AISuggestionsChipParams) {
         DefaultAISuggestionsChip(params)
     }
 }

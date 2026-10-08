@@ -18,6 +18,7 @@ package io.getstream.chat.android.ai.compose.ui.component
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,8 +43,8 @@ import androidx.compose.ui.unit.dp
  *
  * Each chip shows its text on up to 2 lines. Tapping a chip calls [onSuggestionClick] with the
  * chip's exact text. The component doesn't send anything itself, so the caller decides what
- * happens: send the text right away, or put it in the composer. All chips in the row have the
- * same height. Customize the chips through [ChatAiComponentFactory.AISuggestionsChip].
+ * happens, for example sending the text right away. All chips in the row have the same height.
+ * Customize the chips through [ChatAiComponentFactory.AISuggestionsChip].
  *
  * @param suggestions The texts shown as chips, in order.
  * @param onSuggestionClick Called with the chip's text when the user taps a chip.
@@ -66,17 +68,23 @@ public fun AISuggestions(
             .padding(contentPadding),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        with(LocalChatAiComponentFactory.current) {
-            suggestions.forEach { suggestion ->
-                AISuggestionsChip(
-                    AISuggestionsChipParams(
-                        text = suggestion,
-                        onClick = { onSuggestionClick(suggestion) },
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .widthIn(max = itemMaxWidth),
-                    ),
-                )
+        val componentFactory = LocalChatAiComponentFactory.current
+        suggestions.forEach { suggestion ->
+            key(suggestion) {
+                // Gives every chip, custom ones too, the row's height and at most itemMaxWidth.
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .widthIn(max = itemMaxWidth),
+                    propagateMinConstraints = true,
+                ) {
+                    componentFactory.AISuggestionsChip(
+                        AISuggestionsChipParams(
+                            text = suggestion,
+                            onClick = { onSuggestionClick(suggestion) },
+                        ),
+                    )
+                }
             }
         }
     }
@@ -94,7 +102,6 @@ internal fun DefaultAISuggestionsChip(params: AISuggestionsChipParams) {
                 overflow = TextOverflow.Ellipsis,
             )
         },
-        modifier = params.modifier,
     )
 }
 
