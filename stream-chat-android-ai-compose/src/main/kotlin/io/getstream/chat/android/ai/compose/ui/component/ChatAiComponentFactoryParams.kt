@@ -95,3 +95,14 @@ public data class SpeechToTextButtonRecordingContentParams(
     val onClick: () -> Unit,
     val rmsdB: Float,
 )
+
+/**
+ * Parameters for [ChatAiComponentFactory.AISuggestionsChip].
+ *
+ * @param text The suggestion text.
+ * @param onClick Called when the user taps the chip.
+ */
+public data class AISuggestionsChipParams(
+    val text: String,
+    val onClick: () -> Unit,
+)
