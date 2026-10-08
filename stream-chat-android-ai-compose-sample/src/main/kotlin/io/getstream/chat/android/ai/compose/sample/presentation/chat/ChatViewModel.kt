@@ -19,6 +19,7 @@ package io.getstream.chat.android.ai.compose.sample.presentation.chat
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.getstream.chat.android.ai.compose.parts.AIMessagePart
 import io.getstream.chat.android.ai.compose.sample.data.repository.ChatAiRepository
 import io.getstream.chat.android.ai.compose.sample.domain.isFromAi
 import io.getstream.chat.android.ai.compose.ui.component.MessageData
@@ -379,7 +380,9 @@ internal class ChatViewModel(
 }
 
 private fun StreamMessage.toChatMessage(currentUserId: String): ChatUiState.Message? {
-    if (text.isBlank()) {
+    // Stream lifts `name` out of extraData, and a tool call's step needs it back.
+    val parts = AIMessagePart.parts(attachments.map { it.type.orEmpty() to it.extraData + ("name" to it.name) })
+    if (text.isBlank() && parts.isEmpty()) {
         return null
     }
 
@@ -395,6 +398,7 @@ private fun StreamMessage.toChatMessage(currentUserId: String): ChatUiState.Mess
         role = role,
         content = text,
         attachments = attachments,
+        parts = parts,
         isGenerating = extraData["generating"] == true,
     )
 }
