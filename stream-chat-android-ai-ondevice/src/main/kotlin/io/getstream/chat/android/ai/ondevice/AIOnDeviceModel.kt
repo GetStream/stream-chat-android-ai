@@ -27,9 +27,8 @@ import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.SystemInstruction
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
-import io.getstream.chat.android.ai.compose.localmodel.AIConversationTurn
-import io.getstream.chat.android.ai.compose.localmodel.AILocalModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlin.coroutines.cancellation.CancellationException
@@ -79,35 +78,42 @@ public class AIOnDeviceModel(
         Available,
     }
 
-    /** How a download of the model is going. */
-    public sealed interface Download {
+    /** How a download of the model is going. More states may be added. */
+    public abstract class Download internal constructor() {
         /**
          * The download started.
          *
          * @param bytesToDownload The size of the download.
          */
-        public data class Started(val bytesToDownload: Long) : Download
+        public data class Started(val bytesToDownload: Long) : Download()
 
         /**
          * Part of the model has arrived.
          *
          * @param bytesDownloaded How much has arrived so far.
          */
-        public data class Progress(val bytesDownloaded: Long) : Download
+        public data class Progress(val bytesDownloaded: Long) : Download()
 
         /** The model is on the device and can answer. */
-        public data object Completed : Download
+        public data object Completed : Download()
 
         /**
          * The download failed.
          *
          * @param cause Why.
          */
-        public data class Failed(val cause: Throwable) : Download
+        public data class Failed(val cause: Throwable) : Download()
     }
 
     /** Thrown by [reply] when the model can't answer on this device. */
     public class Unavailable(cause: Throwable? = null) : Exception("The on-device model is unavailable.", cause)
+
+    /**
+     * Thrown by [reply] when the model fails while answering.
+     *
+     * @param cause The model's own error.
+     */
+    public class Failure(cause: Throwable) : Exception("The on-device model failed to answer.", cause)
 
     /** Where the model is on this device. A device without AICore, or an error, reads as unavailable. */
     @Suppress("TooGenericExceptionCaught")
@@ -137,8 +143,8 @@ public class AIOnDeviceModel(
         when (status) {
             is DownloadStatus.DownloadStarted -> Download.Started(status.bytesToDownload)
             is DownloadStatus.DownloadProgress -> Download.Progress(status.totalBytesDownloaded)
+            is DownloadStatus.DownloadCompleted -> Download.Completed
             is DownloadStatus.DownloadFailed -> Download.Failed(status.e)
-            else -> Download.Completed
         }
     }
 
@@ -148,18 +154,20 @@ public class AIOnDeviceModel(
      *
      * @throws Unavailable When the model can't answer on this device, or the last turn is not the
      * person's question.
-     * @throws GenAiException When the model fails while answering.
+     * @throws Failure When the model fails while answering.
      */
     override fun reply(instructions: String, turns: List<AIConversationTurn>): Flow<String> = flow {
         if (status() != Status.Available) throw Unavailable()
         val answer = StringBuilder()
-        model.generateContentStream(request(instructions, turns)).collect { chunk ->
-            val piece = chunk.candidates.firstOrNull()?.text.orEmpty()
-            if (piece.isNotEmpty()) {
-                answer.append(piece)
-                emit(answer.toString())
+        model.generateContentStream(request(instructions, turns))
+            .catch { error -> throw if (error is GenAiException) Failure(error) else error }
+            .collect { chunk ->
+                val piece = chunk.candidates.firstOrNull()?.text.orEmpty()
+                if (piece.isNotEmpty()) {
+                    answer.append(piece)
+                    emit(answer.toString())
+                }
             }
-        }
     }
 
     /**

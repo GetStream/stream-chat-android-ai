@@ -45,8 +45,8 @@ tasks.withType<KotlinCompile>().configureEach {
 dependencies {
     detektPlugins(libs.detekt.formatting)
 
-    api(projects.streamChatAndroidAiCompose)
-    implementation(libs.kotlinx.coroutines.core)
+    // Flow is part of this module's API.
+    api(libs.kotlinx.coroutines.core)
     implementation(libs.mlkit.genai.prompt)
 
     testImplementation(libs.junit)

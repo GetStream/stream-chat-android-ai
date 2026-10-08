@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.localmodel
+package io.getstream.chat.android.ai.ondevice
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

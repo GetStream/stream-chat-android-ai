@@ -16,7 +16,6 @@
 
 package io.getstream.chat.android.ai.ondevice
 
-import io.getstream.chat.android.ai.compose.localmodel.AIConversationTurn
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

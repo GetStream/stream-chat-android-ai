@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.getstream.chat.android.ai.compose.localmodel
+package io.getstream.chat.android.ai.ondevice
 
 import kotlinx.coroutines.flow.Flow
 
@@ -22,8 +22,7 @@ import kotlinx.coroutines.flow.Flow
  * A language model on the device, for answering when your AI agent can't: the person is offline,
  * or the agent reached its usage limit.
  *
- * `AIOnDeviceModel`, in the `stream-chat-android-ai-ondevice` artifact, is Gemini Nano through
- * ML Kit. Implement this interface to use another model.
+ * [AIOnDeviceModel] is Gemini Nano through ML Kit. Implement this interface to use another model.
  */
 public interface AILocalModel {
 
@@ -81,11 +80,8 @@ public data class AIConversationTurn(
          * The newest turns that fit a budget of [tokens], oldest first, with consecutive turns of one
          * role merged and empty ones left out. The question, the last turn, is always kept. Tokens
          * are estimated at three bytes of UTF-8 each, which overcounts English.
-         *
-         * @param turns The conversation, oldest first.
-         * @param tokens The budget, in tokens.
          */
-        public fun fitting(turns: List<AIConversationTurn>, tokens: Int): List<AIConversationTurn> {
+        internal fun fitting(turns: List<AIConversationTurn>, tokens: Int): List<AIConversationTurn> {
             val merged = merged(turns)
             val question = merged.removeLastOrNull() ?: return emptyList()
             val kept = mutableListOf(question)

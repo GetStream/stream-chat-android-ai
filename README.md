@@ -598,9 +598,9 @@ AIToolApprovalPrompt(call = call, approver = approver) { approval, state, decide
 ### Answering on the device
 
 When your agent can't take a message, because the person is offline or the agent reached its usage
-limit, a model on the device can answer instead. `AILocalModel` is the interface, and
-`AIOnDeviceModel`, in a separate artifact so the components keep their small set of dependencies,
-is Gemini Nano through ML Kit's GenAI Prompt API:
+limit, a model on the device can answer instead. The `stream-chat-android-ai-ondevice` artifact has
+`AILocalModel`, the interface, and `AIOnDeviceModel`, Gemini Nano through ML Kit's GenAI Prompt API.
+It doesn't depend on the components, and they don't depend on it:
 
 ```kotlin
 dependencies {
@@ -618,8 +618,12 @@ when (model.status()) {
             AIConversationTurn.assistant("How about Miso?"),
             AIConversationTurn.user("Something longer"),
         )
-        model.reply(instructions = "Answer briefly. You have no tools.", turns = turns)
-            .collect { answerSoFar -> show(answerSoFar) }
+        try {
+            model.reply(instructions = "Answer briefly. You have no tools.", turns = turns)
+                .collect { answerSoFar -> show(answerSoFar) }
+        } catch (e: AIOnDeviceModel.Failure) {
+            // The model failed while answering; e.cause is ML Kit's error.
+        }
     }
     AIOnDeviceModel.Status.Downloadable -> model.download().collect { progress -> /* … */ }
     else -> { /* This device can't answer; keep the retry. */ }
@@ -629,8 +633,8 @@ when (model.status()) {
 Each emission is the whole answer so far, and cancelling the collection stops the model. The
 conversation never leaves the device. Gemini Nano runs on devices whose AICore offers it (recent
 flagship phones, Android 8.0 or later for the artifact), not on emulators, and its context holds a
-few thousand tokens: `AIConversationTurn.fitting` keeps the newest turns that fit, always keeping the
-question, and the model writes at most `AIOnDeviceModel.MODEL_MAXIMUM_RESPONSE_TOKENS` per answer.
+few thousand tokens: the newest turns that fit are sent, always with the question, and the model
+writes at most `AIOnDeviceModel.MODEL_MAXIMUM_RESPONSE_TOKENS` per answer.
 
 ## 🎨 Customizing components
 
