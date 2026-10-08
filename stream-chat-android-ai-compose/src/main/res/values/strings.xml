@@ -45,6 +45,6 @@
     <string name="stream_ai_compose_duration_fraction">%1$ss</string>
     <string name="stream_ai_compose_part_unsupported">A step this app version can\'t show</string>
     <string name="stream_ai_compose_tool_approval_allow">Allow</string>
-    <string name="stream_ai_compose_tool_approval_decline">Don\'t Allow</string>
+    <string name="stream_ai_compose_tool_approval_decline">Don\'t allow</string>
     <string name="stream_ai_compose_tool_approval_not_sent">Your answer couldn\'t be sent. Try again.</string>
 </resources>

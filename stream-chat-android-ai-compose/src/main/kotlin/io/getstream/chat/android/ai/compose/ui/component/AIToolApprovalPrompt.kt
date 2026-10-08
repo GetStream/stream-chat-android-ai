@@ -22,8 +22,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,12 +36,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -60,19 +55,46 @@ import kotlin.coroutines.cancellation.CancellationException
  * The person answering tool calls' questions on this device, and how their answer reaches your
  * backend, which holds each call until it gets one.
  *
+ * The approver keeps where each answer is, so create it where it outlives the screen, such as a
+ * ViewModel. It is confined to the main thread: pass a [scope] that runs on it, such as a
+ * `viewModelScope`.
+ *
  * @param userId The person signed in, matched against a call's `target_user_id`.
  * @param clientId This install, matched against a client tool call's `target_client_id`. Use
  * `AIClientIdentity.installId`.
+ * @param scope Where answers are sent.
  * @param decide Sends the answer. Your backend checks it is this person's (and this install's, for
  * a client tool), then updates the call's step; until then the question stays, with its buttons
  * disabled. A thrown exception lets the person answer again.
  */
-@Suppress("UseDataClass") // It holds a function; equality between approvers means nothing.
 public class AIToolApprover(
     public val userId: String,
     public val clientId: String,
-    public val decide: suspend (call: AIToolCallPart, allowed: Boolean) -> Unit,
-)
+    private val scope: CoroutineScope,
+    decide: suspend (call: AIToolCallPart, allowed: Boolean) -> Unit,
+) {
+    private val send = decide
+    private val states = mutableStateMapOf<String, AIToolApprovalState>()
+
+    /** Where the person's answer to [call] is. */
+    internal fun state(call: AIToolCallPart): AIToolApprovalState = states[call.id] ?: AIToolApprovalState()
+
+    /** Sends the person's answer to [call], one at a time. A failed send can be answered again. */
+    @Suppress("TooGenericExceptionCaught")
+    internal fun decide(call: AIToolCallPart, allowed: Boolean) {
+        if (state(call).isSending) return
+        states[call.id] = AIToolApprovalState(isSending = true)
+        scope.launch {
+            try {
+                send(call, allowed)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                states[call.id] = AIToolApprovalState(failed = true)
+            }
+        }
+    }
+}
 
 /**
  * Where the person's answer to a question is.
@@ -119,43 +141,9 @@ public fun AIToolApprovalPrompt(
 ) {
     val approval = call.approval
     if (approval == null || !call.isAwaitingApproval(approver.userId, approver.clientId)) return
-    val answer = rememberApprovalAnswer(call, approver)
-    Box(modifier = modifier) { content(approval, answer.state, answer::decide) }
-}
-
-/** Sends the person's answer once at a time, and lets them answer again when it couldn't be sent. */
-@Stable
-private class ApprovalAnswer(private val scope: CoroutineScope) {
-    var state by mutableStateOf(AIToolApprovalState())
-        private set
-    var call: AIToolCallPart? = null
-    var approver: AIToolApprover? = null
-
-    @Suppress("TooGenericExceptionCaught")
-    fun decide(allowed: Boolean) {
-        val call = call ?: return
-        val approver = approver ?: return
-        if (state.isSending) return
-        state = AIToolApprovalState(isSending = true)
-        scope.launch {
-            try {
-                approver.decide(call, allowed)
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (_: Exception) {
-                state = AIToolApprovalState(failed = true)
-            }
-        }
+    Box(modifier = modifier) {
+        content(approval, approver.state(call)) { allowed -> approver.decide(call, allowed) }
     }
-}
-
-@Composable
-private fun rememberApprovalAnswer(call: AIToolCallPart, approver: AIToolApprover): ApprovalAnswer {
-    val scope = rememberCoroutineScope()
-    val answer = remember(call.id) { ApprovalAnswer(scope) }
-    answer.call = call
-    answer.approver = approver
-    return answer
 }
 
 /**
@@ -272,12 +260,14 @@ private fun ApprovalButtons(
     decide: (Boolean) -> Unit,
     colors: AIToolApprovalColors,
 ) {
-    // The built-in titles follow the app's language; the agent's own titles are shown as written.
-    val allow = approval.allowTitle.takeUnless { it == AIToolApproval.DEFAULT_ALLOW_TITLE }
-        ?: stringResource(R.string.stream_ai_compose_tool_approval_allow)
-    val decline = approval.declineTitle.takeUnless { it == AIToolApproval.DEFAULT_DECLINE_TITLE }
-        ?: stringResource(R.string.stream_ai_compose_tool_approval_decline)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    val allow = approval.allowTitle ?: stringResource(R.string.stream_ai_compose_tool_approval_allow)
+    val decline = approval.declineTitle ?: stringResource(R.string.stream_ai_compose_tool_approval_decline)
+    // Long titles or a large font move a button to the next line instead of squeezing it.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
         Button(
             onClick = { decide(true) },
             enabled = !state.isSending,

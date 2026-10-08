@@ -17,7 +17,10 @@
 package io.getstream.chat.android.ai.compose.ui.component
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
@@ -59,6 +62,21 @@ internal class AIToolApprovalCardTest : PaparazziTest {
                 decide = {},
                 modifier = Modifier.padding(16.dp),
             )
+        }
+    }
+
+    @Test
+    fun long_titles_at_large_font() {
+        snapshot {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                AIToolApprovalCard(
+                    approval = approval.copy(allowTitle = "Share precise location"),
+                    state = AIToolApprovalState(),
+                    decide = {},
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
         }
     }
 

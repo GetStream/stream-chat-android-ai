@@ -525,7 +525,12 @@ install, and only while the call waits. Buttons are disabled while the answer is
 send can be answered again.
 
 ```kotlin
-val approver = AIToolApprover(userId = user.id, clientId = AIClientIdentity.installId(context)) { call, allowed ->
+// In your ViewModel, so an answer on its way survives scrolling and configuration changes:
+val approver = AIToolApprover(
+    userId = user.id,
+    clientId = AIClientIdentity.installId(context),
+    scope = viewModelScope,
+) { call, allowed ->
     backend.answerToolApproval(message, call, allowed)
 }
 

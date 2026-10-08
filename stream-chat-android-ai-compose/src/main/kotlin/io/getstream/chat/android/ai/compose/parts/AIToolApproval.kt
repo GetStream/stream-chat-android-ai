@@ -28,16 +28,18 @@ package io.getstream.chat.android.ai.compose.parts
  * @param message What allowing it shares or does, such as "Only your city is shared."
  * @param reason The agent's own words for why it wants the call, such as "to check the local
  * weather".
- * @param allowTitle The label of the button that allows the call.
- * @param declineTitle The label of the button that declines it.
+ * @param allowTitle The label of the button that allows the call, or `null` when the agent sent
+ * none. The default card then shows "Allow" in the app's language.
+ * @param declineTitle The label of the button that declines it, or `null` when the agent sent none.
+ * The card then shows "Don't allow" in the app's language.
  * @param decision How the person answered, once they did.
  */
 public data class AIToolApproval(
     val title: String,
     val message: String? = null,
     val reason: String? = null,
-    val allowTitle: String = DEFAULT_ALLOW_TITLE,
-    val declineTitle: String = DEFAULT_DECLINE_TITLE,
+    val allowTitle: String? = null,
+    val declineTitle: String? = null,
     val decision: Decision? = null,
 ) {
 
@@ -60,9 +62,6 @@ public data class AIToolApproval(
     }
 
     internal companion object {
-        const val DEFAULT_ALLOW_TITLE = "Allow"
-        const val DEFAULT_DECLINE_TITLE = "Don't Allow"
-
         /** Reads the step's `approval`. A question with no title asks nothing. */
         fun from(fields: Fields): AIToolApproval? {
             val title = fields.string("title") ?: return null
@@ -70,8 +69,8 @@ public data class AIToolApproval(
                 title = title,
                 message = fields.string("message"),
                 reason = fields.string("reason"),
-                allowTitle = fields.string("allow_title") ?: DEFAULT_ALLOW_TITLE,
-                declineTitle = fields.string("decline_title") ?: DEFAULT_DECLINE_TITLE,
+                allowTitle = fields.string("allow_title"),
+                declineTitle = fields.string("decline_title"),
                 decision = fields.string("decision")?.let(::Decision),
             )
         }

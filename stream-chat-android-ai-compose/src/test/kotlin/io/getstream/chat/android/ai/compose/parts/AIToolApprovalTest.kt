@@ -67,8 +67,8 @@ internal class AIToolApprovalTest {
         )
 
         assertTrue(waiting.isAwaitingApproval(userId = "u_1", clientId = "web-1"))
-        assertEquals("Allow", waiting.approval?.allowTitle)
-        assertEquals("Don't Allow", waiting.approval?.declineTitle)
+        assertNull("the card shows its own, translated title", waiting.approval?.allowTitle)
+        assertNull(waiting.approval?.declineTitle)
         assertEquals(emptyList<String>(), approvalLines(waiting.approval!!))
     }
 
