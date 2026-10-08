@@ -12,8 +12,8 @@
   <a href="https://github.com/GetStream/stream-chat-android-ai/releases">
     <img alt="release" src="https://img.shields.io/github/v/release/GetStream/stream-chat-android-ai?color=lightblue" />
   </a>
-  <a href="https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/">
-    <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot&color=lightblue" />
+  <a href="https://browse.stream-io-repo.com/snapshots/io/getstream/stream-chat-android-ai-compose/">
+    <img alt="snapshot" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fsnapshots.stream-io-repo.com%2Fio%2Fgetstream%2Fstream-chat-android-ai-compose%2Fmaven-metadata.xml&strategy=latestProperty&label=snapshot&color=lightblue" />
   </a>
 </p>
 
@@ -41,6 +41,10 @@ labels, able to show different states of the LLM (thinking, checking external so
 and send/stop buttons. It manages message composition state and provides a polished UI with
 automatic keyboard handling.
 
+**AISuggestions** - a horizontally scrolling row of suggestion chips, usually shown above the
+composer on a new chat. Tapping a chip gives you its text, and you decide what to do with it, for
+example send it.
+
 **SpeechToTextButton** - a composable button that provides speech-to-text functionality with
 waveform visualization, automatic permission handling, and customizable UI components.
 
@@ -53,7 +57,19 @@ to add it 😎.
 
 ## 📦 Installation
 
-Add the dependency to your `build.gradle.kts`:
+Releases are published to the Stream Maven repository. Add it to your `settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://stream-io-repo.com")
+    }
+}
+```
+
+Then add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
@@ -67,19 +83,19 @@ Stream Chat SDK and AI providers.
 
 ### Snapshot Releases
 
-To use snapshot releases, you need to add the Sonatype snapshot repository to your `settings.gradle.kts`:
+To use snapshot releases, add the Stream snapshot repository to your `settings.gradle.kts`:
 
 ```kotlin
 dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
+        maven("https://snapshots.stream-io-repo.com")
     }
 }
 ```
 
-Find the latest snapshot version in the badge above, or check the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/) for available versions.
+Find the latest snapshot version in the badge above, or check the [Stream snapshot repository](https://browse.stream-io-repo.com/snapshots/io/getstream/stream-chat-android-ai-compose/) for available versions.
 
 ## 🚀 Usage
 
@@ -249,6 +265,40 @@ text set from outside. Both `ChatComposer` overloads take a `focusRequester`, an
 `ComposerInputContent` receives it in its params.
 
 > To replace the composer's parts (for example, to hide the attachment button), see
+> [Customizing components](#-customizing-components).
+
+### AISuggestions
+
+`AISuggestions` shows a horizontally scrolling row of chips. Each chip shows its text on up to 2
+lines, at most `itemMaxWidth` wide (160 dp by default), and all chips in the row have the same
+height. The component doesn't send anything itself:
+`onSuggestionClick` gets the chip's exact text, and you decide what to do with it.
+
+```kotlin
+import io.getstream.chat.android.ai.compose.ui.component.AISuggestions
+import io.getstream.chat.android.ai.compose.ui.component.ChatComposer
+import io.getstream.chat.android.ai.compose.ui.component.MessageData
+
+@Composable
+fun NewChatBottomBar(onSend: (MessageData) -> Unit, isGenerating: Boolean) {
+    Column {
+        AISuggestions(
+            suggestions = listOf(
+                "Help me study vocabulary for an exam",
+                "Top 5 restaurants in New York",
+            ),
+            onSuggestionClick = { text -> onSend(MessageData(text = text)) },
+        )
+        ChatComposer(
+            onSendClick = onSend,
+            onStopClick = { /* ... */ },
+            isGenerating = isGenerating,
+        )
+    }
+}
+```
+
+> To change how each chip looks, override the `AISuggestionsChip` slot. See
 > [Customizing components](#-customizing-components).
 
 ### SpeechToTextButton
@@ -551,7 +601,7 @@ All components resolve the parts they render through `ChatAiComponentFactory`. E
 with a default, so you override only the ones you need. The factory has a default value, so the
 components work with no setup; provide a custom one only to override a slot.
 
-It exposes slots for `ChatComposer`, `AITypingIndicator`, and `SpeechToTextButton`. See
+It exposes slots for `ChatComposer`, `AITypingIndicator`, `SpeechToTextButton`, and `AISuggestions`. See
 [`ChatAiComponentFactory`](stream-chat-android-ai-compose/src/main/kotlin/io/getstream/chat/android/ai/compose/ui/component/ChatAiComponentFactory.kt)
 for the full list of slots and their defaults.
 

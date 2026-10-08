@@ -159,6 +159,8 @@ internal class ChatViewModel(
         if (text.isEmpty() || _uiState.value.assistantState.isBusy()) {
             return
         }
+        // Busy from the tap itself, so a second tap during the IO hop below is ignored.
+        _uiState.update { it.copy(assistantState = ChatUiState.AssistantState.Thinking) }
 
         viewModelScope.launch {
             val uris = data.attachments.toList()
@@ -176,7 +178,6 @@ internal class ChatViewModel(
             _uiState.update { state ->
                 state.copy(
                     messages = listOfNotNull(message.toChatMessage(currentUserId.value)) + state.messages,
-                    assistantState = ChatUiState.AssistantState.Thinking,
                 )
             }
 

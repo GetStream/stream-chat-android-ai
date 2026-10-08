@@ -136,6 +136,20 @@ public interface ChatAiComponentFactory {
     public fun SpeechToTextButtonRecordingContent(params: SpeechToTextButtonRecordingContentParams) {
         DefaultRecordingContent(onClick = params.onClick, rmsdB = params.rmsdB)
     }
+
+    /**
+     * A chip rendered in [AISuggestions].
+     *
+     * The default renders a Material 3 [androidx.compose.material3.SuggestionChip] that shows the
+     * text on up to 2 lines. The row gives every chip the same height (the minimum height it
+     * receives) and limits its width to [AISuggestions]'s `itemMaxWidth`.
+     *
+     * @param params The parameters for the chip.
+     */
+    @Composable
+    public fun AISuggestionsChip(params: AISuggestionsChipParams) {
+        DefaultAISuggestionsChip(params)
+    }
 }
 
 /**
