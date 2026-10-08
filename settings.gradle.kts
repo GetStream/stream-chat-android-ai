@@ -10,6 +10,7 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
         mavenLocal()
+        maven("https://stream-io-repo.com")
     }
 }
 
@@ -19,6 +20,7 @@ dependencyResolutionManagement {
         mavenLocal()
         google()
         mavenCentral()
+        maven("https://stream-io-repo.com")
     }
 }
 

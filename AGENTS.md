@@ -23,7 +23,7 @@ Complete reference implementation showing how to integrate the UI components wit
 - Full conversation UI with AI agent lifecycle management
 
 **Modules:**
-- `stream-chat-android-ai-compose`: **Pure UI components SDK** (published to Maven Central)
+- `stream-chat-android-ai-compose`: **Pure UI components SDK** (published to the Stream Maven repository)
 - `stream-chat-android-ai-compose-sample`: **Stream Chat reference implementation**
 - `metrics/stream-chat-android-ai-metrics`: SDK size tracking
 
@@ -93,7 +93,8 @@ Complete reference implementation showing how to integrate the UI components wit
 # Publish to Maven Local for testing
 ./gradlew publishToMavenLocal
 
-# Publish to Maven Central (requires credentials)
+# Publish (requires credentials). CI picks the target with ORG_GRADLE_PROJECT_streamPublishTargets
+# (streamRepo, central, or both); without it, this publishes to Maven Central
 ./gradlew publish
 
 # Print all artifacts that will be published
@@ -391,7 +392,9 @@ fun ChatScreen(state: YourChatState) {
 
 ## Publishing & Release
 
-### Maven Central Publishing
+### Maven Publishing
+
+**Repository**: the Stream Maven repository (`https://stream-io-repo.com`, snapshots on `https://snapshots.stream-io-repo.com`). Maven Central is a manual fallback (`publish-targets` input of the release workflow).
 
 **Plugin**: `com.vanniktech.maven.publish` (version ref `mavenPublish` in `libs.versions.toml`)
 
@@ -407,7 +410,7 @@ fun ChatScreen(state: YourChatState) {
 
 **Snapshot Repository:**
 ```
-https://central.sonatype.com/repository/maven-snapshots/io/getstream/stream-chat-android-ai-compose/
+https://browse.stream-io-repo.com/snapshots/io/getstream/stream-chat-android-ai-compose/
 ```
 
 ### Release Process
