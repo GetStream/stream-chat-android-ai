@@ -243,8 +243,10 @@ message = message.copy(text = "Build me a short presentation about ")
 focusRequester.requestFocus()
 ```
 
-After a send, the composer reports an empty message through `onMessageDataChange`; set it back to
-keep the text. A custom `ComposerInputContent` receives the focus requester in its params.
+On send, the composer reports an empty message through `onMessageDataChange` and then calls
+`onSendClick`; set the message back, there or later, to keep the text. The cursor goes to the end of
+text set from outside. Both `ChatComposer` overloads take a `focusRequester`, and a custom
+`ComposerInputContent` receives it in its params.
 
 > To replace the composer's parts (for example, to hide the attachment button), see
 > [Customizing components](#-customizing-components).

@@ -57,8 +57,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.R
 import io.getstream.chat.android.ai.compose.ui.component.ComposerInputContentParams
@@ -110,6 +112,11 @@ internal fun DefaultComposerInputContent(
         else -> null
     }
 
+    // Keeps the person's selection while they type; text set from outside puts the cursor at the end.
+    var fieldValue by remember { mutableStateOf(TextFieldValue()) }
+    val text = params.messageData.text
+    val value = if (fieldValue.text == text) fieldValue else TextFieldValue(text, TextRange(text.length))
+
     val interactionSource = remember { MutableInteractionSource() }
     val componentFactory = LocalChatAiComponentFactory.current
     val trailingParams = ComposerInputTrailingContentParams(
@@ -127,8 +134,11 @@ internal fun DefaultComposerInputContent(
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current)
                 .then(params.focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
-            value = params.messageData.text,
-            onValueChange = params.onTextChange,
+            value = value,
+            onValueChange = {
+                fieldValue = it
+                if (it.text != text) params.onTextChange(it.text)
+            },
             enabled = !params.isGenerating && !speechToTextState.isRecording(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(onSend = { params.onSendClick() }),

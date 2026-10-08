@@ -65,7 +65,10 @@ import androidx.core.net.toUri
  * @param isGenerating Whether the AI is currently generating a response.
  * @param modifier The modifier to be applied to the composer.
  * @param messageData The initial message data to be displayed in the input field.
+ * @param focusRequester Attached to the text field, so you can put the cursor in it with
+ * [FocusRequester.requestFocus].
  */
+@Suppress("LongParameterList") // Both actions, the state, the initial message and the focus requester.
 @Composable
 public fun ChatComposer(
     onSendClick: (data: MessageData) -> Unit,
@@ -73,6 +76,7 @@ public fun ChatComposer(
     isGenerating: Boolean,
     modifier: Modifier = Modifier,
     messageData: MessageData = MessageData(),
+    focusRequester: FocusRequester? = null,
 ) {
     var state by rememberSaveable(stateSaver = MessageData.Saver) {
         mutableStateOf(messageData)
@@ -84,6 +88,36 @@ public fun ChatComposer(
         onStopClick = onStopClick,
         isGenerating = isGenerating,
         modifier = modifier,
+        focusRequester = focusRequester,
+    )
+}
+
+/**
+ * The [ChatComposer] signature without `focusRequester`, kept so apps compiled against it keep
+ * working.
+ *
+ * @param onSendClick Callback invoked when the send button is clicked with the composed message data.
+ * @param onStopClick Callback invoked when the stop button is clicked (during AI generation).
+ * @param isGenerating Whether the AI is currently generating a response.
+ * @param modifier The modifier to be applied to the composer.
+ * @param messageData The initial message data to be displayed in the input field.
+ */
+@Deprecated("Kept for binary compatibility.", level = DeprecationLevel.HIDDEN)
+@Composable
+public fun ChatComposer(
+    onSendClick: (data: MessageData) -> Unit,
+    onStopClick: () -> Unit,
+    isGenerating: Boolean,
+    modifier: Modifier = Modifier,
+    messageData: MessageData = MessageData(),
+) {
+    ChatComposer(
+        onSendClick = onSendClick,
+        onStopClick = onStopClick,
+        isGenerating = isGenerating,
+        modifier = modifier,
+        messageData = messageData,
+        focusRequester = null,
     )
 }
 
@@ -112,8 +146,8 @@ public fun ChatComposer(
  * @param messageData The message being written.
  * @param onMessageDataChange Called with the new message whenever it changes: as the person types
  * or dictates, picks or removes attachments, and with an empty message once it is sent.
- * @param onSendClick Called with the message when the person sends it. The composer then reports an
- * empty message through [onMessageDataChange]; set the message back to keep it.
+ * @param onSendClick Called with the message when the person sends it. The composer reports an empty
+ * message through [onMessageDataChange] just before; set the message back, here or later, to keep it.
  * @param onStopClick Called when the stop button is clicked (during AI generation).
  * @param isGenerating Whether the AI is currently generating a response.
  * @param modifier The modifier to be applied to the composer.
@@ -135,8 +169,9 @@ public fun ChatComposer(
 
     val handleSendClick = {
         keyboardController?.hide()
-        onSendClick(messageData)
+        // Clear before reporting, so a caller that restores the message in onSendClick keeps it.
         onMessageDataChange(MessageData())
+        onSendClick(messageData)
     }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -203,13 +238,14 @@ public data class MessageData(
          * keep a message you own across configuration changes and process death:
          * `rememberSaveable(stateSaver = MessageData.Saver) { mutableStateOf(MessageData()) }`.
          */
-        public val Saver: Saver<MessageData, List<Any>> = Saver(
+        public val Saver: Saver<MessageData, Any> = Saver(
             save = { messageData ->
                 listOf(
                     messageData.text,
                 ) + messageData.attachments.map(Uri::toString)
             },
-            restore = { saved ->
+            restore = { restored ->
+                val saved = restored as List<*>
                 val text = saved.firstOrNull() as? String ?: ""
                 val attachmentStrings = saved.drop(1).mapNotNull { it as? String }
                 val attachments = attachmentStrings.map(String::toUri).toSet()
