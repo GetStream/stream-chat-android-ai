@@ -430,10 +430,15 @@ Agents that think out loud and call tools can write each step as a custom attach
 into `AIMessagePart`s and shows them before the answer.
 
 ```kotlin
+import androidx.compose.runtime.remember
 import io.getstream.chat.android.ai.compose.parts.AIMessagePart
 import io.getstream.chat.android.ai.compose.ui.component.AIMessageParts
 
-val parts = AIMessagePart.parts(message.attachments.map { it.type.orEmpty() to it.extraData })
+// Stream Chat Android moves an attachment's `name` out of `extraData`, so put it back.
+// Parse once per change of the attachments, not on every frame while the reply streams.
+val parts = remember(message.attachments) {
+    AIMessagePart.parts(message.attachments.map { it.type.orEmpty() to it.extraData + ("name" to it.name) })
+}
 
 Column {
     AIMessageParts(parts = parts)

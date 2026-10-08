@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +57,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +70,7 @@ import io.getstream.chat.android.ai.compose.ui.component.internal.ReasoningPanel
 import io.getstream.chat.android.ai.compose.ui.component.internal.ReasoningStrings
 import io.getstream.chat.android.ai.compose.ui.component.internal.pulse
 import io.getstream.chat.android.ai.compose.ui.component.internal.reasoningTitle
+import io.getstream.chat.android.ai.compose.ui.component.internal.rememberDurationStrings
 import io.getstream.chat.android.ai.compose.ui.component.internal.shimmer
 import io.getstream.chat.android.ai.compose.ui.component.internal.thinkingTitle
 import kotlinx.coroutines.delay
@@ -313,14 +316,19 @@ private fun ReasoningHeader(
     val hint = stringResource(
         if (isOpen) R.string.stream_ai_compose_reasoning_hide else R.string.stream_ai_compose_reasoning_show,
     )
+    val openState = stringResource(
+        if (isOpen) R.string.stream_ai_compose_reasoning_expanded else R.string.stream_ai_compose_reasoning_collapsed,
+    )
     val description = listOfNotNull(title, summary.takeIf { !isThinking }).joinToString(". ")
     val chevronRotation by animateFloatAsState(if (isOpen) CHEVRON_OPEN else 0f, label = "chevron")
     val headerStyle = textStyle.copy(fontWeight = FontWeight.Medium, color = colors.title)
     Row(
         modifier = Modifier
             .clickable(onClickLabel = hint, role = Role.Button, onClick = onToggle)
+            .minimumInteractiveComponentSize()
             .clearAndSetSemantics {
                 contentDescription = description
+                stateDescription = openState
                 role = Role.Button
                 onClick(label = hint) {
                     onToggle()
@@ -411,8 +419,9 @@ private fun rememberReasoningStrings(): ReasoningStrings {
     val thinkingFor = stringResource(R.string.stream_ai_compose_reasoning_thinking_for)
     val thought = stringResource(R.string.stream_ai_compose_reasoning_thought)
     val thoughtFor = stringResource(R.string.stream_ai_compose_reasoning_thought_for)
-    return remember(thinking, thinkingFor, thought, thoughtFor) {
-        ReasoningStrings(thinking, thinkingFor, thought, thoughtFor)
+    val duration = rememberDurationStrings()
+    return remember(thinking, thinkingFor, thought, thoughtFor, duration) {
+        ReasoningStrings(thinking, thinkingFor, thought, thoughtFor, duration)
     }
 }
 

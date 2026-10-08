@@ -18,7 +18,10 @@ package io.getstream.chat.android.ai.compose.parts
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Locale
 import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
@@ -39,7 +42,8 @@ public interface AIClientTool {
      * Runs one call.
      *
      * @param call The call to run, with its arguments.
-     * @return What the device reports for the call.
+     * @return What the device reports for the call. If this throws or times out, the runner reports
+     * the call as failed.
      */
     public suspend fun run(call: AIToolCallPart): AIClientToolResult
 }
@@ -53,7 +57,7 @@ public interface AIClientTool {
  * @param failure Why the device could not run the call, such as "Location not shared". Shown on
  * the step and told to the model.
  */
-public data class AIClientToolResult(
+public data class AIClientToolResult internal constructor(
     val output: String? = null,
     val summary: String? = null,
     val failure: String? = null,
@@ -80,9 +84,9 @@ public data class AIClientToolResult(
 /**
  * Runs the client tool calls addressed to this device, each once.
  *
- * Give it each AI reply's steps as they update. It runs a call when the call awaits this person
- * and this install, the runner has a tool of that name and the call has not run here before, then
- * hands the result to `send`. A result that could not be sent is sent again on a later update,
+ * Give it each AI reply's steps as they update. It runs a call when the call has its own id,
+ * awaits this person and this install, the runner has a tool of that name and the call has not run
+ * here before, then hands the result to `send`. A result that could not be sent is sent again on a later update,
  * without running the tool again.
  *
  * The runner is confined to the main thread: call [run] from it, and pass a [scope] that runs on
@@ -107,8 +111,12 @@ public class AIClientToolRunner(
     private val tools: Map<String, AIClientTool> = tools.distinctBy { it.name }.associateBy { it.name }
     private val calls = mutableMapOf<String, Call>()
 
-    /** How many times a result is offered to `send` before the runner gives up on it. */
+    /** How many times a result is offered to `send` before the runner gives up on it. At least 1. */
     public var maxAttempts: Int = DEFAULT_MAX_ATTEMPTS
+        set(value) {
+            require(value >= 1) { "maxAttempts must be at least 1, was $value" }
+            field = value
+        }
 
     /** The names of the tools this device can run. */
     public val toolNames: List<String> get() = tools.keys.sorted()
@@ -131,7 +139,10 @@ public class AIClientToolRunner(
         parts: List<AIMessagePart>,
         send: suspend (call: AIToolCallPart, result: AIClientToolResult) -> Unit,
     ) {
-        parts.mapNotNull { it.toolCall }
+        // A call without its own id gets a positional one, which repeats across replies and
+        // could not match its result.
+        parts.filter { Fields(it.payload).string("id") != null }
+            .mapNotNull { it.toolCall }
             .filter { it.isAwaiting(userId, clientId) }
             .forEach { call -> start(call, send) }
     }
@@ -143,10 +154,27 @@ public class AIClientToolRunner(
         state.sending = true
         val done = state.result
         scope.launch {
-            val result = done ?: tool.run(call)
-            deliver(state, result, call, send)
+            try {
+                val result = done ?: runTool(tool, call)
+                deliver(state, result, call, send)
+            } finally {
+                state.sending = false
+            }
         }
     }
+
+    // A tool that throws or times out is reported as failed, so the agent gets an answer.
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private suspend fun runTool(tool: AIClientTool, call: AIToolCallPart): AIClientToolResult =
+        try {
+            tool.run(call)
+        } catch (cancellation: CancellationException) {
+            // Rethrows when the runner's scope is cancelled; otherwise the tool's own timeout.
+            currentCoroutineContext().ensureActive()
+            AIClientToolResult.failed(TOOL_FAILED)
+        } catch (_: Exception) {
+            AIClientToolResult.failed(TOOL_FAILED)
+        }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     private suspend fun deliver(
@@ -161,16 +189,15 @@ public class AIClientToolRunner(
             send(call, result)
             state.sent = true
         } catch (cancellation: CancellationException) {
-            state.sending = false
             throw cancellation
         } catch (_: Exception) {
             // Offered again on the next update that still shows the call waiting.
         }
-        state.sending = false
     }
 
     private companion object {
         const val DEFAULT_MAX_ATTEMPTS = 3
+        const val TOOL_FAILED = "The tool failed on this device."
     }
 }
 
@@ -180,20 +207,22 @@ public class AIClientToolRunner(
  * makes while answering.
  */
 public object AIClientIdentity {
-    private const val PREFERENCES = "io.getstream.ai"
-    private const val KEY = "io.getstream.ai.client-id"
+    private const val FILE = "io.getstream.ai.client-id"
 
     /**
      * This install's identifier, created on first use and kept until the app's data is cleared.
+     * It is not backed up, so a device restored from a backup gets its own. Reads and writes a
+     * small file, so prefer calling it off the main thread.
      *
      * @param context Any context; the application context is used.
      */
     @Synchronized
     public fun installId(context: Context): String {
-        val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-        preferences.getString(KEY, null)?.let { return it }
+        // noBackupFilesDir: a restored device must not answer calls meant for the old one.
+        val file = File(context.applicationContext.noBackupFilesDir, FILE)
+        if (file.exists()) file.readText().takeIf { it.isNotBlank() }?.let { return it }
         val created = "android-" + UUID.randomUUID().toString().uppercase(Locale.ROOT)
-        preferences.edit().putString(KEY, created).apply()
+        file.writeText(created)
         return created
     }
 }

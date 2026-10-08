@@ -24,15 +24,25 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 @Suppress("StringShouldBeRawString") // The line breaks are what the tests are about.
 internal class ReasoningTextTest {
+
+    private val duration = DurationStrings(
+        seconds = "%ds",
+        minutes = "%dm",
+        minutesSeconds = "%dm %ds",
+        fraction = "%ss",
+        locale = Locale.US,
+    )
 
     private val strings = ReasoningStrings(
         thinking = "Thinking…",
         thinkingFor = "Thinking… %s",
         thought = "Thought process",
         thoughtFor = "Thought for %s",
+        duration = duration,
     )
 
     @Test
@@ -79,9 +89,24 @@ internal class ReasoningTextTest {
 
     @Test
     fun `tool durations read like the agent's`() {
-        assertEquals("0.4s", formatToolDuration(0.42))
-        assertEquals("13s", formatToolDuration(12.6))
-        assertEquals("1m 5s", formatToolDuration(65.2))
+        assertEquals("0.4s", formatToolDuration(0.42, duration))
+        assertEquals("13s", formatToolDuration(12.6, duration))
+        assertEquals("1m 5s", formatToolDuration(65.2, duration))
+    }
+
+    @Test
+    fun `durations follow the translated units and the locale's decimal separator`() {
+        val german = DurationStrings(
+            seconds = "%d Sek.",
+            minutes = "%d Min.",
+            minutesSeconds = "%d Min. %d Sek.",
+            fraction = "%s Sek.",
+            locale = Locale.GERMANY,
+        )
+
+        assertEquals("0,4 Sek.", formatToolDuration(0.42, german))
+        assertEquals("1 Min. 5 Sek.", formatToolDuration(65.2, german))
+        assertEquals("2 Min.", formatSeconds(120, german))
     }
 
     @Test

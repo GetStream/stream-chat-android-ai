@@ -36,15 +36,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isSpecified
 import io.getstream.chat.android.ai.compose.R
 import io.getstream.chat.android.ai.compose.parts.AIToolCallPart
 import io.getstream.chat.android.ai.compose.ui.component.internal.formatToolDuration
+import io.getstream.chat.android.ai.compose.ui.component.internal.rememberDurationStrings
 import io.getstream.chat.android.ai.compose.ui.component.internal.shimmer
 
 /**
@@ -62,8 +64,12 @@ public fun AIToolCall(
     textStyle: TextStyle = MaterialTheme.typography.bodyMedium,
     colors: AIToolCallColors = AIToolCallDefaults.colors(),
 ) {
-    val detail = toolCallDetail(part)
+    val status = toolCallStatus(part.status)
+    val detail = part.summary ?: status.text.takeIf { status.shownAsDetail }
+    // The icon carries the status for TalkBack unless the detail already says it.
+    val statusDescription = status.text.takeUnless { status.shownAsDetail && part.summary == null }
     val duration = part.durationSeconds?.takeIf { part.status.isFinished }
+    val durationStrings = rememberDurationStrings()
     val lineHeight = firstLineHeight(textStyle)
     Row(
         modifier = modifier.semantics(mergeDescendants = true) {},
@@ -76,7 +82,7 @@ public fun AIToolCall(
                 .height(lineHeight),
             contentAlignment = Alignment.Center,
         ) {
-            ToolCallIcon(part, colors)
+            ToolCallIcon(part, colors, description = statusDescription)
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -97,7 +103,7 @@ public fun AIToolCall(
         if (duration != null) {
             Box(modifier = Modifier.height(lineHeight), contentAlignment = Alignment.Center) {
                 Text(
-                    text = formatToolDuration(duration),
+                    text = formatToolDuration(duration, durationStrings),
                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = colors.detail,
                 )
@@ -170,36 +176,63 @@ internal fun UnsupportedPart(textStyle: TextStyle, colors: AIToolCallColors, mod
     }
 }
 
+/**
+ * A call's status in words. Waiting, failed and cancelled calls show it as their detail when the
+ * agent sends no summary.
+ */
+private data class ToolCallStatus(val text: String, val shownAsDetail: Boolean)
+
 @Composable
-private fun toolCallDetail(part: AIToolCallPart): String? = when (part.status) {
-    AIToolCallPart.Status.AwaitingClient -> part.summary ?: stringResource(R.string.stream_ai_compose_tool_call_awaiting_client)
-    AIToolCallPart.Status.Failed -> part.summary ?: stringResource(R.string.stream_ai_compose_tool_call_failed)
-    AIToolCallPart.Status.Cancelled -> part.summary ?: stringResource(R.string.stream_ai_compose_tool_call_cancelled)
-    else -> part.summary
+private fun toolCallStatus(status: AIToolCallPart.Status): ToolCallStatus = when (status) {
+    AIToolCallPart.Status.AwaitingClient ->
+        ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_awaiting_client), shownAsDetail = true)
+    AIToolCallPart.Status.Failed ->
+        ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_failed), shownAsDetail = true)
+    AIToolCallPart.Status.Cancelled ->
+        ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_cancelled), shownAsDetail = true)
+    AIToolCallPart.Status.Completed ->
+        ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_completed), shownAsDetail = false)
+    else -> ToolCallStatus(stringResource(R.string.stream_ai_compose_tool_call_running), shownAsDetail = false)
 }
 
 /** A status this SDK doesn't know reads as still in progress. */
 @Composable
-private fun ToolCallIcon(part: AIToolCallPart, colors: AIToolCallColors) {
+private fun ToolCallIcon(part: AIToolCallPart, colors: AIToolCallColors, description: String?) {
     when (part.status) {
-        AIToolCallPart.Status.AwaitingClient ->
-            StatusIcon(R.drawable.stream_ai_compose_ic_device, colors.accent, 16.dp, Modifier.shimmer(true, colors.title))
-        AIToolCallPart.Status.Completed -> StatusIcon(R.drawable.stream_ai_compose_ic_check, colors.success, 14.dp)
-        AIToolCallPart.Status.Failed -> StatusIcon(R.drawable.stream_ai_compose_ic_exclamation, colors.failure, 14.dp)
-        AIToolCallPart.Status.Cancelled -> StatusIcon(R.drawable.stream_ai_compose_ic_close, colors.detail, 14.dp)
-        else -> CircularProgressIndicator(
-            modifier = Modifier.size(12.dp),
-            color = colors.accent,
-            strokeWidth = 1.5.dp,
+        AIToolCallPart.Status.AwaitingClient -> StatusIcon(
+            R.drawable.stream_ai_compose_ic_device,
+            colors.accent,
+            16.dp,
+            description,
+            Modifier.shimmer(true, colors.title),
         )
+        AIToolCallPart.Status.Completed -> StatusIcon(R.drawable.stream_ai_compose_ic_check, colors.success, 14.dp, description)
+        AIToolCallPart.Status.Failed -> StatusIcon(R.drawable.stream_ai_compose_ic_exclamation, colors.failure, 14.dp, description)
+        AIToolCallPart.Status.Cancelled -> StatusIcon(R.drawable.stream_ai_compose_ic_close, colors.detail, 14.dp, description)
+        // The indicator's own progress semantics would keep the status out of the merged call.
+        else -> Box(Modifier.semantics { description?.let { contentDescription = it } }) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clearAndSetSemantics {},
+                color = colors.accent,
+                strokeWidth = 1.5.dp,
+            )
+        }
     }
 }
 
 @Composable
-private fun StatusIcon(@DrawableRes icon: Int, tint: Color, size: Dp, modifier: Modifier = Modifier) {
+private fun StatusIcon(
+    @DrawableRes icon: Int,
+    tint: Color,
+    size: Dp,
+    description: String?,
+    modifier: Modifier = Modifier,
+) {
     Icon(
         painter = painterResource(icon),
-        contentDescription = null,
+        contentDescription = description,
         tint = tint,
         modifier = modifier.size(size),
     )
@@ -208,9 +241,12 @@ private fun StatusIcon(@DrawableRes icon: Int, tint: Color, size: Dp, modifier: 
 /** The height of the first line of [style], so icons sit centered on it. */
 @Composable
 private fun firstLineHeight(style: TextStyle): Dp = with(LocalDensity.current) {
+    // Only sp converts to dp; em is relative to the font size.
+    val fontSize = style.fontSize.takeIf { it.isSp }
     when {
-        style.lineHeight.isSpecified -> style.lineHeight.toDp()
-        style.fontSize.isSpecified -> (style.fontSize * LINE_HEIGHT_FACTOR).toDp()
+        style.lineHeight.isSp -> style.lineHeight.toDp()
+        style.lineHeight.isEm && fontSize != null -> (fontSize * style.lineHeight.value).toDp()
+        fontSize != null -> (fontSize * LINE_HEIGHT_FACTOR).toDp()
         else -> DEFAULT_LINE_HEIGHT
     }
 }

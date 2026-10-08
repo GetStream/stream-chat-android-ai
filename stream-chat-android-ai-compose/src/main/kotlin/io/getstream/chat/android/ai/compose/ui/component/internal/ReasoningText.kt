@@ -16,9 +16,12 @@
 
 package io.getstream.chat.android.ai.compose.ui.component.internal
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -30,6 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import io.getstream.chat.android.ai.compose.R
+import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.roundToLong
@@ -209,13 +214,41 @@ internal data class ReasoningStrings(
     val thought: String,
     /** The format of "Thought for 12s", with the duration as its argument. */
     val thoughtFor: String,
+    val duration: DurationStrings,
 )
+
+/** The units of a short duration, read from resources so they can be translated. */
+internal data class DurationStrings(
+    /** The format of "7s", with the whole seconds as its argument. */
+    val seconds: String,
+    /** The format of "2m", with the whole minutes as its argument. */
+    val minutes: String,
+    /** The format of "1m 5s", with the minutes and the seconds as its arguments. */
+    val minutesSeconds: String,
+    /** The format of "0.4s", with the seconds, already formatted, as its argument. */
+    val fraction: String,
+    /** Formats the numbers, including the decimal separator. */
+    val locale: Locale,
+)
+
+/** The duration units of the current resources and locale. */
+@Composable
+internal fun rememberDurationStrings(): DurationStrings {
+    val seconds = stringResource(R.string.stream_ai_compose_duration_seconds)
+    val minutes = stringResource(R.string.stream_ai_compose_duration_minutes)
+    val minutesSeconds = stringResource(R.string.stream_ai_compose_duration_minutes_seconds)
+    val fraction = stringResource(R.string.stream_ai_compose_duration_fraction)
+    val locale = Locale.getDefault()
+    return remember(seconds, minutes, minutesSeconds, fraction, locale) {
+        DurationStrings(seconds, minutes, minutesSeconds, fraction, locale)
+    }
+}
 
 /** "Thinking…" while the model thinks, then how long it thought. */
 internal fun reasoningTitle(isThinking: Boolean, durationSeconds: Double?, strings: ReasoningStrings): String = when {
     isThinking -> strings.thinking
     durationSeconds == null -> strings.thought
-    else -> strings.thoughtFor.format(formatSeconds(floor(max(1.0, durationSeconds)).toLong()))
+    else -> strings.thoughtFor.format(formatSeconds(floor(max(1.0, durationSeconds)).toLong(), strings.duration))
 }
 
 /** "Thinking…", then "Thinking… 7s" once a second has passed. */
@@ -223,25 +256,25 @@ internal fun thinkingTitle(elapsedSeconds: Double, strings: ReasoningStrings): S
     if (elapsedSeconds < 1) {
         strings.thinking
     } else {
-        strings.thinkingFor.format(formatSeconds(floor(elapsedSeconds).toLong()))
+        strings.thinkingFor.format(formatSeconds(floor(elapsedSeconds).toLong(), strings.duration))
     }
 
 /** A tool call's duration: "0.4s" under a second, then "12s" or "1m 5s". */
-internal fun formatToolDuration(seconds: Double): String =
+internal fun formatToolDuration(seconds: Double, strings: DurationStrings): String =
     if (seconds < 1) {
-        String.format(java.util.Locale.ROOT, "%.1fs", seconds)
+        String.format(strings.locale, strings.fraction, String.format(strings.locale, "%.1f", seconds))
     } else {
-        formatSeconds(seconds.roundToLong())
+        formatSeconds(seconds.roundToLong(), strings)
     }
 
 /** Whole seconds in the narrow form: "7s", "1m 5s", "2m". */
-internal fun formatSeconds(seconds: Long): String {
+internal fun formatSeconds(seconds: Long, strings: DurationStrings): String {
     val minutes = seconds / SECONDS_PER_MINUTE
     val rest = seconds % SECONDS_PER_MINUTE
     return when {
-        minutes == 0L -> "${rest}s"
-        rest == 0L -> "${minutes}m"
-        else -> "${minutes}m ${rest}s"
+        minutes == 0L -> String.format(strings.locale, strings.seconds, rest)
+        rest == 0L -> String.format(strings.locale, strings.minutes, minutes)
+        else -> String.format(strings.locale, strings.minutesSeconds, minutes, rest)
     }
 }
 

@@ -30,7 +30,10 @@ package io.getstream.chat.android.ai.compose.parts
  * payload but has no typed view.
  *
  * ```
- * val parts = AIMessagePart.parts(message.attachments.map { it.type.orEmpty() to it.extraData })
+ * // Stream Chat Android moves an attachment's `name` out of `extraData`, so put it back.
+ * val parts = AIMessagePart.parts(
+ *     message.attachments.map { it.type.orEmpty() to it.extraData + ("name" to it.name) },
+ * )
  * for (part in parts) {
  *     part.reasoning?.let { /* … */ }
  *     part.toolCall?.let { /* … */ }

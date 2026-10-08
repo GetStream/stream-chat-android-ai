@@ -17,9 +17,16 @@
 package io.getstream.chat.android.ai.compose.parts
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 
@@ -126,5 +133,88 @@ internal class AIClientToolRunnerTest {
         assertEquals(listOf("athena_device_location"), runner.toolNames)
         assertEquals(1, first.runs)
         assertEquals(0, second.runs)
+    }
+
+    @Test
+    fun `a tool that throws is reported as failed`() = runTest {
+        val tool = object : AIClientTool {
+            override val name = "athena_device_location"
+            override suspend fun run(call: AIToolCallPart): AIClientToolResult = error("GPS unavailable")
+        }
+        val runner = AIClientToolRunner(userId = "u_1", clientId = "ios-1", tools = listOf(tool), scope = this)
+        val sent = mutableListOf<AIClientToolResult>()
+
+        runner.run(awaiting()) { _, result -> sent += result }
+        advanceUntilIdle()
+
+        assertEquals(1, sent.size)
+        assertNull(sent.first().output)
+        assertTrue(sent.first().failure != null)
+    }
+
+    @Test
+    fun `a tool that times out is reported as failed`() = runTest {
+        val tool = object : AIClientTool {
+            override val name = "athena_device_location"
+            override suspend fun run(call: AIToolCallPart): AIClientToolResult =
+                withTimeout(10) {
+                    delay(1_000)
+                    AIClientToolResult.completed("{}")
+                }
+        }
+        val runner = AIClientToolRunner(userId = "u_1", clientId = "ios-1", tools = listOf(tool), scope = this)
+        val sent = mutableListOf<AIClientToolResult>()
+
+        runner.run(awaiting()) { _, result -> sent += result }
+        advanceUntilIdle()
+
+        assertEquals(1, sent.size)
+        assertTrue(sent.first().failure != null)
+    }
+
+    @Test
+    fun `nothing is sent when the runner's scope is cancelled during a call`() = runTest {
+        val tool = object : AIClientTool {
+            override val name = "athena_device_location"
+            override suspend fun run(call: AIToolCallPart): AIClientToolResult {
+                delay(1_000)
+                return AIClientToolResult.completed("{}")
+            }
+        }
+        val job = Job(coroutineContext[Job])
+        val runner = AIClientToolRunner(userId = "u_1", clientId = "ios-1", tools = listOf(tool), scope = this + job)
+        val sent = mutableListOf<AIClientToolResult>()
+
+        runner.run(awaiting()) { _, result -> sent += result }
+        runCurrent()
+        job.cancel()
+        advanceUntilIdle()
+
+        assertTrue(sent.isEmpty())
+    }
+
+    @Test
+    fun `a call without its own id is not run, as its result could not be matched`() = runTest {
+        val tool = CountingTool()
+        val runner = AIClientToolRunner(userId = "u_1", clientId = "ios-1", tools = listOf(tool), scope = this)
+        val withoutId = listOfNotNull(
+            AIMessagePart.fromJson(
+                "ai_tool_call",
+                """
+                    {"name":"athena_device_location","status":"awaiting_client","executor":"client",
+                    "target_user_id":"u_1","target_client_id":"ios-1"}
+                """.trimIndent(),
+            ),
+        )
+
+        runner.run(withoutId) { _, _ -> }
+        advanceUntilIdle()
+
+        assertEquals(0, tool.runs)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `maxAttempts below 1 is rejected`() = runTest {
+        AIClientToolRunner(userId = "u_1", clientId = "ios-1", tools = emptyList(), scope = this).maxAttempts = 0
     }
 }
