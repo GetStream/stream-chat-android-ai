@@ -19,7 +19,7 @@
 
 <div align="center">
 
-![stream-chat-android-ai-compose](https://img.shields.io/badge/stream--chat--android--ai--compose-.01%20MB-lightgreen)
+![stream-chat-android-ai-compose](https://img.shields.io/badge/stream--chat--android--ai--compose-.03%20MB-lightgreen)
 
 </div>
 
