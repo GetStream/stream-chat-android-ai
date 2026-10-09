@@ -19,6 +19,7 @@ package io.getstream.chat.android.ai.compose.ui.component.internal
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.mikepenz.markdown.compose.LocalMarkdownColors
 import com.mikepenz.markdown.compose.LocalMarkdownDimens
@@ -62,10 +63,10 @@ internal fun RichText(
 }
 
 private val DefaultRichTextComponent: RichTextComponent = { text, modifier ->
-    val markdownState = rememberMarkdownState(
-        content = text,
-        retainState = true,
-    )
+    // A new state per text, parsed synchronously: the library parses only a state's first text
+    // at once, so while StreamingText reveals a reply a later text would show nothing until its
+    // parse lands, and an older, shorter parse could land last and leave the reply cut short.
+    val markdownState = key(text) { rememberMarkdownState(content = text, immediate = true) }
 
     Markdown(
         modifier = modifier,

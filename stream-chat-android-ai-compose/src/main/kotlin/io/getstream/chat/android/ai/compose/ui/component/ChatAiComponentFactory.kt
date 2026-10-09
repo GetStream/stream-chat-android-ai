@@ -22,6 +22,7 @@ import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import io.getstream.chat.android.ai.compose.ui.component.internal.DefaultComposerInputContent
+import io.getstream.chat.android.ai.compose.ui.component.internal.DefaultComposerInputTrailingContent
 import io.getstream.chat.android.ai.compose.ui.component.internal.DefaultComposerLeadingContent
 
 /**
@@ -51,13 +52,29 @@ public interface ChatAiComponentFactory {
     /**
      * The input field of [ChatComposer], including the speech-to-text and send/stop controls.
      *
-     * The default renders the text field with the voice button and the send/stop button.
+     * The default renders the text field with [ComposerInputTrailingContent] (the voice button)
+     * and the send/stop button.
      *
      * @param params The parameters for the input content.
      */
     @Composable
     public fun RowScope.ComposerInputContent(params: ComposerInputContentParams) {
         DefaultComposerInputContent(modifier = Modifier.weight(1f), params = params)
+    }
+
+    /**
+     * The content rendered inside the input field of [ChatComposer], after the text and before the
+     * send/stop button.
+     *
+     * The default renders a [SpeechToTextButton] that dictates into the field while no response
+     * is generating. Override it to show something else there, or render nothing to leave
+     * dictation out.
+     *
+     * @param params The parameters for the input trailing content.
+     */
+    @Composable
+    public fun RowScope.ComposerInputTrailingContent(params: ComposerInputTrailingContentParams) {
+        DefaultComposerInputTrailingContent(params)
     }
 
     /**

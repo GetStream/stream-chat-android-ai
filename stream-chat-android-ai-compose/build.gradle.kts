@@ -33,6 +33,16 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+// Robolectric and Paparazzi can't share a JVM: a Robolectric class that runs first breaks
+// Paparazzi's setup for every class after it.
+tasks.withType<Test>().configureEach {
+    forkEvery = 1
 }
 
 tasks.withType<KotlinCompile>().configureEach {
@@ -56,8 +66,17 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.bundles.androidx.compose)
     implementation(libs.bundles.markdown.renderer)
+    // CoroutineScope is part of AIClientToolRunner's public constructor.
+    api(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
+    // The JVM implementation of org.json, which android.jar only stubs in unit tests.
+    testImplementation(libs.org.json)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

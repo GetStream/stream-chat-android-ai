@@ -18,6 +18,7 @@ package io.getstream.chat.android.ai.compose.ui.component
 
 import android.net.Uri
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 
 /**
  * Parameters for [ChatAiComponentFactory.ComposerLeadingContent].
@@ -39,7 +40,10 @@ public data class ComposerLeadingContentParams(
  * @param onRemoveAttachment Called when the user removes an attachment.
  * @param onSendClick Called when the user sends the message.
  * @param onStopClick Called when the user stops AI generation.
+ * @param focusRequester The composer's focus requester, when its caller passed one. Attach it to
+ * the text field so the caller can put the cursor in it.
  */
+@Suppress("LongParameterList") // Everything the input field needs, so a replacement can do the same.
 public data class ComposerInputContentParams(
     val messageData: MessageData,
     val isGenerating: Boolean,
@@ -47,6 +51,24 @@ public data class ComposerInputContentParams(
     val onRemoveAttachment: (Uri) -> Unit,
     val onSendClick: () -> Unit,
     val onStopClick: () -> Unit,
+    val focusRequester: FocusRequester? = null,
+)
+
+/**
+ * Parameters for [ChatAiComponentFactory.ComposerInputTrailingContent].
+ *
+ * @param text The text currently in the input field.
+ * @param isGenerating Whether the AI is currently generating a response.
+ * @param speechToTextState The composer's speech-to-text state. The default content passes it to
+ * [SpeechToTextButton], whose transcript the composer writes into the field.
+ * @param onPermissionDenied Called when the microphone permission is denied. The composer shows a
+ * message that links to the app's settings.
+ */
+public data class ComposerInputTrailingContentParams(
+    val text: String,
+    val isGenerating: Boolean,
+    val speechToTextState: SpeechToTextButtonState,
+    val onPermissionDenied: () -> Unit,
 )
 
 /**

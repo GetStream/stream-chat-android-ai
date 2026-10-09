@@ -16,10 +16,7 @@
 
 package io.getstream.chat.android.ai.compose.ui.component.internal
 
-import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
@@ -45,7 +42,6 @@ import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,25 +49,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.takeOrElse
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import io.getstream.chat.android.ai.compose.R
 import io.getstream.chat.android.ai.compose.ui.component.ComposerInputContentParams
+import io.getstream.chat.android.ai.compose.ui.component.ComposerInputTrailingContentParams
 import io.getstream.chat.android.ai.compose.ui.component.ComposerLeadingContentParams
-import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButton
+import io.getstream.chat.android.ai.compose.ui.component.LocalChatAiComponentFactory
 import io.getstream.chat.android.ai.compose.ui.component.SpeechToTextButtonState
 import io.getstream.chat.android.ai.compose.ui.component.rememberSpeechToTextButtonState
-import kotlinx.coroutines.launch
 
 /**
  * Default implementation of the leading content of the chat composer.
@@ -107,31 +104,7 @@ internal fun DefaultComposerInputContent(
     params: ComposerInputContentParams,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // Remember the text that existed before starting speech recognition
-    var textBeforeSpeech by remember { mutableStateOf("") }
-
-    val onTextRecognized = { recognizedText: String ->
-        params.onTextChange(
-            if (textBeforeSpeech.isBlank()) {
-                recognizedText
-            } else {
-                "${textBeforeSpeech.trim()} $recognizedText"
-            },
-        )
-    }
-
-    val speechToTextState = rememberSpeechToTextButtonState(
-        onPartialResult = onTextRecognized,
-        onFinalResult = onTextRecognized,
-    )
-
-    // Update textBeforeSpeech when recording starts/stops
-    LaunchedEffect(speechToTextState.isRecording()) {
-        if (speechToTextState.isRecording()) {
-            textBeforeSpeech = params.messageData.text
-        }
-    }
+    val speechToTextState = rememberDictationState(params.messageData.text, params.onTextChange)
 
     val trailingButton = when {
         params.isGenerating -> ComposerTrailingButton.Stop
@@ -139,7 +112,19 @@ internal fun DefaultComposerInputContent(
         else -> null
     }
 
+    // Keeps the person's selection while they type; text set from outside puts the cursor at the end.
+    var fieldValue by remember { mutableStateOf(TextFieldValue()) }
+    val text = params.messageData.text
+    val value = if (fieldValue.text == text) fieldValue else TextFieldValue(text, TextRange(text.length))
+
     val interactionSource = remember { MutableInteractionSource() }
+    val componentFactory = LocalChatAiComponentFactory.current
+    val trailingParams = ComposerInputTrailingContentParams(
+        text = params.messageData.text,
+        isGenerating = params.isGenerating,
+        speechToTextState = speechToTextState,
+        onPermissionDenied = rememberPermissionDeniedHandler(snackbarHostState),
+    )
 
     Column(modifier = modifier) {
         SnackbarHost(hostState = snackbarHostState)
@@ -147,9 +132,13 @@ internal fun DefaultComposerInputContent(
         BasicTextField(
             modifier = Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current),
-            value = params.messageData.text,
-            onValueChange = params.onTextChange,
+                .defaultMinSize(minHeight = LocalMinimumInteractiveComponentSize.current)
+                .then(params.focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
+            value = value,
+            onValueChange = {
+                fieldValue = it
+                if (it.text != text) params.onTextChange(it.text)
+            },
             enabled = !params.isGenerating && !speechToTextState.isRecording(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(onSend = { params.onSendClick() }),
@@ -174,11 +163,9 @@ internal fun DefaultComposerInputContent(
                                 text = params.messageData.text,
                                 innerTextField = innerTextField,
                             )
-                            VoiceButton(
-                                isGenerating = params.isGenerating,
-                                speechToTextState = speechToTextState,
-                                snackbarHostState = snackbarHostState,
-                            )
+                            with(componentFactory) {
+                                ComposerInputTrailingContent(trailingParams)
+                            }
                             TrailingButton(
                                 button = trailingButton,
                                 onSendClick = params.onSendClick,
@@ -190,6 +177,42 @@ internal fun DefaultComposerInputContent(
             },
         )
     }
+}
+
+/**
+ * The speech-to-text state of the input field: the transcript is written into the field, after
+ * the text that was there when recording started.
+ */
+@Composable
+private fun rememberDictationState(
+    text: String,
+    onTextChange: (String) -> Unit,
+): SpeechToTextButtonState {
+    // Remember the text that existed before starting speech recognition
+    var textBeforeSpeech by remember { mutableStateOf("") }
+
+    val onTextRecognized = { recognizedText: String ->
+        onTextChange(
+            if (textBeforeSpeech.isBlank()) {
+                recognizedText
+            } else {
+                "${textBeforeSpeech.trim()} $recognizedText"
+            },
+        )
+    }
+
+    val speechToTextState = rememberSpeechToTextButtonState(
+        onPartialResult = onTextRecognized,
+        onFinalResult = onTextRecognized,
+    )
+
+    // Update textBeforeSpeech when recording starts/stops
+    LaunchedEffect(speechToTextState.isRecording()) {
+        if (speechToTextState.isRecording()) {
+            textBeforeSpeech = text
+        }
+    }
+    return speechToTextState
 }
 
 @Composable
@@ -253,38 +276,6 @@ private fun TextInput(
     }
 }
 
-@Composable
-private fun VoiceButton(
-    isGenerating: Boolean,
-    speechToTextState: SpeechToTextButtonState,
-    snackbarHostState: SnackbarHostState,
-) {
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-
-    AnimatedContent(targetState = !isGenerating) { showVoiceButton ->
-        if (showVoiceButton) {
-            val snackbarMessage = stringResource(R.string.stream_ai_compose_composer_mic_permission_message)
-            val actionLabel = stringResource(R.string.stream_ai_compose_composer_mic_permission_action)
-            SpeechToTextButton(
-                state = speechToTextState,
-                onPermissionDenied = {
-                    coroutineScope.launch {
-                        val result = snackbarHostState.showSnackbar(
-                            message = snackbarMessage,
-                            actionLabel = actionLabel,
-                            withDismissAction = true,
-                        )
-                        if (result == SnackbarResult.ActionPerformed) {
-                            context.openSettings()
-                        }
-                    }
-                },
-            )
-        }
-    }
-}
-
 private enum class ComposerTrailingButton { Send, Stop }
 
 @Composable
@@ -324,11 +315,4 @@ private fun TrailingIconButton(
             contentDescription = contentDescription,
         )
     }
-}
-
-private fun Context.openSettings() {
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-        data = Uri.fromParts("package", packageName, null)
-    }
-    startActivity(intent)
 }

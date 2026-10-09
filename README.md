@@ -235,6 +235,35 @@ data class MessageData(
 )
 ```
 
+**Owning the message (state hoisting):**
+
+To put text in the composer from elsewhere (a suggestion, a restored draft), keep what was written
+when a send is refused, or move the cursor into the field, own the message and pass a
+`FocusRequester`:
+
+```kotlin
+var message by rememberSaveable(stateSaver = MessageData.Saver) { mutableStateOf(MessageData()) }
+val focusRequester = remember { FocusRequester() }
+
+ChatComposer(
+    messageData = message,
+    onMessageDataChange = { message = it },
+    onSendClick = { sent -> if (!send(sent)) message = sent },
+    onStopClick = { stop() },
+    isGenerating = isGenerating,
+    focusRequester = focusRequester,
+)
+
+// Later, for example when a suggestion is tapped:
+message = message.copy(text = "Build me a short presentation about ")
+focusRequester.requestFocus()
+```
+
+On send, the composer reports an empty message through `onMessageDataChange` and then calls
+`onSendClick`; set the message back, there or later, to keep the text. The cursor goes to the end of
+text set from outside. Both `ChatComposer` overloads take a `focusRequester`, and a custom
+`ComposerInputContent` receives it in its params.
+
 > To replace the composer's parts (for example, to hide the attachment button), see
 > [Customizing components](#-customizing-components).
 
@@ -444,6 +473,169 @@ SpeechToTextButton(
 val isRecording: Boolean = state.isRecording()
 ```
 
+### Reasoning and reply steps
+
+Agents that think out loud and call tools can write each step as a custom attachment on the reply
+(`ai_reasoning`, `ai_tool_call`), in order, with the answer in the message text. The SDK reads them
+into `AIMessagePart`s and shows them before the answer.
+
+```kotlin
+import androidx.compose.runtime.remember
+import io.getstream.chat.android.ai.compose.parts.AIMessagePart
+import io.getstream.chat.android.ai.compose.ui.component.AIMessageParts
+
+// Stream Chat Android moves an attachment's `name` out of `extraData`, so put it back.
+// Parse once per change of the attachments, not on every frame while the reply streams.
+val parts = remember(message.attachments) {
+    AIMessagePart.parts(message.attachments.map { it.type.orEmpty() to it.extraData + ("name" to it.name) })
+}
+
+Column {
+    AIMessageParts(parts = parts)
+    StreamingText(text = message.text, animate = isGenerating)
+}
+```
+
+The kinds of step, and their statuses, are open sets: a step from a newer agent never breaks
+decoding. Read the ones you know through `part.reasoning` and `part.toolCall`, read kinds of your
+own from `part.payload`, and `AIMessagePartItem` shows a neutral placeholder for anything else. To
+show some steps your own way, pass content:
+
+```kotlin
+AIMessageParts(parts = parts) { part ->
+    val reasoning = part.reasoning
+    if (reasoning != null) {
+        StreamingReasoning(part = reasoning, text = liveReasoning[reasoning.id])
+    } else {
+        AIMessagePartItem(part = part)
+    }
+}
+```
+
+#### StreamingReasoning
+
+`StreamingReasoning` shows a model's reasoning. While the model thinks, it is open under a
+"Thinking… 7s" header: a panel that grows with the thoughts up to `maxExpandedHeight` (260 dp),
+then keeps the newest in view, revealing new text smoothly as it arrives. When the model is done it
+folds into "Thought for 12s" and the summary, unless the reader opened or closed it, and tapping the
+header opens it again. Only the paragraph still being written is laid out again as it grows.
+
+```kotlin
+StreamingReasoning(
+    text = reasoning,
+    isThinking = answer.isEmpty(),
+    durationSeconds = 12.0,
+    summary = "Needs the user's location first",
+)
+```
+
+An answer that appears as the reasoning folds can wait `StreamingReasoningDefaults.FoldDurationMillis`,
+so the two don't move against each other; `StreamingReasoningDefaults.foldAnimationSpec()` matches
+the fold.
+
+#### Tool calls and client tools
+
+`AIToolCall` shows one call: what it is doing (`display_title`), its outcome and its duration. Some
+tools run on the person's device (`executor: client`): the agent addresses the call to one person
+and one install and waits (`awaiting_client`). `AIClientToolRunner` runs each such call once and
+sends the result to your backend; a result that couldn't be sent is offered again on a later update,
+without running the tool again.
+
+```kotlin
+class LocationTool : AIClientTool {
+    override val name = "get_location"
+    override suspend fun run(call: AIToolCallPart): AIClientToolResult =
+        AIClientToolResult.completed("""{"city":"Amsterdam"}""", summary = "Shared approximate location")
+}
+
+val runner = AIClientToolRunner(
+    userId = user.id,
+    clientId = AIClientIdentity.installId(context),
+    tools = listOf(LocationTool()),
+    scope = viewModelScope,
+)
+
+// For every update of an AI reply:
+runner.run(parts) { call, result -> backend.sendToolResult(message, call, result) }
+```
+
+Put `AIClientIdentity.installId(context)` in the custom data of the person's message (`client_id`)
+so the agent can address the calls it makes while answering to this install.
+
+#### Tool approvals
+
+Some calls wait for the person before they run, such as sharing their location. The agent's backend
+says so on the call's step: status `awaiting_approval`, addressed to the person (and the install, for
+a client tool), with an `approval` carrying the question. It holds the call until it gets the
+answer, then updates the step: allowed, a client tool's call moves on to `awaiting_client`, so
+`AIClientToolRunner` runs it as before; declined, it is cancelled (`isDeclined`) and never runs.
+
+Pass an `AIToolApprover` to ask: the question shows under the call, only to that person, on that
+install, and only while the call waits. Buttons are disabled while the answer is sent, and a failed
+send can be answered again.
+
+```kotlin
+// In your ViewModel, so an answer on its way survives scrolling and configuration changes:
+val approver = AIToolApprover(
+    userId = user.id,
+    clientId = AIClientIdentity.installId(context),
+    scope = viewModelScope,
+) { call, allowed ->
+    backend.answerToolApproval(message, call, allowed)
+}
+
+AIMessageParts(parts = parts, approver = approver)
+```
+
+`AIToolApprovalCard` is the default design (`AIToolApprovalDefaults.colors()`), or ask in your own:
+
+```kotlin
+AIToolApprovalPrompt(call = call, approver = approver) { approval, state, decide ->
+    MyApprovalCard(approval.title, busy = state.isSending, onAllow = { decide(true) }, onDecline = { decide(false) })
+}
+```
+
+### Answering on the device
+
+When your agent can't take a message, because the person is offline or the agent reached its usage
+limit, a model on the device can answer instead. The `stream-chat-android-ai-ondevice` artifact has
+`AILocalModel`, the interface, and `AIOnDeviceModel`, Gemini Nano through ML Kit's GenAI Prompt API.
+It doesn't depend on the components, and they don't depend on it:
+
+```kotlin
+dependencies {
+    implementation("io.getstream:stream-chat-android-ai-ondevice:$version")
+}
+```
+
+```kotlin
+val model = AIOnDeviceModel(context)
+
+when (model.status()) {
+    AIOnDeviceModel.Status.Available -> {
+        val turns = listOf(
+            AIConversationTurn.user("What's a good name for a cat?"),
+            AIConversationTurn.assistant("How about Miso?"),
+            AIConversationTurn.user("Something longer"),
+        )
+        try {
+            model.reply(instructions = "Answer briefly. You have no tools.", turns = turns)
+                .collect { answerSoFar -> show(answerSoFar) }
+        } catch (e: AIOnDeviceModel.Failure) {
+            // The model failed while answering; e.cause is ML Kit's error.
+        }
+    }
+    AIOnDeviceModel.Status.Downloadable -> model.download().collect { progress -> /* … */ }
+    else -> { /* This device can't answer; keep the retry. */ }
+}
+```
+
+Each emission is the whole answer so far, and cancelling the collection stops the model. The
+conversation never leaves the device. Gemini Nano runs on devices whose AICore offers it (recent
+flagship phones, Android 8.0 or later for the artifact), not on emulators, and its context holds a
+few thousand tokens: the newest turns that fit are sent, always with the question, and the model
+writes at most `AIOnDeviceModel.MODEL_MAXIMUM_RESPONSE_TOKENS` per answer.
+
 ## 🎨 Customizing components
 
 All components resolve the parts they render through `ChatAiComponentFactory`. Each part is a slot
@@ -483,6 +675,31 @@ fun ChatScreen(isGenerating: Boolean) {
     }
 }
 ```
+
+#### Replacing the dictation button
+
+Inside its input field, `ChatComposer` shows a `SpeechToTextButton` while no response is generating.
+Override `ComposerInputTrailingContent` to show something else there, or render nothing to leave
+dictation out:
+
+```kotlin
+CompoundChatAiComponentFactory(
+    factory = { current ->
+        object : ChatAiComponentFactory by current {
+            @Composable
+            override fun RowScope.ComposerInputTrailingContent(params: ComposerInputTrailingContentParams) {
+                // Render nothing to leave dictation out.
+            }
+        }
+    },
+) {
+    ChatComposer(/* ... */)
+}
+```
+
+The params carry the field's text, whether a response is generating, the composer's
+`SpeechToTextButtonState` (its transcript is written into the field) and the handler for a denied
+microphone permission, so a replacement can still dictate.
 
 `AITypingIndicator` and `SpeechToTextButton` also accept content parameters (`label` / `indicator`,
 `idleContent` / `recordingContent`) for per-call-site customization. Those take precedence over the
