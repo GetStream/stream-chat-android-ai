@@ -732,7 +732,7 @@ For more details, check out the [Maker Account](https://getstream.io/maker-accou
 ## License
 
 ```
-Copyright (c) 2014-2025 Stream.io Inc. All rights reserved.
+Copyright (c) 2014-2026 Stream.io Inc. All rights reserved.
 
 Licensed under the Stream License;
 you may not use this file except in compliance with the License.
